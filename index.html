@@ -117,129 +117,260 @@
 
   <main>
 
-    <section class="hero">
+   <section class="hero">
 
-      <div class="container">
+  <div class="container">
 
-        <div class="hero-content">
+    <div class="hero-content">
 
-          <span class="hero-badge">
-            Discover Local Businesses
+      <span class="hero-badge">
+        Discover Local Businesses
+      </span>
+
+
+      <h1>
+        Find the right business
+        <span>near you</span>
+      </h1>
+
+
+      <p>
+        Discover local shops, services, professionals
+        and businesses with UBnux.
+      </p>
+
+
+      <!-- =================================================
+           LOCATION SELECTOR
+      ================================================== -->
+
+      <div class="selector-card">
+
+
+        <!-- =================================================
+             SELECTOR TITLE
+        ================================================== -->
+
+        <div class="selector-title">
+
+          <strong>
+            Find Businesses
+          </strong>
+
+          <span>
+            Select your location and category
           </span>
 
-          <h1>
-            Find the right business
-            <span>near you</span>
-          </h1>
+        </div>
 
-          <p>
-            Discover local shops, services, professionals
-            and businesses with UBnux.
-          </p>
+
+        <!-- =================================================
+             SELECTOR GRID
+        ================================================== -->
+
+        <div class="selector-grid">
 
 
           <!-- =================================================
-               LOCATION SELECTOR
+               STATE
           ================================================== -->
 
-          <div class="selector-card">
+          <div class="field-group">
 
-            <div class="selector-title">
-              <strong>
-                Find Businesses
-              </strong>
+            <label for="stateFilter">
+              State
+            </label>
 
-              <span>
-                Select your location and category
-              </span>
-            </div>
+            <select
+              id="stateFilter"
+              disabled
+              aria-label="Select State"
+            >
 
+              <option value="">
+                Select Your State
+              </option>
 
-            <div class="selector-grid">
+            </select>
 
-
-              <!-- STATE -->
-
-              <div class="field-group">
-
-                <label for="stateFilter">
-                  State
-                </label>
-
-                <select
-                  id="stateFilter"
-                  disabled
-                >
-
-                  <option value="">
-                    Select Your State
-                  </option>
-
-                </select>
-
-              </div>
+          </div>
 
 
-              <!-- DISTRICT -->
+          <!-- =================================================
+               DISTRICT
+          ================================================== -->
 
-              <div class="field-group">
+          <div class="field-group">
 
-                <label for="districtFilter">
-                  District
-                </label>
+            <label for="districtFilter">
+              District
+            </label>
 
-                <select
-                  id="districtFilter"
-                  disabled
-                >
+            <select
+              id="districtFilter"
+              disabled
+              aria-label="Select District"
+            >
 
-                  <option value="">
-                    Select Your District
-                  </option>
+              <option value="">
+                Select Your District
+              </option>
 
-                </select>
+            </select>
 
-              </div>
+          </div>
 
 
-              <!-- CATEGORY -->
+          <!-- =================================================
+               BUSINESS CATEGORY
+          ================================================== -->
 
-              <div class="field-group">
+          <div class="field-group">
 
-                <label for="categoryFilter">
-                  Business Category
-                </label>
-
-                <select
-                  id="categoryFilter"
-                  disabled
-                >
-
-                  <option value="">
-                    Select Business Category
-                  </option>
-
-                </select>
-
-              </div>
-
-            </div>
+            <label
+              for="categoryDropdownButton"
+            >
+              Business Category
+            </label>
 
 
             <div
-              id="selectionMessage"
-              class="selection-message"
+              id="categoryDropdown"
+              class="category-dropdown"
             >
-              Please select your state to continue.
+
+
+              <!-- =================================================
+                   SELECTED CATEGORY BUTTON
+              ================================================== -->
+
+              <button
+                id="categoryDropdownButton"
+                class="category-dropdown-button"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-controls="categoryDropdownMenu"
+                disabled
+              >
+
+                <span
+                  id="selectedCategoryIcon"
+                  class="category-selected-icon"
+                  aria-hidden="true"
+                >
+                  🏪
+                </span>
+
+
+                <span
+                  id="selectedCategoryText"
+                  class="category-selected-text"
+                >
+                  Select Business Category
+                </span>
+
+
+                <span
+                  class="category-arrow"
+                  aria-hidden="true"
+                >
+                  ▼
+                </span>
+
+              </button>
+
+
+              <!-- =================================================
+                   CATEGORY DROPDOWN MENU
+              ================================================== -->
+
+              <div
+                id="categoryDropdownMenu"
+                class="category-dropdown-menu"
+                role="listbox"
+                aria-label="Business Category"
+                hidden
+              >
+
+
+                <!-- =================================================
+                     CATEGORY SEARCH
+                ================================================== -->
+
+                <div class="category-search">
+
+                  <input
+                    id="categorySearchInput"
+                    type="search"
+                    placeholder="Search category..."
+                    autocomplete="off"
+                    aria-label="Search business category"
+                  >
+
+                </div>
+
+
+                <!-- =================================================
+                     CATEGORY OPTIONS
+                ================================================== -->
+
+                <div
+                  id="categoryOptions"
+                  class="category-options"
+                >
+
+                  <!--
+                    Dynamic category options
+                    will be inserted by categories.js
+                  -->
+
+                </div>
+
+
+                <!-- =================================================
+                     EMPTY SEARCH RESULT
+                ================================================== -->
+
+                <div
+                  id="categoryEmptyState"
+                  class="category-empty-state"
+                  hidden
+                >
+                  No category found.
+                </div>
+
+              </div>
+
             </div>
 
           </div>
 
+
         </div>
+
+
+        <!-- =================================================
+             SELECTION MESSAGE
+        ================================================== -->
+
+        <div
+          id="selectionMessage"
+          class="selection-message"
+          role="status"
+          aria-live="polite"
+        >
+          Please select your state to continue.
+        </div>
+
 
       </div>
 
-    </section>
+    </div>
+
+  </div>
+
+</section>
 
 
     <!-- =====================================================
@@ -419,7 +550,7 @@
       </div>
 
       <div>
-        © <span id="currentYear"></span> UBnux.com
+        © <span id="currentYear"></span> UBnux
       </div>
 
     </div>
