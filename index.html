@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>UBnux - Find Local Businesses Near You</title>
+
+  <meta
+    name="description"
+    content="Find local businesses, services and shops near you with UBnux."
+  >
+
+  <meta
+    name="theme-color"
+    content="#2563eb"
+  >
+
+  <link
+    rel="stylesheet"
+    href="assets/css/style.css"
+  >
+
+</head>
+
+
+<body>
+
+
+  <!-- =====================================================
+       PAGE LOADER
+  ====================================================== -->
+
+  <div
+    id="pageLoader"
+    class="page-loader"
+    aria-hidden="true"
+  >
+
+    <div class="loader-box">
+
+      <div class="spinner"></div>
+
+      <div
+        id="loaderText"
+        class="loader-text"
+      >
+        Loading UBnux...
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
+  <header class="site-header">
+
+    <div class="container header-inner">
+
+      <a
+        href="/"
+        class="brand"
+        aria-label="UBnux Home"
+      >
+        <span class="brand-main">UBnux</span>
+        <span class="brand-dot">.com</span>
+      </a>
+
+
+      <button
+        id="mobileMenuButton"
+        class="mobile-menu-button"
+        type="button"
+        aria-label="Open menu"
+      >
+        ☰
+      </button>
+
+
+      <nav
+        id="mainNav"
+        class="main-nav"
+      >
+
+        <a href="#businesses">
+          Businesses
+        </a>
+
+        <a href="#categories">
+          Categories
+        </a>
+
+        <a href="#about">
+          About
+        </a>
+
+      </nav>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       HERO
+  ====================================================== -->
+
+  <main>
+
+    <section class="hero">
+
+      <div class="container">
+
+        <div class="hero-content">
+
+          <span class="hero-badge">
+            Discover Local Businesses
+          </span>
+
+          <h1>
+            Find the right business
+            <span>near you</span>
+          </h1>
+
+          <p>
+            Discover local shops, services, professionals
+            and businesses with UBnux.
+          </p>
+
+
+          <!-- =================================================
+               LOCATION SELECTOR
+          ================================================== -->
+
+          <div class="selector-card">
+
+            <div class="selector-title">
+              <strong>
+                Find Businesses
+              </strong>
+
+              <span>
+                Select your location and category
+              </span>
+            </div>
+
+
+            <div class="selector-grid">
+
+
+              <!-- STATE -->
+
+              <div class="field-group">
+
+                <label for="stateFilter">
+                  State
+                </label>
+
+                <select
+                  id="stateFilter"
+                  disabled
+                >
+
+                  <option value="">
+                    Select Your State
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <!-- DISTRICT -->
+
+              <div class="field-group">
+
+                <label for="districtFilter">
+                  District
+                </label>
+
+                <select
+                  id="districtFilter"
+                  disabled
+                >
+
+                  <option value="">
+                    Select Your District
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <!-- CATEGORY -->
+
+              <div class="field-group">
+
+                <label for="categoryFilter">
+                  Business Category
+                </label>
+
+                <select
+                  id="categoryFilter"
+                  disabled
+                >
+
+                  <option value="">
+                    Select Business Category
+                  </option>
+
+                </select>
+
+              </div>
+
+            </div>
+
+
+            <div
+              id="selectionMessage"
+              class="selection-message"
+            >
+              Please select your state to continue.
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         BUSINESS SECTION
+    ====================================================== -->
+
+    <section
+      id="businesses"
+      class="business-section"
+    >
+
+      <div class="container">
+
+
+        <!-- SECTION HEADER -->
+
+        <div class="section-header">
+
+          <div>
+
+            <span class="section-kicker">
+              LOCAL BUSINESSES
+            </span>
+
+            <h2>
+              Businesses near you
+            </h2>
+
+            <p
+              id="businessSummary"
+              class="business-summary"
+            >
+              Select your location and category.
+            </p>
+
+          </div>
+
+
+          <div class="sort-wrapper">
+
+            <label for="sortFilter">
+              Sort
+            </label>
+
+            <select
+              id="sortFilter"
+              disabled
+            >
+
+              <option value="featured">
+                Featured
+              </option>
+
+              <option value="rating">
+                Rating
+              </option>
+
+              <option value="name">
+                Name
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             BUSINESS GRID
+        ================================================== -->
+
+        <div
+          id="businessGrid"
+          class="business-grid"
+        >
+        </div>
+
+
+        <!-- =================================================
+             EMPTY STATE
+        ================================================== -->
+
+        <div
+          id="emptyState"
+          class="empty-state hidden"
+        >
+
+          <div class="empty-icon">
+            🔎
+          </div>
+
+          <h3>
+            No businesses found
+          </h3>
+
+          <p>
+            We couldn't find any businesses
+            for your selected location and category.
+          </p>
+
+        </div>
+
+
+        <!-- =================================================
+             LOAD MORE
+        ================================================== -->
+
+        <div
+          id="loadMoreWrapper"
+          class="load-more-wrapper hidden"
+        >
+
+          <button
+            id="loadMoreButton"
+            class="load-more-button"
+            type="button"
+          >
+            Load More
+          </button>
+
+        </div>
+
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         ABOUT
+    ====================================================== -->
+
+    <section
+      id="about"
+      class="about-section"
+    >
+
+      <div class="container">
+
+        <div class="about-card">
+
+          <span class="section-kicker">
+            ABOUT UBNux
+          </span>
+
+          <h2>
+            Your local business discovery platform
+          </h2>
+
+          <p>
+            UBnux helps users discover businesses,
+            shops, services and professionals in their
+            selected state, district and category.
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       FOOTER
+  ====================================================== -->
+
+  <footer class="site-footer">
+
+    <div class="container footer-inner">
+
+      <div>
+        <strong>UBnux</strong>
+        <span> - Local Business Discovery</span>
+      </div>
+
+      <div>
+        © <span id="currentYear"></span> UBnux.com
+      </div>
+
+    </div>
+
+  </footer>
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+  ====================================================== -->
+
+  <script src="assets/js/config.js"></script>
+
+  <script src="assets/js/api.js"></script>
+
+  <script src="assets/js/storage.js"></script>
+
+  <script src="assets/js/state.js"></script>
+
+  <script src="assets/js/districts.js"></script>
+
+  <script src="assets/js/categories.js"></script>
+
+  <script src="assets/js/businesses.js"></script>
+
+  <script src="assets/js/app.js"></script>
+
+
+</body>
+
+</html>
