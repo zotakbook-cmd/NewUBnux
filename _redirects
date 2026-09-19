@@ -1,5 +1,6 @@
-# Business detail pages
-/in/:state/:district/:category/:business/ /business.html 200
+# =========================================================
+# UBnux SEO ROUTING
+# =========================================================
 
-# Category pages
-/in/:state/:district/:category/ /index.html 200
+/in/*/*/*/* /business.html 200
+/in/*/*/* /index.html 200
