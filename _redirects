@@ -1,9 +1,45 @@
 # =========================================================
-# UBnux Cloudflare Pages Routing
+# UBnux - Cloudflare Pages Routing
+# =========================================================
+#
+# IMPORTANT:
+# - These are INTERNAL PROXY rules.
+# - HTTP 200 means browser URL does NOT change.
+# - Business SEO URLs are served by /business.
+# - Do NOT point these routes to /business.html.
+#
+# Business:
+# /in/bihar/siwan/clothing-and-fashion/siwan-fashion-house/
+#                         ↓
+#                      /business
+#
+# Category:
+# /in/bihar/siwan/clothing-and-fashion/
+#                         ↓
+#                      /
+#
 # =========================================================
 
-# BUSINESS SEO URL
-/in/*/*/*/* /business 200
 
+# =========================================================
+# BUSINESS SEO URL
+# =========================================================
+
+/in/:state/:district/:category/:business/ /business 200
+/in/:state/:district/:category/:business /business 200
+
+
+# =========================================================
 # CATEGORY SEO URL
-/in/*/*/* / 200
+# =========================================================
+
+/in/:state/:district/:category/ / 200
+/in/:state/:district/:category / 200
+
+
+# =========================================================
+# STATIC CLEAN ROUTES
+# =========================================================
+
+/login /login.html 200
+/verify /verify.html 200
