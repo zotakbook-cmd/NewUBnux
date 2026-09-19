@@ -6,7 +6,8 @@
    - Read current URL
    - Detect SEO route
    - Extract state/district/category/business slug
-   - Provide backward-compatible parse() API
+   - Provide parse() API
+   - Maintain compatibility with existing UBnux code
    ========================================================= */
 
 (function (
@@ -16,6 +17,10 @@
 
   "use strict";
 
+
+  /* =======================================================
+     UBNUX SEO ROUTER
+  ======================================================= */
 
   const UBNUX_SEO_ROUTER = {
 
@@ -36,14 +41,19 @@
         )
         .replace(
           /^\/|\/$/g,
-          ""
-        );
+          "");
 
     },
 
 
     /* =====================================================
        PARSE BUSINESS ROUTE
+       
+       Expected:
+
+       /in/bihar/siwan/
+          clothing-and-fashion/
+          siwan-fashion-house/
     ===================================================== */
 
     parseBusinessRoute() {
@@ -56,17 +66,6 @@
         path
           ? path.split("/")
           : [];
-
-
-      /*
-        Expected:
-
-        /in/
-          state
-          district
-          category
-          business
-      */
 
 
       if (
@@ -114,19 +113,15 @@
 
     /* =====================================================
        GENERIC PARSE
-       -----------------------------------------------------
-       business-page.js uses:
-         UBnuxSEORouter.parse(path)
 
-       So this method must exist.
+       business-page.js uses:
+
+       UBnuxSEORouter.parse(
+         window.location.pathname
+       );
     ===================================================== */
 
     parse(path) {
-
-      /*
-        If a path is explicitly supplied,
-        temporarily parse that path directly.
-      */
 
       const currentPath =
         path !== undefined &&
@@ -154,7 +149,7 @@
 
 
       /* =================================================
-         BUSINESS SEO ROUTE
+         BUSINESS SEO URL
       ================================================= */
 
       if (
@@ -195,9 +190,9 @@
       }
 
 
-      /*
-        Unknown / non-business route.
-      */
+      /* =================================================
+         UNKNOWN / NON-BUSINESS ROUTE
+      ================================================= */
 
       return {
 
@@ -213,7 +208,7 @@
 
 
     /* =====================================================
-       CHECK BUSINESS ROUTE
+       CHECK BUSINESS PAGE
     ===================================================== */
 
     isBusinessPage() {
@@ -228,26 +223,55 @@
 
 
   /* =======================================================
-     GLOBAL EXPORT
-  ====================================================== */
+     GLOBAL EXPORTS
+
+     IMPORTANT:
+     business-page.js expects:
+
+       window.UBnuxSEORouter
+
+     Other existing code may use:
+
+       window.UBNUX_SEO_ROUTER
+       window.App.router
+  ======================================================= */
 
   window.UBNUX_SEO_ROUTER =
     UBNUX_SEO_ROUTER;
 
 
-  /*
-    Optional compatibility alias.
+  window.UBnuxSEORouter =
+    UBNUX_SEO_ROUTER;
 
-    This keeps the router usable by older
-    frontend code which may expect App.router.
-  */
 
   window.App =
     window.App ||
     {};
 
+
   window.App.router =
     UBNUX_SEO_ROUTER;
+
+
+  /* =======================================================
+     DEBUG
+  ======================================================= */
+
+  console.log(
+    "UBnux SEO Router initialized:",
+    {
+      router:
+        !!window.UBnuxSEORouter,
+
+      parse:
+        typeof
+        window.UBnuxSEORouter.parse,
+
+      businessParser:
+        typeof
+        window.UBnuxSEORouter.parseBusinessRoute
+    }
+  );
 
 
 })(window, document);
