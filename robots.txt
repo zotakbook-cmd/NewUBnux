@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /cms/
+Disallow: /api/
+
+# Sitemap will be activated after the dynamic
+# sitemap system is completed.
