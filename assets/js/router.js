@@ -1,8 +1,7 @@
-
 /* =========================================================
    UBnux - SEO Router
    File: assets/js/router.js
-   Version: 2.0.0
+   Version: 2.1.0
 
    Responsibilities:
    - Parse UBnux SEO URLs
@@ -11,19 +10,27 @@
    - Generate canonical page URLs
    - Keep routing logic centralized
    - Support permanent /in/ SEO architecture
+   - Support business-page.js compatibility
+   - Prevent accidental fallback to /business/
    - Future Cloudflare Worker compatible
 
    URL STRUCTURE
    ---------------------------------------------------------
+   /
+   /in/
    /in/bihar/
    /in/bihar/siwan/
    /in/bihar/siwan/libraries/
    /in/bihar/siwan/libraries/abc-library/
 
+   LEGACY
+   ---------------------------------------------------------
+   /business/abc-library/
+
    IMPORTANT:
    - Does NOT fetch data
    - Does NOT render businesses
-   - Does NOT modify existing filters
+   - Does NOT modify filters
    - Does NOT interfere with app.js
 ========================================================= */
 
@@ -55,33 +62,53 @@
   var SITE_ORIGIN =
     "https://ubnux.com";
 
-
   var SEO_PREFIX =
     "in";
 
 
+  /*
+   * These paths are handled as static / reserved routes.
+   *
+   * IMPORTANT:
+   * "business" is kept here only for legacy compatibility.
+   * It does NOT affect /in/... business URLs.
+   */
+
   var RESERVED_PATHS = {
 
     business: true,
+
     search: true,
+
     about: true,
+
     contact: true,
+
     privacy: true,
+
     "privacy-policy": true,
+
     terms: true,
+
     login: true,
+
     admin: true,
+
     api: true,
+
     assets: true,
+
     sitemap: true,
+
     "sitemap.xml": true,
+
     "robots.txt": true
 
   };
 
 
   /* =======================================================
-     HELPERS
+     BASIC HELPERS
   ======================================================= */
 
   function clean(value) {
@@ -94,7 +121,6 @@
       return "";
 
     }
-
 
     return String(
       value
@@ -112,7 +138,6 @@
         .replace(/\s+/g, "-")
         .replace(/[^a-z0-9-]/g, "")
         .replace(/-+/g, "-");
-
 
     return slug;
 
@@ -136,6 +161,10 @@
   }
 
 
+  /* =======================================================
+     PATH NORMALIZATION
+  ======================================================= */
+
   function normalizePath(pathname) {
 
     var path =
@@ -144,20 +173,32 @@
       );
 
 
-    try {
+    path =
+      safeDecode(
+        path
+      );
 
-      path =
-        safeDecode(
-          path
-        );
 
-    } catch (error) {}
-
+    /*
+     * Convert duplicate slashes:
+     *
+     * //in//bihar//
+     *
+     * ->
+     *
+     * /in/bihar/
+     */
 
     path =
-      path
-        .replace(/\/+/g, "/");
+      path.replace(
+        /\/+/g,
+        "/"
+      );
 
+
+    /*
+     * Always start with /
+     */
 
     if (
       path.charAt(0) !== "/"
@@ -170,11 +211,8 @@
 
 
     /*
-     * Keep file URLs as-is:
-     *
-     * /robots.txt
-     * /sitemap.xml
-     * /favicon.ico
+     * File URLs must not automatically
+     * receive a trailing slash.
      */
 
     if (
@@ -187,7 +225,7 @@
 
 
     /*
-     * All normal SEO pages end with /
+     * Normal SEO routes always end with /
      */
 
     if (
@@ -206,6 +244,10 @@
 
   }
 
+
+  /* =======================================================
+     GET URL SEGMENTS
+  ======================================================= */
 
   function getSegments(pathname) {
 
@@ -235,6 +277,10 @@
   }
 
 
+  /* =======================================================
+     ABSOLUTE URL BUILDER
+  ======================================================= */
+
   function joinURL(path) {
 
     var normalized =
@@ -252,7 +298,7 @@
 
 
   /* =======================================================
-     INTERNAL SEO PATH CHECK
+     SEO PATH CHECK
   ======================================================= */
 
   function isSEOPath(
@@ -260,7 +306,8 @@
   ) {
 
     return (
-      segments.length >= 2 &&
+      Array.isArray(segments) &&
+      segments.length >= 1 &&
       segments[0] === SEO_PREFIX
     );
 
@@ -268,28 +315,39 @@
 
 
   /* =======================================================
-     ROUTE DETECTION
+     ROUTE OBJECT
   ======================================================= */
 
-  function parseRoute(pathname) {
+  function createBaseRoute(
+    path,
+    segments
+  ) {
 
-    var path =
-      normalizePath(
-        pathname ||
-        window.location.pathname
-      );
-
-
-    var segments =
-      getSegments(
-        path
-      );
-
-
-    var route = {
+    return {
 
       type:
         "unknown",
+
+      isSEOPage:
+        false,
+
+      isBusinessPage:
+        false,
+
+      isStatePage:
+        false,
+
+      isDistrictPage:
+        false,
+
+      isCategoryPage:
+        false,
+
+      isStaticPage:
+        false,
+
+      isLegacyPage:
+        false,
 
       path:
         path,
@@ -319,6 +377,38 @@
 
     };
 
+  }
+
+
+  /* =======================================================
+     ROUTE DETECTION
+  ======================================================= */
+
+  function parseRoute(pathname) {
+
+    var path =
+      normalizePath(
+        pathname ||
+        (
+          window.location &&
+          window.location.pathname
+        ) ||
+        "/"
+      );
+
+
+    var segments =
+      getSegments(
+        path
+      );
+
+
+    var route =
+      createBaseRoute(
+        path,
+        segments
+      );
+
 
     /* =====================================================
        HOME
@@ -335,8 +425,7 @@
         "/";
 
       route.canonicalURL =
-        SITE_ORIGIN +
-        "/";
+        SITE_ORIGIN + "/";
 
       return route;
 
@@ -344,34 +433,28 @@
 
 
     /* =====================================================
-       RESERVED STATIC PAGES
-    ===================================================== */
-
-    if (
-      RESERVED_PATHS[
-        segments[0]
-      ]
-    ) {
-
-      route.type =
-        "static";
-
-      return route;
-
-    }
-
-
-    /* =====================================================
-       LEGACY BUSINESS URL
-
+       LEGACY / BUSINESS
+       -----------------------------------------------------
+       /business/
        /business/abc-library/
-
-       Kept for compatibility only.
+       -----------------------------------------------------
+       Kept only for compatibility.
     ===================================================== */
 
     if (
       segments[0] === "business"
     ) {
+
+      route.isLegacyPage =
+        true;
+
+      route.isStaticPage =
+        true;
+
+
+      /*
+       * /business/<slug>/
+       */
 
       if (
         segments.length === 2 &&
@@ -399,6 +482,10 @@
       }
 
 
+      /*
+       * /business/
+       */
+
       route.type =
         "business-index";
 
@@ -416,18 +503,41 @@
 
 
     /* =====================================================
-       SEO ROOT
-
-       /in/
+       RESERVED STATIC ROUTES
     ===================================================== */
 
     if (
-      segments.length === 1 &&
-      segments[0] === SEO_PREFIX
+      RESERVED_PATHS[
+        segments[0]
+      ]
+    ) {
+
+      route.type =
+        "static";
+
+      route.isStaticPage =
+        true;
+
+      return route;
+
+    }
+
+
+    /* =====================================================
+       /in/
+       SEO ROOT
+    ===================================================== */
+
+    if (
+      isSEOPath(segments) &&
+      segments.length === 1
     ) {
 
       route.type =
         "seo-root";
+
+      route.isSEOPage =
+        true;
 
       route.canonicalPath =
         "/in/";
@@ -444,7 +554,7 @@
 
     /* =====================================================
        STATE
-
+       -----------------------------------------------------
        /in/bihar/
     ===================================================== */
 
@@ -456,18 +566,27 @@
       route.type =
         "state";
 
+      route.isSEOPage =
+        true;
+
+      route.isStatePage =
+        true;
+
       route.stateSlug =
         segments[1];
+
 
       route.canonicalPath =
         "/in/" +
         route.stateSlug +
         "/";
 
+
       route.canonicalURL =
         joinURL(
           route.canonicalPath
         );
+
 
       return route;
 
@@ -476,7 +595,7 @@
 
     /* =====================================================
        DISTRICT
-
+       -----------------------------------------------------
        /in/bihar/siwan/
     ===================================================== */
 
@@ -488,11 +607,18 @@
       route.type =
         "district";
 
+      route.isSEOPage =
+        true;
+
+      route.isDistrictPage =
+        true;
+
       route.stateSlug =
         segments[1];
 
       route.districtSlug =
         segments[2];
+
 
       route.canonicalPath =
         "/in/" +
@@ -501,10 +627,12 @@
         route.districtSlug +
         "/";
 
+
       route.canonicalURL =
         joinURL(
           route.canonicalPath
         );
+
 
       return route;
 
@@ -513,7 +641,7 @@
 
     /* =====================================================
        CATEGORY
-
+       -----------------------------------------------------
        /in/bihar/siwan/libraries/
     ===================================================== */
 
@@ -525,6 +653,12 @@
       route.type =
         "category";
 
+      route.isSEOPage =
+        true;
+
+      route.isCategoryPage =
+        true;
+
       route.stateSlug =
         segments[1];
 
@@ -533,6 +667,7 @@
 
       route.categorySlug =
         segments[3];
+
 
       route.canonicalPath =
         "/in/" +
@@ -543,10 +678,12 @@
         route.categorySlug +
         "/";
 
+
       route.canonicalURL =
         joinURL(
           route.canonicalPath
         );
+
 
       return route;
 
@@ -555,7 +692,7 @@
 
     /* =====================================================
        BUSINESS
-
+       -----------------------------------------------------
        /in/bihar/siwan/libraries/abc-library/
     ===================================================== */
 
@@ -564,8 +701,29 @@
       segments.length === 5
     ) {
 
+      /*
+       * CRITICAL FIX
+       *
+       * business-page.js expects:
+       *
+       * route.isBusinessPage === true
+       *
+       * Without this flag:
+       *
+       * "Invalid business URL."
+       *
+       * can occur.
+       */
+
       route.type =
         "business";
+
+      route.isSEOPage =
+        true;
+
+      route.isBusinessPage =
+        true;
+
 
       route.stateSlug =
         segments[1];
@@ -579,6 +737,11 @@
       route.businessSlug =
         segments[4];
 
+
+      /*
+       * Canonical SEO path
+       */
+
       route.canonicalPath =
         "/in/" +
         route.stateSlug +
@@ -590,10 +753,12 @@
         route.businessSlug +
         "/";
 
+
       route.canonicalURL =
         joinURL(
           route.canonicalPath
         );
+
 
       return route;
 
@@ -613,6 +778,7 @@
      URL BUILDERS
   ======================================================= */
 
+
   function buildHomeURL() {
 
     return (
@@ -622,6 +788,10 @@
 
   }
 
+
+  /* =======================================================
+     STATE URL
+  ======================================================= */
 
   function buildStateURL(
     stateSlug
@@ -652,6 +822,10 @@
 
   }
 
+
+  /* =======================================================
+     DISTRICT URL
+  ======================================================= */
 
   function buildDistrictURL(
     stateSlug,
@@ -692,6 +866,10 @@
 
   }
 
+
+  /* =======================================================
+     CATEGORY URL
+  ======================================================= */
 
   function buildCategoryURL(
     stateSlug,
@@ -743,6 +921,10 @@
   }
 
 
+  /* =======================================================
+     BUSINESS URL
+  ======================================================= */
+
   function buildBusinessURL(
     stateSlug,
     districtSlug,
@@ -775,7 +957,13 @@
 
 
     /*
-     * New permanent SEO business URL
+     * -----------------------------------------------------
+     * PERMANENT SEO BUSINESS URL
+     * -----------------------------------------------------
+     *
+     * /in/bihar/siwan/clothing-and-fashion/
+     * /in/bihar/siwan/clothing-and-fashion/siwan-fashion-house/
+     *
      */
 
     if (
@@ -803,7 +991,15 @@
 
 
     /*
-     * Legacy fallback
+     * -----------------------------------------------------
+     * LEGACY FALLBACK
+     * -----------------------------------------------------
+     *
+     * Only used when full SEO information is unavailable.
+     *
+     * IMPORTANT:
+     * Normal SEO business navigation should NEVER reach here.
+     *
      */
 
     if (
@@ -821,10 +1017,11 @@
     }
 
 
-    return (
-      SITE_ORIGIN +
-      "/business/"
-    );
+    /*
+     * No business slug.
+     */
+
+    return buildHomeURL();
 
   }
 
@@ -836,7 +1033,68 @@
   function getCurrentRoute() {
 
     return parseRoute(
-      window.location.pathname
+
+      (
+        window.location &&
+        window.location.pathname
+      ) ||
+      "/"
+
+    );
+
+  }
+
+
+  /* =======================================================
+     BUSINESS PAGE CHECK
+  ======================================================= */
+
+  function isBusinessPage(
+    pathname
+  ) {
+
+    var route =
+      parseRoute(
+        pathname
+      );
+
+
+    return (
+      route.type === "business" &&
+      route.isBusinessPage === true &&
+      Boolean(
+        route.stateSlug
+      ) &&
+      Boolean(
+        route.districtSlug
+      ) &&
+      Boolean(
+        route.categorySlug
+      ) &&
+      Boolean(
+        route.businessSlug
+      )
+    );
+
+  }
+
+
+  /* =======================================================
+     SEO PAGE CHECK
+  ======================================================= */
+
+  function isSEOPage(
+    pathname
+  ) {
+
+    var route =
+      parseRoute(
+        pathname
+      );
+
+
+    return (
+      route.isSEOPage === true
     );
 
   }
@@ -854,17 +1112,29 @@
     SEO_PREFIX:
       SEO_PREFIX,
 
+    RESERVED_PATHS:
+      RESERVED_PATHS,
+
     normalizePath:
       normalizePath,
 
     cleanSlug:
       cleanSlug,
 
+    getSegments:
+      getSegments,
+
     parseRoute:
       parseRoute,
 
     getCurrentRoute:
       getCurrentRoute,
+
+    isBusinessPage:
+      isBusinessPage,
+
+    isSEOPage:
+      isSEOPage,
 
     buildHomeURL:
       buildHomeURL,
@@ -902,6 +1172,46 @@
 
   App.buildStateURL =
     buildStateURL;
+
+
+  /*
+   * Compatibility aliases.
+   *
+   * Some existing files may use:
+   *
+   * window.UBnux.router
+   * window.App.router
+   * window.ZilaBiz.router
+   */
+
+  window.UBnux =
+    App;
+
+  window.ZilaBiz =
+    App;
+
+  window.App =
+    App;
+
+
+  /* =======================================================
+     DEBUG HELPER
+     -------------------------------------------------------
+     Available in console:
+     UBnux.router.getCurrentRoute()
+     UBnux.router.isBusinessPage()
+     ======================================================= */
+
+  if (
+    window.console &&
+    typeof window.console.debug === "function"
+  ) {
+
+    window.console.debug(
+      "UBnux SEO Router 2.1.0 initialized."
+    );
+
+  }
 
 
 })(window);
