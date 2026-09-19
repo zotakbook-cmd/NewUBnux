@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux - Business SEO Router
    File: assets/js/seo/seo-router.js
-   Version: 2.1.0
+   Version: 2.2.0
 
    Responsibilities:
    - Read current URL
@@ -11,6 +11,9 @@
    - Maintain compatibility with business-page.js
    - NEVER overwrite the main UBnux router
    - Support permanent /in/ business URLs
+   - Safe with Cloudflare Pages rewrites
+   - Safe with query strings / hashes
+   - Never redirect the browser
 
    BUSINESS URL
    ---------------------------------------------------------
@@ -20,6 +23,7 @@
    - This is NOT the main application router.
    - Main routing is handled by assets/js/router.js
    - This router is specifically for business-page.js
+   - This file NEVER changes window.location
 ========================================================= */
 
 (function (
@@ -45,9 +49,7 @@
 
     }
 
-    return String(
-      value
-    ).trim();
+    return String(value).trim();
 
   }
 
@@ -61,13 +63,11 @@
     const input =
       clean(value);
 
-
     if (!input) {
 
       return "";
 
     }
-
 
     try {
 
@@ -78,8 +78,8 @@
     } catch (error) {
 
       /*
-       * Invalid encoded URL should not
-       * crash the business page.
+       * Invalid encoded URL must never
+       * break the business page.
        */
 
       return input;
@@ -91,6 +91,16 @@
 
   /* =======================================================
      SAFE SLUG
+     -------------------------------------------------------
+     Converts:
+
+       "Siwan Fashion House"
+       "siwan-fashion-house"
+       "%20"
+
+     into:
+
+       "siwan-fashion-house"
   ======================================================= */
 
   function cleanSlug(value) {
@@ -109,23 +119,74 @@
 
   /* =======================================================
      NORMALIZE PATH
+     -------------------------------------------------------
+     IMPORTANT:
+     - pathname only
+     - query string ignored
+     - hash ignored
+     - duplicate slash removed
+     - trailing slash removed internally
   ======================================================= */
 
   function normalizePath(path) {
 
     let value =
       clean(
-        path ||
-        (
-          window.location &&
-          window.location.pathname
-        ) ||
-        "/"
+        path
       );
 
 
     /*
-     * Remove duplicate slashes.
+     * If path was not supplied,
+     * use current browser pathname.
+     */
+
+    if (!value) {
+
+      value =
+        (
+          window.location &&
+          window.location.pathname
+        ) ||
+        "/";
+
+    }
+
+
+    /*
+     * Remove query string.
+     */
+
+    value =
+      value.split("?")[0];
+
+
+    /*
+     * Remove hash.
+     */
+
+    value =
+      value.split("#")[0];
+
+
+    /*
+     * Decode safely before parsing.
+     */
+
+    value =
+      safeDecode(
+        value
+      );
+
+
+    /*
+     * Convert duplicate slashes:
+     *
+     * //in//bihar//
+     *
+     * into:
+     *
+     * /in/bihar/
      */
 
     value =
@@ -150,8 +211,8 @@
 
 
     /*
-     * Remove trailing slash for
-     * internal parsing.
+     * Remove trailing slash
+     * for internal parsing.
      */
 
     value =
@@ -227,32 +288,40 @@
 
   /* =======================================================
      BUILD BUSINESS ROUTE
+     -------------------------------------------------------
+     Required:
+
+       /in/
+       state
+       district
+       category
+       business
+
+     Exactly 5 segments.
   ======================================================= */
 
   function buildBusinessRoute(
     parts
   ) {
 
+    if (
+      !Array.isArray(parts) ||
+      parts.length !== 5
+    ) {
+
+      return null;
+
+    }
+
+
     /*
-     * Expected:
-     *
-     * /in/bihar/siwan/
-     * clothing-and-fashion/
-     * siwan-fashion-house/
-     *
-     * Parts:
-     *
-     * 0 = in
-     * 1 = bihar
-     * 2 = siwan
-     * 3 = clothing-and-fashion
-     * 4 = siwan-fashion-house
+     * First segment MUST be "in".
      */
 
     if (
-      !Array.isArray(parts) ||
-      parts.length !== 5 ||
-      parts[0] !== "in"
+      cleanSlug(
+        parts[0]
+      ) !== "in"
     ) {
 
       return null;
@@ -285,7 +354,7 @@
 
 
     /*
-     * Every part is mandatory.
+     * Every SEO segment is mandatory.
      */
 
     if (
@@ -293,6 +362,20 @@
       !districtSlug ||
       !categorySlug ||
       !businessSlug
+    ) {
+
+      return null;
+
+    }
+
+
+    /*
+     * "in" itself cannot be used as
+     * a business slug.
+     */
+
+    if (
+      businessSlug === "in"
     ) {
 
       return null;
@@ -348,8 +431,10 @@
   ) {
 
     const currentPath =
-      path !== undefined &&
-      path !== null
+      (
+        path !== undefined &&
+        path !== null
+      )
 
         ? path
 
@@ -374,9 +459,9 @@
      -------------------------------------------------------
      business-page.js uses:
 
-     UBnuxSEORouter.parse(
-       window.location.pathname
-     );
+       UBnuxSEORouter.parse(
+         window.location.pathname
+       );
   ======================================================= */
 
   function parse(
@@ -389,6 +474,10 @@
       );
 
 
+    /*
+     * Valid Business SEO URL.
+     */
+
     if (
       businessRoute
     ) {
@@ -400,9 +489,10 @@
 
     /*
      * Non-business route.
-     *
+
      * IMPORTANT:
-     * Do not invent business information.
+     * Never convert category/state/district
+     * routes into business routes.
      */
 
     return {
@@ -495,7 +585,7 @@
   const UBNUX_SEO_ROUTER = {
 
     version:
-      "2.1.0",
+      "2.2.0",
 
     getPath:
       getPath,
@@ -523,7 +613,7 @@
   ======================================================= */
 
   /*
-   * Main compatibility name.
+   * Primary SEO router.
    */
 
   window.UBNUX_SEO_ROUTER =
@@ -531,30 +621,25 @@
 
 
   /*
-   * business-page.js specifically expects
-   * this name.
+   * Compatibility name required by
+   * business-page.js.
    */
 
   window.UBnuxSEORouter =
     UBNUX_SEO_ROUTER;
 
 
+  /* =======================================================
+     APP NAMESPACE
+  ======================================================= */
+
   /*
-   * IMPORTANT:
+   * Do NOT replace the main router.
    *
-   * DO NOT DO THIS:
+   * WRONG:
    *
    * window.App.router =
    *   UBNUX_SEO_ROUTER;
-   *
-   * Because assets/js/router.js already owns
-   * the main UBnux router.
-   */
-
-
-  /*
-   * Keep App namespace only as a
-   * compatibility container.
    */
 
   window.App =
@@ -563,9 +648,7 @@
 
 
   /*
-   * Business-specific router alias.
-   *
-   * Do NOT overwrite App.router.
+   * SEO router gets its own namespace.
    */
 
   window.App.seoRouter =
@@ -582,17 +665,25 @@
       "function"
   ) {
 
+    const currentRoute =
+      UBNUX_SEO_ROUTER.getCurrentRoute();
+
+
     console.debug(
       "UBnux Business SEO Router initialized.",
       {
         version:
           UBNUX_SEO_ROUTER.version,
 
+        path:
+          UBNUX_SEO_ROUTER.getPath(),
+
         businessPage:
-          UBnuxSEORouter.isBusinessPage(),
+          UBNUX_SEO_ROUTER.isBusinessPage(),
 
         currentRoute:
-          UBnuxSEORouter.getCurrentRoute()
+          currentRoute
+
       }
     );
 
