@@ -213,96 +213,104 @@
   /* =========================================================
      BUSINESS URL
   ========================================================= */
+function getBusinessURL(business) {
 
-  function getBusinessURL(business) {
-
-    const stateSlug =
-      String(
-        business.StateSlug ||
-        business.stateSlug ||
-        ""
-      ).trim();
-
-
-    const districtSlug =
-      String(
-        business.DistrictSlug ||
-        business.districtSlug ||
-        ""
-      ).trim();
+  const stateSlug =
+    String(
+      business.StateSlug ||
+      business.stateSlug ||
+      ""
+    ).trim();
 
 
-    const categorySlug =
-      String(
-        business.CategorySlug ||
-        business.categorySlug ||
-        ""
-      ).trim();
+  const districtSlug =
+    String(
+      business.DistrictSlug ||
+      business.districtSlug ||
+      ""
+    ).trim();
 
 
-    const businessSlug =
-      String(
-        business.Slug ||
-        business.slug ||
-        ""
-      ).trim();
+  const categorySlug =
+    String(
+      business.CategorySlug ||
+      business.categorySlug ||
+      ""
+    ).trim();
 
 
-    /*
-       Preferred permanent SEO URL
-    */
-
-    if (
-      stateSlug &&
-      districtSlug &&
-      categorySlug &&
-      businessSlug
-    ) {
-
-      return (
-        "/in/" +
-        encodeURIComponent(stateSlug) +
-        "/" +
-        encodeURIComponent(districtSlug) +
-        "/" +
-        encodeURIComponent(categorySlug) +
-        "/" +
-        encodeURIComponent(businessSlug) +
-        "/"
-      );
-
-    }
+  const businessSlug =
+    String(
+      business.Slug ||
+      business.slug ||
+      ""
+    ).trim();
 
 
-    /*
-       Current fallback URL
+  /*
+   * =====================================================
+   * PERMANENT BUSINESS SEO URL
+   * =====================================================
+   */
 
-       This keeps the listing working even when
-       the backend does not yet return SEO slugs.
-    */
-
-    const id =
-      String(
-        business.BusinessID ||
-        business.businessID ||
-        business.id ||
-        businessSlug ||
-        ""
-      ).trim();
-
-
-    if (!id) {
-      return "#";
-    }
-
+  if (
+    stateSlug &&
+    districtSlug &&
+    categorySlug &&
+    businessSlug
+  ) {
 
     return (
-      "/business/" +
-      encodeURIComponent(id)
+      "/in/" +
+      encodeURIComponent(stateSlug) +
+      "/" +
+      encodeURIComponent(districtSlug) +
+      "/" +
+      encodeURIComponent(categorySlug) +
+      "/" +
+      encodeURIComponent(businessSlug) +
+      "/"
     );
 
   }
 
+
+  /*
+   * =====================================================
+   * SEO DATA MISSING
+   * =====================================================
+   *
+   * Do NOT generate legacy /business/ URLs.
+   * The business data must contain all SEO slugs.
+   */
+
+  console.warn(
+    "UBnux: Business SEO URL could not be generated.",
+    {
+      BusinessID:
+        business.BusinessID ||
+        business.businessID ||
+        business.id ||
+        "",
+
+      StateSlug:
+        stateSlug,
+
+      DistrictSlug:
+        districtSlug,
+
+      CategorySlug:
+        categorySlug,
+
+      Slug:
+        businessSlug
+    }
+  );
+
+
+  return "#";
+
+}
 
   /* =========================================================
      LOCATION
