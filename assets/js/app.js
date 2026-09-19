@@ -1,27 +1,30 @@
+ /* =========================================================
+    UBnux Main Application
+    File: assets/js/app.js
+    Version: 3.0.0
 
-/* =========================================================
-   UBnux Main Application
-   File: assets/js/app.js
+    Responsibilities:
+    - Application initialization
+    - State selection
+    - District selection
+    - Custom Category selection
+    - User selection restore
+    - Business loading trigger
+    - Sorting
+    - URL state
+    - Mobile navigation
+    - Safe DOM initialization
+    - SEO route detection
+    - Listing / Business page separation
 
-   Responsibilities:
-   - Application initialization
-   - State selection
-   - District selection
-   - Custom Category selection
-   - User selection restore
-   - Business loading trigger
-   - Sorting
-   - URL state
-   - Mobile navigation
-   - Safe DOM initialization
-
-   IMPORTANT:
-   - Compatible with custom category dropdown
-   - No dependency on #categoryFilter
-   - Missing optional elements do not crash application
-   - Compatible with district-wise business backend
-   - Search-engine modules remain independent
-========================================================= */
+    IMPORTANT:
+    - Business SEO URL is NOT redirected to /business/
+    - /in/<state>/<district>/<category>/<business>/ is
+      treated as a Business Page
+    - Normal listing routes continue to work
+    - Saved selection is NOT allowed to overwrite
+      a business SEO URL
+ ========================================================= */
 
 (function (window, document) {
 
@@ -30,15 +33,119 @@
 
   /* =======================================================
      CONFIG
-  ====================================================== */
+  ======================================================= */
 
   const config =
     window.UBNUX_CONFIG || {};
 
 
   /* =======================================================
+     ROUTE DETECTION
+  ======================================================= */
+
+  function getCurrentRoute() {
+
+    try {
+
+      if (
+        window.UBnux &&
+        window.UBnux.router &&
+        typeof window.UBnux.router
+          .getCurrentRoute === "function"
+      ) {
+
+        return window.UBnux.router
+          .getCurrentRoute();
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "UBnux route detection failed:",
+        error
+      );
+
+    }
+
+
+    return {
+      type: "unknown",
+      isBusinessPage: false,
+      isSEOPage: false
+    };
+
+  }
+
+
+  const CURRENT_ROUTE =
+    getCurrentRoute();
+
+
+  /* =======================================================
+     BUSINESS PAGE DETECTION
+  ======================================================= */
+
+  const IS_BUSINESS_PAGE =
+    (
+      CURRENT_ROUTE &&
+      CURRENT_ROUTE.type === "business" &&
+      CURRENT_ROUTE.isBusinessPage === true &&
+      Boolean(
+        CURRENT_ROUTE.stateSlug
+      ) &&
+      Boolean(
+        CURRENT_ROUTE.districtSlug
+      ) &&
+      Boolean(
+        CURRENT_ROUTE.categorySlug
+      ) &&
+      Boolean(
+        CURRENT_ROUTE.businessSlug
+      )
+    );
+
+
+  /* =======================================================
+     IMPORTANT:
+     DO NOT RUN LISTING APP ON BUSINESS PAGE
+  ======================================================= */
+
+  if (IS_BUSINESS_PAGE) {
+
+    /*
+     * Business page has its own controller:
+     *
+     * business-page.js
+     *
+     * Therefore:
+     *
+     * - do not load states
+     * - do not restore listing selection
+     * - do not update listing URL
+     * - do not load business cards
+     * - do not overwrite the SEO URL
+     */
+
+    console.debug(
+      "UBnux: Business SEO route detected.",
+      CURRENT_ROUTE
+    );
+
+
+    /*
+     * If this file is accidentally loaded on a
+     * business page, simply stop here.
+     */
+
+    return;
+
+  }
+
+
+  /* =======================================================
      STATE SAFETY
-  ====================================================== */
+  ======================================================= */
 
   if (
     !window.UBnuxState ||
@@ -60,11 +167,9 @@
 
   /* =======================================================
      DOM HELPER
-  ====================================================== */
+  ======================================================= */
 
-  function getElement(
-    id
-  ) {
+  function getElement(id) {
 
     return document.getElementById(
       id
@@ -75,7 +180,7 @@
 
   /* =======================================================
      DOM ELEMENTS
-  ====================================================== */
+  ======================================================= */
 
   const stateFilter =
     getElement(
@@ -91,16 +196,13 @@
 
   /*
    * IMPORTANT:
-   * There is NO categoryFilter anymore.
    *
-   * index.html uses:
-   * categoryDropdownButton
-   * selectedCategoryText
-   * categoryOptions
+   * No #categoryFilter.
    *
-   * Category handling is done by categories.js.
+   * Category is controlled by:
+   *
+   * categories.js
    */
-
 
   const sortFilter =
     getElement(
@@ -146,7 +248,7 @@
 
   /* =======================================================
      START TIME
-  ====================================================== */
+  ======================================================= */
 
   let startedAt =
     Date.now();
@@ -154,11 +256,9 @@
 
   /* =======================================================
      LOADER
-  ====================================================== */
+  ======================================================= */
 
-  function showLoader(
-    message
-  ) {
+  function showLoader(message) {
 
     if (!pageLoader) {
 
@@ -192,8 +292,7 @@
 
     const minimumLoaderTime =
       Number(
-        config.MINIMUM_LOADER_TIME ||
-        0
+        config.MINIMUM_LOADER_TIME || 0
       );
 
 
@@ -236,11 +335,9 @@
 
   /* =======================================================
      MESSAGE
-  ====================================================== */
+  ======================================================= */
 
-  function setMessage(
-    message
-  ) {
+  function setMessage(message) {
 
     if (!selectionMessage) {
 
@@ -257,11 +354,9 @@
 
   /* =======================================================
      GET STATE NAME
-  ====================================================== */
+  ======================================================= */
 
-  function getStateName(
-    code
-  ) {
+  function getStateName(code) {
 
     const states =
       Array.isArray(
@@ -298,7 +393,7 @@
 
   /* =======================================================
      GET SELECTED CATEGORY
-  ====================================================== */
+  ======================================================= */
 
   function getSelectedCategory() {
 
@@ -323,227 +418,211 @@
   }
 
 
-/* =======================================================
-   UPDATE URL
+  /* =======================================================
+     UPDATE LISTING URL
+  ======================================================= */
 
-   Permanent UBnux SEO listing URL:
+  function updateURL() {
 
-   /in/bihar/
-   /in/bihar/siwan/
-   /in/bihar/siwan/clothing-and-fashion/
-
-   State filter value:
-   BR
-
-   District filter value:
-   SIW
-
-   URL needs:
-   bihar
-   siwan
-   clothing-and-fashion
-======================================================= */
-
-function updateURL() {
-
-  const selected =
-    window.UBnuxState
-      .getSelection();
-
-
-  if (
-    !selected ||
-    !selected.state ||
-    !selected.district ||
-    !selected.category
-  ) {
-
-    return;
-
-  }
-
-
-  /* =====================================================
-     STATE SLUG
-  ===================================================== */
-
-  const stateName =
-    selected.stateName ||
-    getStateName(
-      selected.state
-    );
-
-
-  /* =====================================================
-     DISTRICT SLUG
-  ===================================================== */
-
-  const districtName =
-    selected.districtName ||
-    selected.district;
-
-
-  /* =====================================================
-     CATEGORY SLUG
-  ===================================================== */
-
-  const categorySlug =
-    selected.category;
-
-
-  /*
-   * Prefer centralized router.
-   *
-   * router.js now generates:
-   *
-   * /in/bihar/siwan/clothing-and-fashion/
-   */
-
-  try {
+    /*
+     * Never modify URL when the current page
+     * is a business page.
+     */
 
     if (
-      window.UBnux &&
-      window.UBnux.router &&
-      typeof
-        window.UBnux.router
-          .buildCategoryURL ===
-        "function"
+      IS_BUSINESS_PAGE
     ) {
-
-      const fullURL =
-        window.UBnux.router
-          .buildCategoryURL(
-
-            stateName,
-
-            districtName,
-
-            categorySlug
-
-          );
-
-
-      /*
-       * buildCategoryURL()
-       * returns absolute URL:
-       *
-       * https://ubnux.com/in/...
-       *
-       * history API accepts the path,
-       * so extract only pathname.
-       */
-
-      const parsedURL =
-        new URL(
-          fullURL,
-          window.location.origin
-        );
-
-
-      window.history.replaceState(
-        {},
-        "",
-        parsedURL.pathname
-      );
-
 
       return;
 
     }
 
-  } catch (error) {
 
-    console.warn(
-      "UBnux router URL update failed:",
-      error
-    );
+    const selected =
+      window.UBnuxState
+        .getSelection();
+
+
+    if (
+      !selected ||
+      !selected.state ||
+      !selected.district ||
+      !selected.category
+    ) {
+
+      return;
+
+    }
+
+
+    const stateName =
+      selected.stateName ||
+      getStateName(
+        selected.state
+      );
+
+
+    const districtName =
+      selected.districtName ||
+      selected.district;
+
+
+    const categorySlug =
+      selected.category;
+
+
+    /* =====================================================
+       CENTRAL ROUTER
+    ===================================================== */
+
+    try {
+
+      if (
+        window.UBnux &&
+        window.UBnux.router &&
+        typeof window.UBnux.router
+          .buildCategoryURL ===
+          "function"
+      ) {
+
+        const fullURL =
+          window.UBnux.router
+            .buildCategoryURL(
+
+              stateName,
+
+              districtName,
+
+              categorySlug
+
+            );
+
+
+        const parsedURL =
+          new URL(
+            fullURL,
+            window.location.origin
+          );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          parsedURL.pathname
+        );
+
+
+        return;
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "UBnux router URL update failed:",
+        error
+      );
+
+    }
+
+
+    /* =====================================================
+       FALLBACK
+    ===================================================== */
+
+    function slugify(value) {
+
+      return String(
+        value || ""
+      )
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "")
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+    }
+
+
+    const stateSlug =
+      slugify(
+        stateName
+      );
+
+
+    const districtSlug =
+      slugify(
+        districtName
+      );
+
+
+    const categorySlugSafe =
+      slugify(
+        categorySlug
+      );
+
+
+    if (
+      !stateSlug ||
+      !districtSlug ||
+      !categorySlugSafe
+    ) {
+
+      return;
+
+    }
+
+
+    const path =
+      "/in/" +
+      stateSlug +
+      "/" +
+      districtSlug +
+      "/" +
+      categorySlugSafe +
+      "/";
+
+
+    try {
+
+      window.history.replaceState(
+        {},
+        "",
+        path
+      );
+
+    } catch (error) {
+
+      console.warn(
+        "UBnux URL state update failed:",
+        error
+      );
+
+    }
 
   }
-
-
-  /* =====================================================
-     FALLBACK
-  ===================================================== */
-
-  function slugify(value) {
-
-    return String(
-      value || ""
-    )
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "")
-      .replace(/-+/g, "-")
-      .replace(/^-+|-+$/g, "");
-
-  }
-
-
-  const stateSlug =
-    slugify(
-      stateName
-    );
-
-
-  const districtSlug =
-    slugify(
-      districtName
-    );
-
-
-  const categorySlugSafe =
-    slugify(
-      categorySlug
-    );
-
-
-  if (
-    !stateSlug ||
-    !districtSlug ||
-    !categorySlugSafe
-  ) {
-
-    return;
-
-  }
-
-
-  const path =
-    "/in/" +
-    stateSlug +
-    "/" +
-    districtSlug +
-    "/" +
-    categorySlugSafe +
-    "/";
-
-
-  try {
-
-    window.history.replaceState(
-      {},
-      "",
-      path
-    );
-
-  } catch (error) {
-
-    console.warn(
-      "UBnux URL state update failed:",
-      error
-    );
-
-  }
-
-}
 
 
   /* =======================================================
      SAVE SELECTION
-  ====================================================== */
+  ======================================================= */
 
   function saveSelection() {
+
+    /*
+     * Never save/modify listing URL from
+     * business SEO route.
+     */
+
+    if (
+      IS_BUSINESS_PAGE
+    ) {
+
+      return;
+
+    }
+
 
     const selected =
       window.UBnuxState
@@ -572,7 +651,7 @@ function updateURL() {
 
   /* =======================================================
      INITIAL BASE DATA
-  ====================================================== */
+  ======================================================= */
 
   async function initializeBaseData() {
 
@@ -660,11 +739,6 @@ function updateURL() {
       );
 
 
-    /*
-     * Category is disabled until
-     * a district is selected.
-     */
-
     window.UBnuxCategories
       .setEnabled(
         false
@@ -675,9 +749,23 @@ function updateURL() {
 
   /* =======================================================
      RESTORE USER SELECTION
-  ====================================================== */
+  ======================================================= */
 
   async function restoreUserSelection() {
+
+    /*
+     * Safety:
+     * Business page must NEVER enter this method.
+     */
+
+    if (
+      IS_BUSINESS_PAGE
+    ) {
+
+      return;
+
+    }
+
 
     if (
       !window.UBnuxStorage
@@ -707,28 +795,27 @@ function updateURL() {
     }
 
 
-    state.selected =
-      {
+    state.selected = {
 
-        state:
-          saved.state,
+      state:
+        saved.state,
 
-        district:
-          saved.district || "",
+      district:
+        saved.district || "",
 
-        category:
-          saved.category || "",
+      category:
+        saved.category || "",
 
-        stateName:
-          saved.stateName || "",
+      stateName:
+        saved.stateName || "",
 
-        districtName:
-          saved.districtName || "",
+      districtName:
+        saved.districtName || "",
 
-        categoryName:
-          saved.categoryName || ""
+      categoryName:
+        saved.categoryName || ""
 
-      };
+    };
 
 
     if (stateFilter) {
@@ -831,6 +918,7 @@ function updateURL() {
 
 
       setMessage(
+
         (
           saved.stateName ||
           saved.state
@@ -846,6 +934,7 @@ function updateURL() {
           saved.categoryName ||
           saved.category
         )
+
       );
 
 
@@ -888,7 +977,7 @@ function updateURL() {
 
   /* =======================================================
      INITIAL FILTER STATE
-  ====================================================== */
+  ======================================================= */
 
   function setInitialFilterState() {
 
@@ -940,9 +1029,18 @@ function updateURL() {
 
   /* =======================================================
      STATE CHANGE
-  ====================================================== */
+  ======================================================= */
 
   async function handleStateChange() {
+
+    if (
+      IS_BUSINESS_PAGE
+    ) {
+
+      return;
+
+    }
+
 
     const stateCode =
       stateFilter
@@ -1008,17 +1106,16 @@ function updateURL() {
       }
 
 
-      state.selected =
-        {
+      state.selected = {
 
-          state: "",
-          district: "",
-          category: "",
-          stateName: "",
-          districtName: "",
-          categoryName: ""
+        state: "",
+        district: "",
+        category: "",
+        stateName: "",
+        districtName: "",
+        categoryName: ""
 
-        };
+      };
 
 
       setMessage(
@@ -1037,24 +1134,23 @@ function updateURL() {
       );
 
 
-    state.selected =
-      {
+    state.selected = {
 
-        state:
-          stateCode,
+      state:
+        stateCode,
 
-        district: "",
+      district: "",
 
-        category: "",
+      category: "",
 
-        stateName:
-          stateName,
+      stateName:
+        stateName,
 
-        districtName: "",
+      districtName: "",
 
-        categoryName: ""
+      categoryName: ""
 
-      };
+    };
 
 
     saveSelection();
@@ -1086,9 +1182,18 @@ function updateURL() {
 
   /* =======================================================
      DISTRICT CHANGE
-  ====================================================== */
+  ======================================================= */
 
   async function handleDistrictChange() {
+
+    if (
+      IS_BUSINESS_PAGE
+    ) {
+
+      return;
+
+    }
+
 
     const districtCode =
       districtFilter
@@ -1172,10 +1277,12 @@ function updateURL() {
       typeof window.UBnuxDistricts
         .getDistrictName ===
         "function"
+
         ? window.UBnuxDistricts
             .getDistrictName(
               districtCode
             )
+
         : "";
 
 
@@ -1219,16 +1326,20 @@ function updateURL() {
 
   /* =======================================================
      CATEGORY CHANGE
-     
-     Triggered by:
-     categories.js
-     document event:
-     ubnux:categorychange
-  ====================================================== */
+  ======================================================= */
 
   async function handleCategoryChange(
     detail
   ) {
+
+    if (
+      IS_BUSINESS_PAGE
+    ) {
+
+      return;
+
+    }
+
 
     const category =
       detail &&
@@ -1270,16 +1381,20 @@ function updateURL() {
     const categoryName =
       detail &&
       detail.name
+
         ? detail.name
+
         : (
             window.UBnuxCategories &&
             typeof window.UBnuxCategories
               .getCategoryName ===
-            "function"
+              "function"
+
               ? window.UBnuxCategories
                   .getCategoryName(
                     category
                   )
+
               : category
           );
 
@@ -1310,6 +1425,7 @@ function updateURL() {
 
 
     setMessage(
+
       (
         state.selected.stateName ||
         state.selected.state
@@ -1321,6 +1437,7 @@ function updateURL() {
       ) +
       " → " +
       categoryName
+
     );
 
 
@@ -1363,9 +1480,18 @@ function updateURL() {
 
   /* =======================================================
      SORT CHANGE
-  ====================================================== */
+  ======================================================= */
 
   async function handleSortChange() {
+
+    if (
+      IS_BUSINESS_PAGE
+    ) {
+
+      return;
+
+    }
+
 
     state.sort =
       (
@@ -1400,9 +1526,10 @@ function updateURL() {
 
   /* =======================================================
      EVENT SETUP
-  ====================================================== */
+  ======================================================= */
 
   function setupEvents() {
+
 
     /* =====================================================
        STATE
@@ -1561,7 +1688,7 @@ function updateURL() {
 
   /* =======================================================
      INITIALIZE APP
-  ====================================================== */
+  ======================================================= */
 
   async function initializeApp() {
 
@@ -1585,7 +1712,6 @@ function updateURL() {
 
       await initializeBaseData();
 
-
       await restoreUserSelection();
 
 
@@ -1598,10 +1724,14 @@ function updateURL() {
 
 
       setMessage(
+
         error &&
         error.message
+
           ? error.message
+
           : "Unable to initialize UBnux."
+
       );
 
 
@@ -1616,7 +1746,7 @@ function updateURL() {
 
   /* =======================================================
      DOM READY
-  ====================================================== */
+  ======================================================= */
 
   if (
     document.readyState ===
