@@ -6,6 +6,7 @@
    - Read current URL
    - Detect SEO route
    - Extract state/district/category/business slug
+   - Provide backward-compatible parse() API
    ========================================================= */
 
 (function (
@@ -21,7 +22,7 @@
 
     /* =====================================================
        GET CURRENT PATH
-    ==================================================== */
+    ===================================================== */
 
     getPath() {
 
@@ -43,7 +44,7 @@
 
     /* =====================================================
        PARSE BUSINESS ROUTE
-    ==================================================== */
+    ===================================================== */
 
     parseBusinessRoute() {
 
@@ -58,13 +59,13 @@
 
 
       /*
-       Expected:
+        Expected:
 
-       in
-       state
-       district
-       category
-       business
+        /in/
+          state
+          district
+          category
+          business
       */
 
 
@@ -82,6 +83,9 @@
 
         type:
           "business",
+
+        isBusinessPage:
+          true,
 
         stateSlug:
           decodeURIComponent(
@@ -109,8 +113,108 @@
 
 
     /* =====================================================
+       GENERIC PARSE
+       -----------------------------------------------------
+       business-page.js uses:
+         UBnuxSEORouter.parse(path)
+
+       So this method must exist.
+    ===================================================== */
+
+    parse(path) {
+
+      /*
+        If a path is explicitly supplied,
+        temporarily parse that path directly.
+      */
+
+      const currentPath =
+        path !== undefined &&
+        path !== null
+          ? String(path)
+          : window.location.pathname;
+
+
+      const normalizedPath =
+        currentPath
+          .replace(
+            /\/+/g,
+            "/"
+          )
+          .replace(
+            /^\/|\/$/g,
+            ""
+          );
+
+
+      const parts =
+        normalizedPath
+          ? normalizedPath.split("/")
+          : [];
+
+
+      /* =================================================
+         BUSINESS SEO ROUTE
+      ================================================= */
+
+      if (
+        parts.length === 5 &&
+        parts[0] === "in"
+      ) {
+
+        return {
+
+          type:
+            "business",
+
+          isBusinessPage:
+            true,
+
+          stateSlug:
+            decodeURIComponent(
+              parts[1]
+            ),
+
+          districtSlug:
+            decodeURIComponent(
+              parts[2]
+            ),
+
+          categorySlug:
+            decodeURIComponent(
+              parts[3]
+            ),
+
+          businessSlug:
+            decodeURIComponent(
+              parts[4]
+            )
+
+        };
+
+      }
+
+
+      /*
+        Unknown / non-business route.
+      */
+
+      return {
+
+        type:
+          "unknown",
+
+        isBusinessPage:
+          false
+
+      };
+
+    },
+
+
+    /* =====================================================
        CHECK BUSINESS ROUTE
-    ==================================================== */
+    ===================================================== */
 
     isBusinessPage() {
 
@@ -123,7 +227,26 @@
   };
 
 
+  /* =======================================================
+     GLOBAL EXPORT
+  ====================================================== */
+
   window.UBNUX_SEO_ROUTER =
+    UBNUX_SEO_ROUTER;
+
+
+  /*
+    Optional compatibility alias.
+
+    This keeps the router usable by older
+    frontend code which may expect App.router.
+  */
+
+  window.App =
+    window.App ||
+    {};
+
+  window.App.router =
     UBNUX_SEO_ROUTER;
 
 
