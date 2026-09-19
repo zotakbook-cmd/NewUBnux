@@ -1,1 +1,5 @@
+# Business detail pages
+/in/:state/:district/:category/:business/ /business.html 200
 
+# Category pages
+/in/:state/:district/:category/ /index.html 200
