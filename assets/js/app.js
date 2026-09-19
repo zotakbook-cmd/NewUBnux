@@ -1,6 +1,26 @@
+
 /* =========================================================
    UBnux Main Application
    File: assets/js/app.js
+
+   Responsibilities:
+   - Application initialization
+   - State selection
+   - District selection
+   - Custom Category selection
+   - User selection restore
+   - Business loading trigger
+   - Sorting
+   - URL state
+   - Mobile navigation
+   - Safe DOM initialization
+
+   IMPORTANT:
+   - Compatible with custom category dropdown
+   - No dependency on #categoryFilter
+   - Missing optional elements do not crash application
+   - Compatible with district-wise business backend
+   - Search-engine modules remain independent
 ========================================================= */
 
 (function (window, document) {
@@ -8,85 +28,152 @@
   "use strict";
 
 
+  /* =======================================================
+     CONFIG
+  ====================================================== */
+
   const config =
-    window.UBNUX_CONFIG;
+    window.UBNUX_CONFIG || {};
+
+
+  /* =======================================================
+     STATE SAFETY
+  ====================================================== */
+
+  if (
+    !window.UBnuxState ||
+    !window.UBnuxState.state
+  ) {
+
+    console.error(
+      "UBnuxState is not available."
+    );
+
+    return;
+
+  }
 
 
   const state =
     window.UBnuxState.state;
 
 
+  /* =======================================================
+     DOM HELPER
+  ====================================================== */
+
+  function getElement(
+    id
+  ) {
+
+    return document.getElementById(
+      id
+    );
+
+  }
+
+
+  /* =======================================================
+     DOM ELEMENTS
+  ====================================================== */
+
   const stateFilter =
-    document.getElementById(
+    getElement(
       "stateFilter"
     );
 
 
   const districtFilter =
-    document.getElementById(
+    getElement(
       "districtFilter"
     );
 
 
-  const categoryFilter =
-    document.getElementById(
-      "categoryFilter"
-    );
+  /*
+   * IMPORTANT:
+   * There is NO categoryFilter anymore.
+   *
+   * index.html uses:
+   * categoryDropdownButton
+   * selectedCategoryText
+   * categoryOptions
+   *
+   * Category handling is done by categories.js.
+   */
 
 
   const sortFilter =
-    document.getElementById(
+    getElement(
       "sortFilter"
     );
 
 
   const selectionMessage =
-    document.getElementById(
+    getElement(
       "selectionMessage"
     );
 
 
   const pageLoader =
-    document.getElementById(
+    getElement(
       "pageLoader"
     );
 
 
   const loaderText =
-    document.getElementById(
+    getElement(
       "loaderText"
     );
 
 
   const mobileMenuButton =
-    document.getElementById(
+    getElement(
       "mobileMenuButton"
     );
 
 
   const mainNav =
-    document.getElementById(
+    getElement(
       "mainNav"
     );
 
 
   const currentYear =
-    document.getElementById(
+    getElement(
       "currentYear"
     );
 
+
+  /* =======================================================
+     START TIME
+  ====================================================== */
 
   let startedAt =
     Date.now();
 
 
+  /* =======================================================
+     LOADER
+  ====================================================== */
+
   function showLoader(
     message
   ) {
 
-    loaderText.textContent =
-      message ||
-      "Loading UBnux...";
+    if (!pageLoader) {
+
+      return;
+
+    }
+
+
+    if (loaderText) {
+
+      loaderText.textContent =
+        message ||
+        "Loading UBnux...";
+
+    }
 
 
     pageLoader.classList.remove(
@@ -103,15 +190,24 @@
       startedAt;
 
 
+    const minimumLoaderTime =
+      Number(
+        config.MINIMUM_LOADER_TIME ||
+        0
+      );
+
+
     const remaining =
       Math.max(
         0,
-        config.MINIMUM_LOADER_TIME -
+        minimumLoaderTime -
         elapsed
       );
 
 
-    if (remaining > 0) {
+    if (
+      remaining > 0
+    ) {
 
       await new Promise(
         function (resolve) {
@@ -127,98 +223,325 @@
     }
 
 
-    pageLoader.classList.add(
-      "hidden"
-    );
+    if (pageLoader) {
+
+      pageLoader.classList.add(
+        "hidden"
+      );
+
+    }
 
   }
 
+
+  /* =======================================================
+     MESSAGE
+  ====================================================== */
 
   function setMessage(
     message
   ) {
 
-    selectionMessage.textContent =
-      message;
-
-  }
-
-
-  function getStateName(
-    code
-  ) {
-
-    const item =
-      state.states.find(
-        function (item) {
-
-          return String(
-            item.StateCode
-          ) === String(code);
-
-        }
-      );
-
-
-    return item
-      ? item.State
-      : "";
-
-  }
-
-
-  function updateURL() {
-
-    const selected =
-      window.UBnuxState
-        .getSelection();
-
-
-    if (
-      !selected.state ||
-      !selected.district ||
-      !selected.category
-    ) {
+    if (!selectionMessage) {
 
       return;
 
     }
 
 
-    const path =
-      "/" +
-      encodeURIComponent(
-        selected.state.toLowerCase()
-      ) +
-      "/" +
-      encodeURIComponent(
-        selected.district.toLowerCase()
-      ) +
-      "/" +
-      encodeURIComponent(
-        selected.category.toLowerCase()
+    selectionMessage.textContent =
+      message || "";
+
+  }
+
+
+  /* =======================================================
+     GET STATE NAME
+  ====================================================== */
+
+  function getStateName(
+    code
+  ) {
+
+    const states =
+      Array.isArray(
+        state.states
+      )
+        ? state.states
+        : [];
+
+
+    const item =
+      states.find(
+        function (item) {
+
+          return String(
+            item.StateCode
+          ) === String(
+            code
+          );
+
+        }
       );
 
 
-    try {
+    return item
+      ? (
+          item.State ||
+          item.StateName ||
+          ""
+        )
+      : "";
+
+  }
+
+
+  /* =======================================================
+     GET SELECTED CATEGORY
+  ====================================================== */
+
+  function getSelectedCategory() {
+
+    if (
+      window.UBnuxCategories &&
+      typeof window.UBnuxCategories
+        .getSelectedCategory ===
+        "function"
+    ) {
+
+      return window.UBnuxCategories
+        .getSelectedCategory();
+
+    }
+
+
+    return (
+      state.selected &&
+      state.selected.category
+    ) || "";
+
+  }
+
+
+/* =======================================================
+   UPDATE URL
+
+   Permanent UBnux SEO listing URL:
+
+   /in/bihar/
+   /in/bihar/siwan/
+   /in/bihar/siwan/clothing-and-fashion/
+
+   State filter value:
+   BR
+
+   District filter value:
+   SIW
+
+   URL needs:
+   bihar
+   siwan
+   clothing-and-fashion
+======================================================= */
+
+function updateURL() {
+
+  const selected =
+    window.UBnuxState
+      .getSelection();
+
+
+  if (
+    !selected ||
+    !selected.state ||
+    !selected.district ||
+    !selected.category
+  ) {
+
+    return;
+
+  }
+
+
+  /* =====================================================
+     STATE SLUG
+  ===================================================== */
+
+  const stateName =
+    selected.stateName ||
+    getStateName(
+      selected.state
+    );
+
+
+  /* =====================================================
+     DISTRICT SLUG
+  ===================================================== */
+
+  const districtName =
+    selected.districtName ||
+    selected.district;
+
+
+  /* =====================================================
+     CATEGORY SLUG
+  ===================================================== */
+
+  const categorySlug =
+    selected.category;
+
+
+  /*
+   * Prefer centralized router.
+   *
+   * router.js now generates:
+   *
+   * /in/bihar/siwan/clothing-and-fashion/
+   */
+
+  try {
+
+    if (
+      window.UBnux &&
+      window.UBnux.router &&
+      typeof
+        window.UBnux.router
+          .buildCategoryURL ===
+        "function"
+    ) {
+
+      const fullURL =
+        window.UBnux.router
+          .buildCategoryURL(
+
+            stateName,
+
+            districtName,
+
+            categorySlug
+
+          );
+
+
+      /*
+       * buildCategoryURL()
+       * returns absolute URL:
+       *
+       * https://ubnux.com/in/...
+       *
+       * history API accepts the path,
+       * so extract only pathname.
+       */
+
+      const parsedURL =
+        new URL(
+          fullURL,
+          window.location.origin
+        );
+
 
       window.history.replaceState(
         {},
         "",
-        path
+        parsedURL.pathname
       );
 
-    } catch (error) {
 
-      console.warn(
-        "URL state update failed:",
-        error
-      );
+      return;
 
     }
 
+  } catch (error) {
+
+    console.warn(
+      "UBnux router URL update failed:",
+      error
+    );
+
   }
 
+
+  /* =====================================================
+     FALLBACK
+  ===================================================== */
+
+  function slugify(value) {
+
+    return String(
+      value || ""
+    )
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  }
+
+
+  const stateSlug =
+    slugify(
+      stateName
+    );
+
+
+  const districtSlug =
+    slugify(
+      districtName
+    );
+
+
+  const categorySlugSafe =
+    slugify(
+      categorySlug
+    );
+
+
+  if (
+    !stateSlug ||
+    !districtSlug ||
+    !categorySlugSafe
+  ) {
+
+    return;
+
+  }
+
+
+  const path =
+    "/in/" +
+    stateSlug +
+    "/" +
+    districtSlug +
+    "/" +
+    categorySlugSafe +
+    "/";
+
+
+  try {
+
+    window.history.replaceState(
+      {},
+      "",
+      path
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "UBnux URL state update failed:",
+      error
+    );
+
+  }
+
+}
+
+
+  /* =======================================================
+     SAVE SELECTION
+  ====================================================== */
 
   function saveSelection() {
 
@@ -227,16 +550,29 @@
         .getSelection();
 
 
-    window.UBnuxStorage
-      .saveSelection(
-        selected
-      );
+    if (
+      window.UBnuxStorage &&
+      typeof window.UBnuxStorage
+        .saveSelection ===
+        "function"
+    ) {
+
+      window.UBnuxStorage
+        .saveSelection(
+          selected
+        );
+
+    }
 
 
     updateURL();
 
   }
 
+
+  /* =======================================================
+     INITIAL BASE DATA
+  ====================================================== */
 
   async function initializeBaseData() {
 
@@ -245,89 +581,114 @@
     );
 
 
-    try {
+    if (
+      !window.UBnuxAPI
+    ) {
 
-      const results =
-        await Promise.all([
-
-          window.UBnuxAPI
-            .getStates(),
-
-          window.UBnuxAPI
-            .getCategories()
-
-        ]);
-
-
-      window.UBnuxDistricts
-        .renderStates(
-          results[0].data || []
-        );
-
-
-      window.UBnuxCategories
-        .renderCategories(
-          results[1].data || []
-        );
-
-
-    } catch (error) {
-
-      console.error(
-        "Initial data error:",
-        error
+      throw new Error(
+        "UBnux API is not available."
       );
-
-
-      setMessage(
-        "Unable to load UBnux data. Please refresh the page."
-      );
-
-
-      throw error;
 
     }
+
+
+    if (
+      !window.UBnuxDistricts
+    ) {
+
+      throw new Error(
+        "UBnux District module is not available."
+      );
+
+    }
+
+
+    if (
+      !window.UBnuxCategories
+    ) {
+
+      throw new Error(
+        "UBnux Category module is not available."
+      );
+
+    }
+
+
+    const results =
+      await Promise.all([
+
+        window.UBnuxAPI
+          .getStates(),
+
+        window.UBnuxAPI
+          .getCategories()
+
+      ]);
+
+
+    const statesData =
+      Array.isArray(
+        results[0] &&
+        results[0].data
+      )
+        ? results[0].data
+        : [];
+
+
+    const categoriesData =
+      Array.isArray(
+        results[1] &&
+        results[1].data
+      )
+        ? results[1].data
+        : [];
+
+
+    state.states =
+      statesData;
+
+
+    window.UBnuxDistricts
+      .renderStates(
+        statesData
+      );
+
+
+    window.UBnuxCategories
+      .renderCategories(
+        categoriesData
+      );
+
+
+    /*
+     * Category is disabled until
+     * a district is selected.
+     */
+
+    window.UBnuxCategories
+      .setEnabled(
+        false
+      );
 
   }
 
 
-  function restoreDropdownValues(
-    selection
-  ) {
-
-    if (
-      selection.state
-    ) {
-
-      stateFilter.value =
-        selection.state;
-
-    }
-
-
-    if (
-      selection.district
-    ) {
-
-      districtFilter.value =
-        selection.district;
-
-    }
-
-
-    if (
-      selection.category
-    ) {
-
-      categoryFilter.value =
-        selection.category;
-
-    }
-
-  }
-
+  /* =======================================================
+     RESTORE USER SELECTION
+  ====================================================== */
 
   async function restoreUserSelection() {
+
+    if (
+      !window.UBnuxStorage
+    ) {
+
+      setInitialFilterState();
+
+      return;
+
+    }
+
 
     const saved =
       window.UBnuxStorage
@@ -335,15 +696,11 @@
 
 
     if (
+      !saved ||
       !saved.state
     ) {
 
-      stateFilter.disabled =
-        false;
-
-      setMessage(
-        "Please select your state to continue."
-      );
+      setInitialFilterState();
 
       return;
 
@@ -374,18 +731,32 @@
       };
 
 
-    stateFilter.value =
-      saved.state;
+    if (stateFilter) {
 
+      stateFilter.value =
+        saved.state;
 
-    await window.UBnuxDistricts
-      .loadDistricts(
-        saved.state
-      );
+    }
 
 
     if (
-      saved.district
+      window.UBnuxDistricts &&
+      typeof window.UBnuxDistricts
+        .loadDistricts ===
+        "function"
+    ) {
+
+      await window.UBnuxDistricts
+        .loadDistricts(
+          saved.state
+        );
+
+    }
+
+
+    if (
+      saved.district &&
+      districtFilter
     ) {
 
       districtFilter.value =
@@ -395,11 +766,48 @@
 
 
     if (
-      saved.category
+      saved.district &&
+      window.UBnuxCategories
     ) {
 
-      categoryFilter.value =
-        saved.category;
+      window.UBnuxCategories
+        .setEnabled(
+          true
+        );
+
+    } else if (
+      window.UBnuxCategories
+    ) {
+
+      window.UBnuxCategories
+        .setEnabled(
+          false
+        );
+
+    }
+
+
+    if (
+      saved.category &&
+      window.UBnuxCategories
+    ) {
+
+      const categorySet =
+        window.UBnuxCategories
+          .setCategory(
+            saved.category
+          );
+
+
+      if (!categorySet) {
+
+        state.selected.category =
+          "";
+
+        state.selected.categoryName =
+          "";
+
+      }
 
     }
 
@@ -409,79 +817,195 @@
       saved.category
     ) {
 
-      sortFilter.disabled =
-        false;
+      if (sortFilter) {
 
+        sortFilter.disabled =
+          false;
 
-      await window.UBnuxBusinesses
-        .loadBusinesses(
-          false
-        );
+        state.sort =
+          sortFilter.value ||
+          config.DEFAULT_SORT ||
+          "featured";
+
+      }
 
 
       setMessage(
-        saved.stateName +
+        (
+          saved.stateName ||
+          saved.state
+        ) +
         " → " +
-        saved.districtName +
+        (
+          saved.districtName ||
+          saved.district
+        ) +
         " → " +
-        saved.categoryName
+        (
+          state.selected.categoryName ||
+          saved.categoryName ||
+          saved.category
+        )
       );
 
 
-    } else if (
+      if (
+        window.UBnuxBusinesses
+      ) {
+
+        await window.UBnuxBusinesses
+          .loadBusinesses(
+            false
+          );
+
+      }
+
+
+      return;
+
+    }
+
+
+    if (
       saved.district
     ) {
-
-      categoryFilter.disabled =
-        false;
-
 
       setMessage(
         "Now select your business category."
       );
 
-
-    } else {
-
-      setMessage(
-        "Now select your district."
-      );
+      return;
 
     }
+
+
+    setMessage(
+      "Now select your district."
+    );
 
   }
 
 
+  /* =======================================================
+     INITIAL FILTER STATE
+  ====================================================== */
+
+  function setInitialFilterState() {
+
+    if (stateFilter) {
+
+      stateFilter.disabled =
+        false;
+
+    }
+
+
+    if (districtFilter) {
+
+      districtFilter.disabled =
+        true;
+
+    }
+
+
+    if (
+      window.UBnuxCategories
+    ) {
+
+      window.UBnuxCategories
+        .clearCategory();
+
+      window.UBnuxCategories
+        .setEnabled(
+          false
+        );
+
+    }
+
+
+    if (sortFilter) {
+
+      sortFilter.disabled =
+        true;
+
+    }
+
+
+    setMessage(
+      "Please select your state to continue."
+    );
+
+  }
+
+
+  /* =======================================================
+     STATE CHANGE
+  ====================================================== */
+
   async function handleStateChange() {
 
     const stateCode =
-      stateFilter.value;
+      stateFilter
+        ? stateFilter.value
+        : "";
 
 
-    window.UBnuxState
-      .resetBusinesses();
+    if (
+      window.UBnuxState &&
+      typeof window.UBnuxState
+        .resetBusinesses ===
+        "function"
+    ) {
+
+      window.UBnuxState
+        .resetBusinesses();
+
+    }
 
 
-    categoryFilter.value =
-      "";
+    if (
+      window.UBnuxCategories
+    ) {
+
+      window.UBnuxCategories
+        .clearCategory();
+
+      window.UBnuxCategories
+        .setEnabled(
+          false
+        );
+
+    }
 
 
-    categoryFilter.disabled =
-      true;
+    if (sortFilter) {
 
+      sortFilter.disabled =
+        true;
 
-    sortFilter.disabled =
-      true;
+    }
 
 
     if (!stateCode) {
 
-      window.UBnuxDistricts
-        .clearDistricts();
+      if (
+        window.UBnuxDistricts
+      ) {
+
+        window.UBnuxDistricts
+          .clearDistricts();
+
+      }
 
 
-      window.UBnuxStorage
-        .clearSelection();
+      if (
+        window.UBnuxStorage
+      ) {
+
+        window.UBnuxStorage
+          .clearSelection();
+
+      }
 
 
       state.selected =
@@ -513,23 +1037,24 @@
       );
 
 
-    state.selected.state =
-      stateCode;
+    state.selected =
+      {
 
-    state.selected.stateName =
-      stateName;
+        state:
+          stateCode,
 
-    state.selected.district =
-      "";
+        district: "",
 
-    state.selected.category =
-      "";
+        category: "",
 
-    state.selected.districtName =
-      "";
+        stateName:
+          stateName,
 
-    state.selected.categoryName =
-      "";
+        districtName: "",
+
+        categoryName: ""
+
+      };
 
 
     saveSelection();
@@ -540,10 +1065,16 @@
     );
 
 
-    await window.UBnuxDistricts
-      .loadDistricts(
-        stateCode
-      );
+    if (
+      window.UBnuxDistricts
+    ) {
+
+      await window.UBnuxDistricts
+        .loadDistricts(
+          stateCode
+        );
+
+    }
 
 
     setMessage(
@@ -553,18 +1084,47 @@
   }
 
 
+  /* =======================================================
+     DISTRICT CHANGE
+  ====================================================== */
+
   async function handleDistrictChange() {
 
     const districtCode =
-      districtFilter.value;
+      districtFilter
+        ? districtFilter.value
+        : "";
 
 
-    categoryFilter.disabled =
-      !districtCode;
+    if (
+      window.UBnuxState &&
+      typeof window.UBnuxState
+        .resetBusinesses ===
+        "function"
+    ) {
+
+      window.UBnuxState
+        .resetBusinesses();
+
+    }
 
 
-    sortFilter.disabled =
-      true;
+    if (
+      window.UBnuxCategories
+    ) {
+
+      window.UBnuxCategories
+        .clearCategory();
+
+    }
+
+
+    if (sortFilter) {
+
+      sortFilter.disabled =
+        true;
+
+    }
 
 
     if (!districtCode) {
@@ -582,6 +1142,18 @@
         "";
 
 
+      if (
+        window.UBnuxCategories
+      ) {
+
+        window.UBnuxCategories
+          .setEnabled(
+            false
+          );
+
+      }
+
+
       saveSelection();
 
 
@@ -596,23 +1168,43 @@
 
 
     const districtName =
-      window.UBnuxDistricts
-        .getDistrictName(
-          districtCode
-        );
+      window.UBnuxDistricts &&
+      typeof window.UBnuxDistricts
+        .getDistrictName ===
+        "function"
+        ? window.UBnuxDistricts
+            .getDistrictName(
+              districtCode
+            )
+        : "";
 
 
     state.selected.district =
       districtCode;
 
+
     state.selected.districtName =
       districtName;
+
 
     state.selected.category =
       "";
 
+
     state.selected.categoryName =
       "";
+
+
+    if (
+      window.UBnuxCategories
+    ) {
+
+      window.UBnuxCategories
+        .setEnabled(
+          true
+        );
+
+    }
 
 
     saveSelection();
@@ -625,10 +1217,24 @@
   }
 
 
-  async function handleCategoryChange() {
+  /* =======================================================
+     CATEGORY CHANGE
+     
+     Triggered by:
+     categories.js
+     document event:
+     ubnux:categorychange
+  ====================================================== */
+
+  async function handleCategoryChange(
+    detail
+  ) {
 
     const category =
-      categoryFilter.value;
+      detail &&
+      detail.slug
+        ? detail.slug
+        : getSelectedCategory();
 
 
     if (!category) {
@@ -639,8 +1245,13 @@
       state.selected.categoryName =
         "";
 
-      sortFilter.disabled =
-        true;
+
+      if (sortFilter) {
+
+        sortFilter.disabled =
+          true;
+
+      }
 
 
       saveSelection();
@@ -657,67 +1268,64 @@
 
 
     const categoryName =
-      window.UBnuxCategories
-        .getCategoryName(
-          category
-        );
+      detail &&
+      detail.name
+        ? detail.name
+        : (
+            window.UBnuxCategories &&
+            typeof window.UBnuxCategories
+              .getCategoryName ===
+            "function"
+              ? window.UBnuxCategories
+                  .getCategoryName(
+                    category
+                  )
+              : category
+          );
 
 
     state.selected.category =
       category;
 
+
     state.selected.categoryName =
       categoryName;
 
 
-    sortFilter.disabled =
-      false;
+    if (sortFilter) {
+
+      sortFilter.disabled =
+        false;
 
 
-    state.sort =
-      sortFilter.value ||
-      config.DEFAULT_SORT;
+      state.sort =
+        sortFilter.value ||
+        config.DEFAULT_SORT ||
+        "featured";
+
+    }
 
 
     saveSelection();
 
 
     setMessage(
-      state.selected.stateName +
+      (
+        state.selected.stateName ||
+        state.selected.state
+      ) +
       " → " +
-      state.selected.districtName +
+      (
+        state.selected.districtName ||
+        state.selected.district
+      ) +
       " → " +
       categoryName
     );
 
 
-    await window.UBnuxBusinesses
-      .loadBusinesses(
-        false
-      );
-
-
-    document.getElementById(
-      "businesses"
-    ).scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-
-  }
-
-
-  async function handleSortChange() {
-
-    state.sort =
-      sortFilter.value ||
-      config.DEFAULT_SORT;
-
-
     if (
-      state.selected.state &&
-      state.selected.district &&
-      state.selected.category
+      window.UBnuxBusinesses
     ) {
 
       await window.UBnuxBusinesses
@@ -727,88 +1335,247 @@
 
     }
 
+
+    const businessesSection =
+      document.getElementById(
+        "businesses"
+      );
+
+
+    if (
+      businessesSection
+    ) {
+
+      businessesSection.scrollIntoView({
+
+        behavior:
+          "smooth",
+
+        block:
+          "start"
+
+      });
+
+    }
+
   }
 
 
+  /* =======================================================
+     SORT CHANGE
+  ====================================================== */
+
+  async function handleSortChange() {
+
+    state.sort =
+      (
+        sortFilter &&
+        sortFilter.value
+      ) ||
+      config.DEFAULT_SORT ||
+      "featured";
+
+
+    if (
+      state.selected.state &&
+      state.selected.district &&
+      state.selected.category
+    ) {
+
+      if (
+        window.UBnuxBusinesses
+      ) {
+
+        await window.UBnuxBusinesses
+          .loadBusinesses(
+            false
+          );
+
+      }
+
+    }
+
+  }
+
+
+  /* =======================================================
+     EVENT SETUP
+  ====================================================== */
+
   function setupEvents() {
 
-    stateFilter.addEventListener(
-      "change",
-      function () {
+    /* =====================================================
+       STATE
+    ===================================================== */
 
-        handleStateChange();
+    if (stateFilter) {
+
+      stateFilter.addEventListener(
+        "change",
+        function () {
+
+          handleStateChange()
+            .catch(
+              function (error) {
+
+                console.error(
+                  "State change error:",
+                  error
+                );
+
+              }
+            );
+
+        }
+      );
+
+    }
+
+
+    /* =====================================================
+       DISTRICT
+    ===================================================== */
+
+    if (districtFilter) {
+
+      districtFilter.addEventListener(
+        "change",
+        function () {
+
+          handleDistrictChange()
+            .catch(
+              function (error) {
+
+                console.error(
+                  "District change error:",
+                  error
+                );
+
+              }
+            );
+
+        }
+      );
+
+    }
+
+
+    /* =====================================================
+       CUSTOM CATEGORY
+    ===================================================== */
+
+    document.addEventListener(
+      "ubnux:categorychange",
+      function (event) {
+
+        handleCategoryChange(
+          event.detail || {}
+        )
+          .catch(
+            function (error) {
+
+              console.error(
+                "Category change error:",
+                error
+              );
+
+            }
+          );
 
       }
     );
 
 
-    districtFilter.addEventListener(
-      "change",
-      function () {
+    /* =====================================================
+       SORT
+    ===================================================== */
 
-        handleDistrictChange();
+    if (sortFilter) {
 
-      }
-    );
+      sortFilter.addEventListener(
+        "change",
+        function () {
 
+          handleSortChange()
+            .catch(
+              function (error) {
 
-    categoryFilter.addEventListener(
-      "change",
-      function () {
+                console.error(
+                  "Sort change error:",
+                  error
+                );
 
-        handleCategoryChange();
+              }
+            );
 
-      }
-    );
+        }
+      );
 
-
-    sortFilter.addEventListener(
-      "change",
-      function () {
-
-        handleSortChange();
-
-      }
-    );
+    }
 
 
-    mobileMenuButton.addEventListener(
-      "click",
-      function () {
+    /* =====================================================
+       MOBILE MENU
+    ===================================================== */
 
-        mainNav.classList.toggle(
-          "open"
-        );
+    if (
+      mobileMenuButton &&
+      mainNav
+    ) {
 
-      }
-    );
+      mobileMenuButton.addEventListener(
+        "click",
+        function () {
+
+          mainNav.classList.toggle(
+            "open"
+          );
+
+        }
+      );
 
 
-    mainNav
-      .querySelectorAll("a")
-      .forEach(function (link) {
+      mainNav
+        .querySelectorAll("a")
+        .forEach(
+          function (link) {
 
-        link.addEventListener(
-          "click",
-          function () {
+            link.addEventListener(
+              "click",
+              function () {
 
-            mainNav.classList.remove(
-              "open"
+                mainNav.classList.remove(
+                  "open"
+                );
+
+              }
             );
 
           }
         );
 
-      });
+    }
 
   }
 
 
+  /* =======================================================
+     INITIALIZE APP
+  ====================================================== */
+
   async function initializeApp() {
 
-    currentYear.textContent =
-      new Date()
-        .getFullYear();
+    startedAt =
+      Date.now();
+
+
+    if (currentYear) {
+
+      currentYear.textContent =
+        new Date()
+          .getFullYear();
+
+    }
 
 
     setupEvents();
@@ -818,7 +1585,9 @@
 
       await initializeBaseData();
 
+
       await restoreUserSelection();
+
 
     } catch (error) {
 
@@ -826,6 +1595,15 @@
         "UBnux initialization failed:",
         error
       );
+
+
+      setMessage(
+        error &&
+        error.message
+          ? error.message
+          : "Unable to initialize UBnux."
+      );
+
 
     } finally {
 
@@ -836,10 +1614,28 @@
   }
 
 
-  document.addEventListener(
-    "DOMContentLoaded",
-    initializeApp
-  );
+  /* =======================================================
+     DOM READY
+  ====================================================== */
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      initializeApp,
+      {
+        once: true
+      }
+    );
+
+  } else {
+
+    initializeApp();
+
+  }
 
 
 })(window, document);

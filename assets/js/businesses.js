@@ -1,6 +1,23 @@
+
 /* =========================================================
-   UBnux Business Manager
+   UBnux - Business Listing Manager
    File: assets/js/businesses.js
+
+   Responsibilities:
+   - Business API loading
+   - Business card rendering
+   - Business count
+   - Pagination
+   - Load More
+   - Sorting
+   - Skeleton loading
+   - Empty state
+   - API response normalization
+
+   IMPORTANT:
+   - Does NOT contain search-engine logic
+   - Does NOT contain district/category logic
+   - Works with current UBnuxAPI
 ========================================================= */
 
 (function (window, document) {
@@ -8,15 +25,58 @@
   "use strict";
 
 
+  /* =========================================================
+     CONFIG
+  ========================================================= */
+
   const config =
-    window.UBNUX_CONFIG;
+    window.UBNUX_CONFIG || {};
 
 
-  const state =
-    window.UBnuxState.state;
+  const PAGE_SIZE =
+    Number(
+      config.BUSINESS_PAGE_SIZE || 18
+    );
 
 
-  const grid =
+  const DEFAULT_SORT =
+    String(
+      config.DEFAULT_SORT || "featured"
+    );
+
+
+  /* =========================================================
+     STATE
+  ========================================================= */
+
+  const state = {
+
+    businesses: [],
+
+    currentPage: 1,
+
+    total: 0,
+
+    hasMore: false,
+
+    isLoading: false,
+
+    selectedState: "",
+
+    selectedDistrict: "",
+
+    selectedCategory: "",
+
+    selectedSort: DEFAULT_SORT
+
+  };
+
+
+  /* =========================================================
+     DOM
+  ========================================================= */
+
+  const businessGrid =
     document.getElementById(
       "businessGrid"
     );
@@ -40,496 +100,1042 @@
     );
 
 
-  const summary =
+  const businessSummary =
     document.getElementById(
       "businessSummary"
     );
 
 
-  function escapeHTML(
-    value
-  ) {
+  /* =========================================================
+     HELPERS
+  ========================================================= */
+
+  function escapeHTML(value) {
 
     return String(
-      value || ""
+      value === undefined ||
+      value === null
+        ? ""
+        : value
     )
-
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-
-      .replace(
-        /</g,
-        "&lt;"
-      )
-
-      .replace(
-        />/g,
-        "&gt;"
-      )
-
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-
-      .replace(
-        /'/g,
-        "&#039;"
-      );
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
 
   }
 
 
-  function imageOrPlaceholder(
-    url,
-    type
-  ) {
+  function safeNumber(value, fallback) {
+
+    const number =
+      Number(value);
+
+    return Number.isFinite(number)
+      ? number
+      : (
+          fallback === undefined
+            ? 0
+            : fallback
+        );
+
+  }
+
+
+  function isTrue(value) {
 
     if (
-      url &&
-      String(url).trim()
+      value === true ||
+      value === 1
+    ) {
+      return true;
+    }
+
+    const text =
+      String(value || "")
+        .trim()
+        .toLowerCase();
+
+    return (
+      text === "true" ||
+      text === "yes" ||
+      text === "1" ||
+      text === "active"
+    );
+
+  }
+
+
+  function imageOrPlaceholder(url) {
+
+    const image =
+      String(url || "").trim();
+
+    if (image) {
+      return escapeHTML(image);
+    }
+
+    return (
+      "data:image/svg+xml;charset=UTF-8," +
+      encodeURIComponent(
+        `
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="600"
+          height="400"
+          viewBox="0 0 600 400"
+        >
+          <rect
+            width="600"
+            height="400"
+            fill="#f1f5f9"
+          />
+          <text
+            x="300"
+            y="200"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-family="Arial"
+            font-size="28"
+            fill="#64748b"
+          >
+            UBnux Business
+          </text>
+        </svg>
+        `
+      )
+    );
+
+  }
+
+
+  /* =========================================================
+     BUSINESS URL
+  ========================================================= */
+
+  function getBusinessURL(business) {
+
+    const stateSlug =
+      String(
+        business.StateSlug ||
+        business.stateSlug ||
+        ""
+      ).trim();
+
+
+    const districtSlug =
+      String(
+        business.DistrictSlug ||
+        business.districtSlug ||
+        ""
+      ).trim();
+
+
+    const categorySlug =
+      String(
+        business.CategorySlug ||
+        business.categorySlug ||
+        ""
+      ).trim();
+
+
+    const businessSlug =
+      String(
+        business.Slug ||
+        business.slug ||
+        ""
+      ).trim();
+
+
+    /*
+       Preferred permanent SEO URL
+    */
+
+    if (
+      stateSlug &&
+      districtSlug &&
+      categorySlug &&
+      businessSlug
     ) {
 
       return (
-        '<img src="' +
-        escapeHTML(url) +
-        '" alt="" loading="lazy">'
+        "/in/" +
+        encodeURIComponent(stateSlug) +
+        "/" +
+        encodeURIComponent(districtSlug) +
+        "/" +
+        encodeURIComponent(categorySlug) +
+        "/" +
+        encodeURIComponent(businessSlug) +
+        "/"
       );
 
+    }
+
+
+    /*
+       Current fallback URL
+
+       This keeps the listing working even when
+       the backend does not yet return SEO slugs.
+    */
+
+    const id =
+      String(
+        business.BusinessID ||
+        business.businessID ||
+        business.id ||
+        businessSlug ||
+        ""
+      ).trim();
+
+
+    if (!id) {
+      return "#";
     }
 
 
     return (
-      '<div style="' +
-      'width:100%;height:100%;' +
-      'display:flex;align-items:center;' +
-      'justify-content:center;' +
-      'font-size:32px;">' +
-      (
-        type === "logo"
-          ? "🏪"
-          : "🏢"
-      ) +
-      "</div>"
+      "/business/" +
+      encodeURIComponent(id)
     );
 
   }
 
 
-  function renderSkeletons() {
+  /* =========================================================
+     LOCATION
+  ========================================================= */
 
-    emptyState.classList.add(
-      "hidden"
-    );
+  function getBusinessLocation(business) {
+
+    const area =
+      String(
+        business.Area || ""
+      ).trim();
 
 
-    loadMoreWrapper.classList.add(
-      "hidden"
-    );
+    const address =
+      String(
+        business.Address || ""
+      ).trim();
 
 
-    grid.innerHTML = "";
+    if (
+      area &&
+      address
+    ) {
+
+      return (
+        escapeHTML(area) +
+        ", " +
+        escapeHTML(address)
+      );
+
+    }
+
+
+    if (area) {
+      return escapeHTML(area);
+    }
+
+
+    if (address) {
+      return escapeHTML(address);
+    }
+
+
+    return "Location not available";
+
+  }
+
+
+  /* =========================================================
+     RATING
+  ========================================================= */
+
+  function renderRating(business) {
+
+    const rating =
+      safeNumber(
+        business.Rating,
+        0
+      );
+
+
+    const reviewCount =
+      safeNumber(
+        business.ReviewCount,
+        0
+      );
+
+
+    if (rating <= 0) {
+
+      return `
+        <div class="business-rating">
+          <span class="rating-star">★</span>
+          <span>No rating</span>
+        </div>
+      `;
+
+    }
+
+
+    return `
+      <div class="business-rating">
+        <span class="rating-star">★</span>
+        <strong>${rating.toFixed(1)}</strong>
+        ${
+          reviewCount > 0
+            ? `<span>(${reviewCount})</span>`
+            : ""
+        }
+      </div>
+    `;
+
+  }
+
+
+  /* =========================================================
+     BADGES
+  ========================================================= */
+
+  function renderBadges(business) {
+
+    let html = "";
+
+
+    if (
+      isTrue(
+        business.Verified
+      )
+    ) {
+
+      html += `
+        <span class="business-badge verified">
+          ✓ Verified
+        </span>
+      `;
+
+    }
+
+
+    if (
+      isTrue(
+        business.Featured
+      )
+    ) {
+
+      html += `
+        <span class="business-badge featured">
+          Featured
+        </span>
+      `;
+
+    }
+
+
+    return html;
+
+  }
+
+
+  /* =========================================================
+     BUSINESS CARD
+  ========================================================= */
+
+  function renderBusinessCard(business) {
+
+    const name =
+      String(
+        business.BusinessName ||
+        business.Name ||
+        "Business"
+      ).trim();
+
+
+    const description =
+      String(
+        business.ShortDescription ||
+        business.Description ||
+        "Local business listed on UBnux."
+      ).trim();
+
+
+    const logo =
+      imageOrPlaceholder(
+        business.LogoURL ||
+        business.CoverURL
+      );
+
+
+    const businessURL =
+      getBusinessURL(
+        business
+      );
+
+
+    const location =
+      getBusinessLocation(
+        business
+      );
+
+
+    const badges =
+      renderBadges(
+        business
+      );
+
+
+    return `
+      <article
+        class="business-card"
+        data-business-id="${
+          escapeHTML(
+            business.BusinessID ||
+            business.businessID ||
+            ""
+          )
+        }"
+      >
+
+        <a
+          class="business-card-image"
+          href="${businessURL}"
+          aria-label="${escapeHTML(name)}"
+        >
+
+          <img
+            src="${logo}"
+            alt="${escapeHTML(name)}"
+            loading="lazy"
+            decoding="async"
+            onerror="this.onerror=null;this.src='${imageOrPlaceholder("")}'"
+          >
+
+          ${
+            badges
+              ? `
+                <div class="business-card-badges">
+                  ${badges}
+                </div>
+              `
+              : ""
+          }
+
+        </a>
+
+
+        <div class="business-card-content">
+
+          <h3 class="business-card-title">
+
+            <a
+              href="${businessURL}"
+            >
+              ${escapeHTML(name)}
+            </a>
+
+          </h3>
+
+
+          ${renderRating(business)}
+
+
+          <div class="business-location">
+
+            <span
+              class="business-location-icon"
+              aria-hidden="true"
+            >
+              📍
+            </span>
+
+            <span>
+              ${location}
+            </span>
+
+          </div>
+
+
+          <p class="business-description">
+
+            ${escapeHTML(
+              description
+            )}
+
+          </p>
+
+
+          <div class="business-card-footer">
+
+            <a
+              class="business-view-button"
+              href="${businessURL}"
+            >
+              View Business
+            </a>
+
+          </div>
+
+        </div>
+
+      </article>
+    `;
+
+  }
+
+
+  /* =========================================================
+     SKELETON
+  ========================================================= */
+
+  function renderSkeletons(count) {
+
+    if (!businessGrid) {
+      return;
+    }
+
+
+    const total =
+      Math.max(
+        1,
+        Number(count || 6)
+      );
+
+
+    let html = "";
 
 
     for (
       let i = 0;
-      i < 6;
+      i < total;
       i++
     ) {
 
-      const item =
-        document.createElement(
-          "div"
-        );
+      html += `
+        <div
+          class="business-card business-card-skeleton"
+          aria-hidden="true"
+        >
+
+          <div class="skeleton skeleton-image"></div>
+
+          <div class="business-card-content">
+
+            <div class="skeleton skeleton-title"></div>
+
+            <div class="skeleton skeleton-line short"></div>
+
+            <div class="skeleton skeleton-line"></div>
+
+            <div class="skeleton skeleton-line"></div>
+
+            <div class="skeleton skeleton-button"></div>
+
+          </div>
+
+        </div>
+      `;
+
+    }
 
 
-      item.className =
-        "skeleton-card";
+    businessGrid.innerHTML =
+      html;
+
+  }
 
 
-      grid.appendChild(
-        item
-      );
+  /* =========================================================
+     EMPTY STATE
+  ========================================================= */
+
+  function showEmptyState(show) {
+
+    if (!emptyState) {
+      return;
+    }
+
+
+    emptyState.hidden =
+      !show;
+
+  }
+
+
+  /* =========================================================
+     SUMMARY
+  ========================================================= */
+
+  function updateSummary() {
+
+    if (!businessSummary) {
+      return;
+    }
+
+
+    const count =
+      state.businesses.length;
+
+
+    const total =
+      state.total;
+
+
+    if (state.isLoading) {
+
+      businessSummary.textContent =
+        "Loading businesses...";
+
+      return;
+
+    }
+
+
+    if (!total) {
+
+      businessSummary.textContent =
+        "0 businesses found";
+
+      return;
+
+    }
+
+
+    if (total === count) {
+
+      businessSummary.textContent =
+        `${total} businesses found`;
+
+      return;
+
+    }
+
+
+    businessSummary.textContent =
+      `Showing ${count} of ${total} businesses`;
+
+  }
+
+
+  /* =========================================================
+     LOAD MORE UI
+  ========================================================= */
+
+  function updateLoadMore() {
+
+    if (
+      !loadMoreWrapper ||
+      !loadMoreButton
+    ) {
+      return;
+    }
+
+
+    if (
+      state.hasMore &&
+      state.businesses.length > 0
+    ) {
+
+      loadMoreWrapper.hidden =
+        false;
+
+      loadMoreButton.disabled =
+        state.isLoading;
+
+
+      loadMoreButton.textContent =
+        state.isLoading
+          ? "Loading..."
+          : "Load More";
+
+    } else {
+
+      loadMoreWrapper.hidden =
+        true;
 
     }
 
   }
 
 
+  /* =========================================================
+     RENDER BUSINESSES
+  ========================================================= */
+
   function renderBusinesses() {
 
-    grid.innerHTML = "";
+    if (!businessGrid) {
+      return;
+    }
 
 
     if (
       !state.businesses.length
     ) {
 
-      emptyState.classList.remove(
-        "hidden"
+      businessGrid.innerHTML =
+        "";
+
+      showEmptyState(
+        true
       );
 
-      loadMoreWrapper.classList.add(
-        "hidden"
-      );
+      updateSummary();
+      updateLoadMore();
 
       return;
 
     }
 
 
-    emptyState.classList.add(
-      "hidden"
+    showEmptyState(
+      false
     );
 
 
-    state.businesses
-      .forEach(function (business) {
+    businessGrid.innerHTML =
+      state.businesses
+        .map(
+          renderBusinessCard
+        )
+        .join("");
 
-        const card =
-          document.createElement(
-            "article"
-          );
 
+    updateSummary();
+    updateLoadMore();
 
-        card.className =
-          "business-card";
+  }
 
 
-        const rating =
-          Number(
-            business.Rating || 0
-          );
+  /* =========================================================
+     NORMALIZE API RESPONSE
+  ========================================================= */
 
+  function normalizeResponse(response) {
 
-        const verified =
-          String(
-            business.Verified || ""
-          ).toLowerCase() ===
-          "true";
+    response =
+      response || {};
 
 
-        const featured =
-          String(
-            business.Featured || ""
-          ).toLowerCase() ===
-          "true";
+    /*
+       Backend may return:
 
+       response.businesses
+       response.data
+       response.data.businesses
+       response.results
+    */
 
-        const location =
-          [
-            business.Area,
-            business.Address
-          ]
+    let businesses = [];
 
-          .filter(Boolean)
 
-          .join(", ");
+    if (
+      Array.isArray(
+        response.businesses
+      )
+    ) {
 
+      businesses =
+        response.businesses;
 
-        const businessUrl =
-          "/business/" +
-          encodeURIComponent(
-            business.Slug ||
-            business.BusinessID
-          );
+    } else if (
+      Array.isArray(
+        response.data
+      )
+    ) {
 
+      businesses =
+        response.data;
 
-        card.innerHTML = `
+    } else if (
+      response.data &&
+      Array.isArray(
+        response.data.businesses
+      )
+    ) {
 
-          <div class="business-cover">
+      businesses =
+        response.data.businesses;
 
-            ${imageOrPlaceholder(
-              business.CoverURL,
-              "cover"
-            )}
+    } else if (
+      Array.isArray(
+        response.results
+      )
+    ) {
 
-          </div>
-
-
-          <div class="business-body">
-
-            ${
-              featured
-                ? `
-                  <span class="featured-badge">
-                    FEATURED
-                  </span>
-                `
-                : ""
-            }
-
-
-            <div class="business-top">
-
-              <div class="business-logo">
-
-                ${imageOrPlaceholder(
-                  business.LogoURL,
-                  "logo"
-                )}
-
-              </div>
-
-
-              <div>
-
-                <h3 class="business-name">
-
-                  ${escapeHTML(
-                    business.BusinessName
-                  )}
-
-                </h3>
-
-
-                <div class="business-area">
-
-                  ${escapeHTML(
-                    location
-                  )}
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            <p class="business-description">
-
-              ${escapeHTML(
-                business.ShortDescription ||
-                business.Description ||
-                ""
-              )}
-
-            </p>
-
-
-            <div class="business-meta">
-
-              ${
-                rating > 0
-                  ? `
-                    <span class="rating">
-                      ★ ${rating.toFixed(1)}
-                      ${
-                        business.ReviewCount
-                          ? `(${escapeHTML(
-                              business.ReviewCount
-                            )})`
-                          : ""
-                      }
-                    </span>
-                  `
-                  : ""
-              }
-
-
-              ${
-                verified
-                  ? `
-                    <span class="verified">
-                      ✓ Verified
-                    </span>
-                  `
-                  : ""
-              }
-
-            </div>
-
-          </div>
-
-        `;
-
-
-        card.addEventListener(
-          "click",
-          function () {
-
-            window.location.href =
-              businessUrl;
-
-          }
-        );
-
-
-        card.style.cursor =
-          "pointer";
-
-
-        grid.appendChild(
-          card
-        );
-
-      });
-
-
-    if (state.hasMore) {
-
-      loadMoreWrapper.classList.remove(
-        "hidden"
-      );
-
-    } else {
-
-      loadMoreWrapper.classList.add(
-        "hidden"
-      );
+      businesses =
+        response.results;
 
     }
 
 
-    summary.textContent =
-      state.totalBusinesses +
-      " business" +
-      (
-        state.totalBusinesses === 1
-          ? ""
-          : "es"
-      ) +
-      " found";
+    const page =
+      safeNumber(
+        response.page ||
+        (
+          response.data &&
+          response.data.page
+        ),
+        state.currentPage
+      );
+
+
+    const total =
+      safeNumber(
+        response.total ||
+        (
+          response.data &&
+          response.data.total
+        ),
+        businesses.length
+      );
+
+
+    let hasMore;
+
+
+    if (
+      response.hasMore !== undefined
+    ) {
+
+      hasMore =
+        Boolean(
+          response.hasMore
+        );
+
+    } else if (
+      response.data &&
+      response.data.hasMore !== undefined
+    ) {
+
+      hasMore =
+        Boolean(
+          response.data.hasMore
+        );
+
+    } else {
+
+      hasMore =
+        (
+          page * PAGE_SIZE
+        ) < total;
+
+    }
+
+
+    return {
+
+      businesses,
+      page,
+      total,
+      hasMore
+
+    };
 
   }
 
+
+  /* =========================================================
+     LOAD BUSINESSES
+  ========================================================= */
 
   async function loadBusinesses(
     append
   ) {
 
     append =
-      Boolean(append);
+      Boolean(
+        append
+      );
 
 
     if (
-      !append
+      state.isLoading
     ) {
 
-      window.UBnuxState
-        .resetBusinesses();
-
-      renderSkeletons();
+      return;
 
     }
 
+/* =========================================================
+   SYNC WITH GLOBAL UBNUX SELECTION
+========================================================= */
 
-    const selection =
-      window.UBnuxState
-        .getSelection();
+try {
 
+  if (
+    window.UBnuxState &&
+    typeof window.UBnuxState.getSelection === "function"
+  ) {
 
+    const selected =
+      window.UBnuxState.getSelection();
+
+    if (selected) {
+
+      state.selectedState =
+        String(
+          selected.state || ""
+        ).trim();
+
+      state.selectedDistrict =
+        String(
+          selected.district || ""
+        ).trim();
+
+      state.selectedCategory =
+        String(
+          selected.category || ""
+        ).trim();
+
+    }
+
+  }
+
+} catch (error) {
+
+  console.warn(
+    "UBnux business selection sync failed:",
+    error
+  );
+
+}
     if (
-      !selection.state ||
-      !selection.district ||
-      !selection.category
+      !state.selectedState ||
+      !state.selectedDistrict ||
+      !state.selectedCategory
     ) {
 
-      grid.innerHTML = "";
+      state.businesses = [];
+      state.total = 0;
+      state.currentPage = 1;
+      state.hasMore = false;
 
-      emptyState.classList.add(
-        "hidden"
-      );
-
-      loadMoreWrapper.classList.add(
-        "hidden"
-      );
-
-      summary.textContent =
-        "Select your location and category.";
+      renderBusinesses();
 
       return;
 
     }
 
 
-    if (append) {
+    state.isLoading =
+      true;
 
-      loadMoreButton.disabled =
-        true;
 
-      loadMoreButton.textContent =
-        "Loading...";
+    const page =
+      append
+        ? state.currentPage + 1
+        : 1;
+
+
+    if (!append) {
+
+      state.currentPage =
+        1;
+
+      state.businesses =
+        [];
+
+      state.total =
+        0;
+
+      state.hasMore =
+        false;
+
+      renderSkeletons(
+        Math.min(
+          PAGE_SIZE,
+          6
+        )
+      );
+
+      showEmptyState(
+        false
+      );
+
+      updateSummary();
+      updateLoadMore();
+
+    } else {
+
+      updateLoadMore();
 
     }
 
 
     try {
 
-      const nextPage =
-        append
-          ? state.currentPage + 1
-          : 1;
-
-
       const response =
-        await window.UBnuxAPI
-          .getBusinesses({
+        await window.UBnuxAPI.getBusinesses({
 
-            state:
-              selection.state,
+          state:
+            state.selectedState,
 
-            district:
-              selection.district,
+          district:
+            state.selectedDistrict,
 
-            category:
-              selection.category,
+          category:
+            state.selectedCategory,
 
-            page:
-              nextPage,
+          page:
+            page,
 
-            limit:
-              config.BUSINESS_PAGE_SIZE,
+          limit:
+            PAGE_SIZE,
 
-            sort:
-              state.sort
+          sort:
+            state.selectedSort
 
-          });
+        });
 
 
-      const data =
-        Array.isArray(
-          response.businesses
-        )
-          ? response.businesses
-          : [];
+      console.log(
+        "UBnux businesses API response:",
+        response
+      );
+
+
+      const normalized =
+        normalizeResponse(
+          response
+        );
+
+
+      console.log(
+        "UBnux businesses received:",
+        normalized.businesses.length
+      );
 
 
       if (append) {
 
         state.businesses =
           state.businesses.concat(
-            data
+            normalized.businesses
           );
 
       } else {
 
         state.businesses =
-          data;
+          normalized.businesses;
 
       }
 
 
       state.currentPage =
-        Number(
-          response.page ||
-          nextPage
-        );
+        normalized.page;
 
 
-      state.totalBusinesses =
-        Number(
-          response.total ||
-          state.businesses.length
-        );
+      state.total =
+        normalized.total;
 
 
       state.hasMore =
-        Boolean(
-          response.hasMore
-        );
+        normalized.hasMore;
 
 
       renderBusinesses();
@@ -538,68 +1144,301 @@
     } catch (error) {
 
       console.error(
-        "Business loading error:",
+        "UBnux business loading error:",
         error
       );
 
 
-      grid.innerHTML = `
+      if (!append) {
 
-        <div class="empty-state">
+        state.businesses =
+          [];
 
-          <div class="empty-icon">
-            ⚠️
-          </div>
+        state.total =
+          0;
 
-          <h3>
-            Unable to load businesses
-          </h3>
+        state.currentPage =
+          1;
 
-          <p>
-            Please try again.
-          </p>
-
-        </div>
-
-      `;
+        state.hasMore =
+          false;
 
 
-      loadMoreWrapper.classList.add(
-        "hidden"
-      );
+        if (businessGrid) {
+
+          businessGrid.innerHTML = `
+            <div class="business-error">
+              <h3>
+                Unable to load businesses
+              </h3>
+
+              <p>
+                ${
+                  escapeHTML(
+                    error &&
+                    error.message
+                      ? error.message
+                      : "Please try again."
+                  )
+                }
+              </p>
+
+              <button
+                type="button"
+                class="business-retry-button"
+                id="businessRetryButton"
+              >
+                Try Again
+              </button>
+            </div>
+          `;
+
+
+          const retryButton =
+            document.getElementById(
+              "businessRetryButton"
+            );
+
+
+          if (retryButton) {
+
+            retryButton.addEventListener(
+              "click",
+              function () {
+
+                loadBusinesses(
+                  false
+                );
+
+              }
+            );
+
+          }
+
+        }
+
+      }
 
     } finally {
 
-      loadMoreButton.disabled =
+      state.isLoading =
         false;
 
-      loadMoreButton.textContent =
-        "Load More";
+      updateSummary();
+      updateLoadMore();
 
     }
 
   }
 
 
-  loadMoreButton.addEventListener(
-    "click",
-    function () {
+  /* =========================================================
+     LOAD MORE
+  ========================================================= */
+
+  if (
+    loadMoreButton
+  ) {
+
+    loadMoreButton.addEventListener(
+      "click",
+      function () {
+
+        loadBusinesses(
+          true
+        );
+
+      }
+    );
+
+  }
+
+
+  /* =========================================================
+     CATEGORY CHANGE
+  ========================================================= */
+
+  document.addEventListener(
+    "ubnux:categorychange",
+    function (event) {
+
+      const detail =
+        event &&
+        event.detail
+          ? event.detail
+          : {};
+
+
+      state.selectedCategory =
+        String(
+          detail.slug ||
+          detail.name ||
+          ""
+        ).trim();
+
+
+      /*
+         Category slug is preferred.
+         The API backend already supports
+         both category slug and category name.
+      */
+
 
       loadBusinesses(
-        true
+        false
       );
 
     }
   );
 
 
+  /* =========================================================
+     STATE / DISTRICT CHANGE
+  ========================================================= */
+
+  document.addEventListener(
+    "ubnux:selectionchange",
+    function (event) {
+
+      const detail =
+        event &&
+        event.detail
+          ? event.detail
+          : {};
+
+
+      if (
+        detail.state !== undefined
+      ) {
+
+        state.selectedState =
+          String(
+            detail.state || ""
+          ).trim();
+
+      }
+
+
+      if (
+        detail.district !== undefined
+      ) {
+
+        state.selectedDistrict =
+          String(
+            detail.district || ""
+          ).trim();
+
+      }
+
+
+      if (
+        detail.sort !== undefined
+      ) {
+
+        state.selectedSort =
+          String(
+            detail.sort ||
+            DEFAULT_SORT
+          ).trim();
+
+      }
+
+    }
+  );
+
+
+  /* =========================================================
+     PUBLIC SETTERS
+  ========================================================= */
+
+  function setSelection(
+    options
+  ) {
+
+    options =
+      options || {};
+
+
+    if (
+      options.state !== undefined
+    ) {
+
+      state.selectedState =
+        String(
+          options.state || ""
+        ).trim();
+
+    }
+
+
+    if (
+      options.district !== undefined
+    ) {
+
+      state.selectedDistrict =
+        String(
+          options.district || ""
+        ).trim();
+
+    }
+
+
+    if (
+      options.category !== undefined
+    ) {
+
+      state.selectedCategory =
+        String(
+          options.category || ""
+        ).trim();
+
+    }
+
+
+    if (
+      options.sort !== undefined
+    ) {
+
+      state.selectedSort =
+        String(
+          options.sort ||
+          DEFAULT_SORT
+        ).trim();
+
+    }
+
+  }
+
+
+  /* =========================================================
+     PUBLIC API
+  ========================================================= */
+
   window.UBnuxBusinesses = {
+
+    state,
 
     loadBusinesses,
 
     renderBusinesses,
 
-    renderSkeletons
+    setSelection,
+
+    getBusinesses: function () {
+
+      return state.businesses.slice();
+
+    },
+
+    getState: function () {
+
+      return {
+        ...state,
+        businesses:
+          state.businesses.slice()
+      };
+
+    }
 
   };
 

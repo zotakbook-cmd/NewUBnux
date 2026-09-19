@@ -1,0 +1,1936 @@
+/* =========================================================
+   UBnux - Business Detail Page
+   File: assets/css/business.css
+   Version: 1.0.0
+========================================================= */
+
+
+/* =========================================================
+   VARIABLES
+========================================================= */
+
+:root {
+
+  --business-primary: #0f172a;
+  --business-primary-light: #1e293b;
+
+  --business-accent: #2563eb;
+  --business-accent-hover: #1d4ed8;
+
+  --business-success: #16a34a;
+
+  --business-bg: #f8fafc;
+  --business-card: #ffffff;
+
+  --business-border: #e2e8f0;
+
+  --business-text: #0f172a;
+  --business-muted: #64748b;
+
+  --business-radius: 16px;
+
+  --business-shadow:
+    0 10px 30px rgba(
+      15,
+      23,
+      42,
+      0.08
+    );
+
+}
+
+
+/* =========================================================
+   BASE
+========================================================= */
+
+.business-page {
+
+  min-height: 70vh;
+
+  background:
+    var(--business-bg);
+
+  color:
+    var(--business-text);
+
+}
+
+
+.business-container {
+  width: min(
+    1180px,
+    calc(100% - 20px)
+  );
+  margin:
+    0 auto;
+
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.business-header {
+
+  position:
+    sticky;
+
+  top:
+    0;
+
+  z-index:
+    1000;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.96
+    );
+
+  border-bottom:
+    1px solid
+    var(--business-border);
+
+  backdrop-filter:
+    blur(12px);
+
+}
+
+
+.business-header
+.business-container {
+
+  min-height:
+    68px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    20px;
+
+}
+
+
+.business-logo {
+
+  color:
+    var(--business-primary);
+
+  font-size:
+    1.5rem;
+
+  font-weight:
+    800;
+
+  text-decoration:
+    none;
+
+}
+
+
+.business-back-link {
+
+  color:
+    var(--business-accent);
+
+  font-size:
+    0.95rem;
+
+  font-weight:
+    600;
+
+  text-decoration:
+    none;
+
+}
+
+
+.business-back-link:hover {
+
+  text-decoration:
+    underline;
+
+}
+
+
+/* =========================================================
+   LOADER
+========================================================= */
+
+.business-page-loader {
+
+  position:
+    fixed;
+
+  inset:
+    0;
+
+  z-index:
+    9999;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    14px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.98
+    );
+
+}
+
+
+.business-page-loader.is-hidden {
+
+  display:
+    none;
+
+}
+
+
+.business-loader-spinner {
+
+  width:
+    42px;
+
+  height:
+    42px;
+
+  border:
+    4px solid
+    var(--business-border);
+
+  border-top-color:
+    var(--business-accent);
+
+  border-radius:
+    50%;
+
+  animation:
+    businessSpin
+    0.8s linear infinite;
+
+}
+
+
+@keyframes businessSpin {
+
+  to {
+
+    transform:
+      rotate(
+        360deg
+      );
+
+  }
+
+}
+
+
+.business-page-loader p {
+
+  margin:
+    0;
+
+  color:
+    var(--business-muted);
+
+  font-size:
+    0.95rem;
+
+}
+
+
+/* =========================================================
+   BREADCRUMB
+========================================================= */
+
+.business-breadcrumb {
+
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  align-items:
+    center;
+
+  gap:
+    7px;
+
+  padding:
+    18px 0;
+
+  color:
+    var(--business-muted);
+
+  font-size:
+    0.88rem;
+
+}
+
+
+.business-breadcrumb a {
+
+  color:
+    var(--business-accent);
+
+  text-decoration:
+    none;
+
+}
+
+
+.business-breadcrumb a:hover {
+
+  text-decoration:
+    underline;
+
+}
+
+
+.business-breadcrumb strong {
+
+  color:
+    var(--business-text);
+
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.business-hero {
+
+  padding-bottom:
+    30px;
+
+}
+
+
+.business-cover-wrap {
+
+  position:
+    relative;
+
+  height:
+    310px;
+
+  overflow:
+    hidden;
+
+  border-radius:
+    var(--business-radius);
+
+  background:
+    linear-gradient(
+      135deg,
+      #e2e8f0,
+      #cbd5e1
+    );
+
+}
+
+
+.business-cover {
+
+  display:
+    block;
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  object-fit:
+    cover;
+
+}
+
+
+.business-cover.is-hidden {
+
+  display:
+    none;
+
+}
+
+
+.business-cover-fallback {
+
+  position:
+    absolute;
+
+  inset:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  color:
+    #ffffff;
+
+  font-size:
+    2rem;
+
+  font-weight:
+    800;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0f172a,
+      #334155
+    );
+
+}
+
+
+.business-cover-fallback.is-hidden {
+
+  display:
+    none;
+
+}
+
+
+/* =========================================================
+   PROFILE CARD
+========================================================= */
+
+.business-profile-card {
+
+  position:
+    relative;
+
+  margin-top:
+    -60px;
+
+  margin-left:
+    24px;
+
+  margin-right:
+    24px;
+
+  padding:
+    24px;
+
+  display:
+    flex;
+
+  align-items:
+    flex-end;
+
+  justify-content:
+    space-between;
+
+  gap:
+    24px;
+
+  background:
+    var(--business-card);
+
+  border:
+    1px solid
+    var(--business-border);
+
+  border-radius:
+    var(--business-radius);
+
+  box-shadow:
+    var(--business-shadow);
+
+}
+
+
+.business-profile-main {
+
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    20px;
+
+}
+
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+.business-logo-wrap {
+
+  flex:
+    0 0 auto;
+
+  width:
+    110px;
+
+  height:
+    110px;
+
+  overflow:
+    hidden;
+
+  border:
+    5px solid
+    #ffffff;
+
+  border-radius:
+    18px;
+
+  background:
+    #f1f5f9;
+
+  box-shadow:
+    0 8px 20px
+    rgba(
+      15,
+      23,
+      42,
+      0.12
+    );
+
+}
+
+
+.business-profile-logo {
+
+  display:
+    block;
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  object-fit:
+    cover;
+
+}
+
+
+.business-profile-logo.is-hidden {
+
+  display:
+    none;
+
+}
+
+
+.business-logo-fallback {
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  font-size:
+    2.5rem;
+
+}
+
+
+.business-logo-fallback.is-hidden {
+
+  display:
+    none;
+
+}
+
+
+/* =========================================================
+   BUSINESS HEADING
+========================================================= */
+
+.business-heading {
+
+  min-width:
+    0;
+
+}
+
+
+.business-badges {
+
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    7px;
+
+  margin-bottom:
+    8px;
+
+}
+
+
+.business-badge {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  padding:
+    5px 9px;
+
+  border-radius:
+    999px;
+
+  font-size:
+    0.76rem;
+
+  font-weight:
+    700;
+
+}
+
+
+.business-badge.verified {
+
+  color:
+    #166534;
+
+  background:
+    #dcfce7;
+
+}
+
+
+.business-badge.featured {
+
+  color:
+    #92400e;
+
+  background:
+    #fef3c7;
+
+}
+
+
+.business-name {
+
+  margin:
+    0;
+
+  color:
+    var(--business-text);
+
+  font-size:
+    clamp(
+      1.65rem,
+      3vw,
+      2.4rem
+    );
+
+  line-height:
+    1.15;
+
+  font-weight:
+    800;
+
+}
+
+
+.business-category-line {
+
+  margin-top:
+    7px;
+
+  color:
+    var(--business-accent);
+
+  font-size:
+    0.98rem;
+
+  font-weight:
+    700;
+
+}
+
+
+.business-location-line {
+
+  margin-top:
+    5px;
+
+  color:
+    var(--business-muted);
+
+  font-size:
+    0.92rem;
+
+}
+
+
+.business-rating {
+
+  margin-top:
+    10px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    5px;
+
+  color:
+    var(--business-muted);
+
+  font-size:
+    0.9rem;
+
+}
+
+
+.business-rating-stars {
+
+  color:
+    #f59e0b;
+
+  font-size:
+    1.1rem;
+
+}
+
+
+/* =========================================================
+   ACTIONS
+========================================================= */
+
+.business-actions {
+
+  flex:
+    0 0 auto;
+
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  justify-content:
+    flex-end;
+
+  gap:
+    9px;
+
+}
+
+
+.business-action-button {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  min-height:
+    42px;
+
+  padding:
+    0 15px;
+
+  color:
+    var(--business-text);
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid
+    var(--business-border);
+
+  border-radius:
+    10px;
+
+  text-decoration:
+    none;
+
+  font-size:
+    0.9rem;
+
+  font-weight:
+    700;
+
+  transition:
+    0.2s ease;
+
+}
+
+
+.business-action-button:hover {
+
+  border-color:
+    var(--business-accent);
+
+  color:
+    var(--business-accent);
+
+  transform:
+    translateY(
+      -1px
+    );
+
+}
+
+
+.business-call-button {
+
+  color:
+    #ffffff;
+
+  background:
+    var(--business-accent);
+
+  border-color:
+    var(--business-accent);
+
+}
+
+
+.business-call-button:hover {
+
+  color:
+    #ffffff;
+
+  background:
+    var(--business-accent-hover);
+
+}
+
+
+.business-whatsapp-button {
+
+  color:
+    #166534;
+
+}
+
+
+.business-whatsapp-button:hover {
+
+  color:
+    #166534;
+
+  border-color:
+    #22c55e;
+
+}
+
+
+/* =========================================================
+   CONTENT LAYOUT
+========================================================= */
+
+.business-layout {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(
+      0,
+      1fr
+    )
+    330px;
+
+  gap:
+    28px;
+
+  padding-bottom:
+    45px;
+
+}
+
+
+.business-main-content {
+
+  min-width:
+    0;
+
+}
+
+
+.business-sidebar {
+
+  min-width:
+    0;
+
+}
+
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.business-section {
+
+  margin-bottom:
+    24px;
+
+  padding:
+    26px;
+
+  background:
+    var(--business-card);
+
+  border:
+    1px solid
+    var(--business-border);
+
+  border-radius:
+    var(--business-radius);
+
+  box-shadow:
+    0 5px 18px
+    rgba(
+      15,
+      23,
+      42,
+      0.04
+    );
+
+}
+
+
+.business-section-heading {
+
+  margin-bottom:
+    18px;
+
+}
+
+
+.business-section-heading h2 {
+
+  margin:
+    0;
+
+  font-size:
+    1.35rem;
+
+  line-height:
+    1.3;
+
+}
+
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.business-rich-content {
+
+  color:
+    #334155;
+
+  font-size:
+    1rem;
+
+  line-height:
+    1.8;
+
+}
+
+
+.business-rich-content p {
+
+  margin:
+    0 0 14px;
+
+}
+
+
+.business-rich-content p:last-child {
+
+  margin-bottom:
+    0;
+
+}
+
+
+/* =========================================================
+   CONTACT GRID
+========================================================= */
+
+.business-info-grid {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap:
+    16px;
+
+}
+
+
+.business-info-item {
+
+  display:
+    flex;
+
+  align-items:
+    flex-start;
+
+  gap:
+    12px;
+
+  padding:
+    16px;
+
+  background:
+    #f8fafc;
+
+  border:
+    1px solid
+    var(--business-border);
+
+  border-radius:
+    12px;
+
+}
+
+
+.business-info-icon {
+
+  flex:
+    0 0 auto;
+
+  font-size:
+    1.2rem;
+
+}
+
+
+.business-info-item strong {
+
+  display:
+    block;
+
+  margin-bottom:
+    4px;
+
+  font-size:
+    0.88rem;
+
+}
+
+
+.business-info-item p {
+
+  margin:
+    0;
+
+  color:
+    var(--business-muted);
+
+  font-size:
+    0.92rem;
+
+  line-height:
+    1.5;
+
+}
+
+
+.business-info-item a {
+
+  color:
+    var(--business-accent);
+
+  text-decoration:
+    none;
+
+}
+
+
+/* =========================================================
+   HOURS
+========================================================= */
+
+.business-hours-card {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap:
+    14px;
+
+}
+
+
+.business-hours-card > div {
+
+  padding:
+    16px;
+
+  background:
+    #f8fafc;
+
+  border:
+    1px solid
+    var(--business-border);
+
+  border-radius:
+    12px;
+
+}
+
+
+.business-hours-card strong {
+
+  display:
+    block;
+
+  margin-bottom:
+    6px;
+
+  font-size:
+    0.85rem;
+
+}
+
+
+.business-hours-card p {
+
+  margin:
+    0;
+
+  color:
+    var(--business-muted);
+
+  font-size:
+    0.92rem;
+
+}
+
+
+.business-status {
+
+  color:
+    var(--business-success) !important;
+
+  font-weight:
+    700;
+
+}
+
+
+/* =========================================================
+   SOCIAL
+========================================================= */
+
+.business-social-links {
+
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    10px;
+
+}
+
+
+.business-social-link {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  min-height:
+    40px;
+
+  padding:
+    0 14px;
+
+  color:
+    var(--business-text);
+
+  background:
+    #f8fafc;
+
+  border:
+    1px solid
+    var(--business-border);
+
+  border-radius:
+    10px;
+
+  text-decoration:
+    none;
+
+  font-weight:
+    600;
+
+}
+
+
+.business-social-link:hover {
+
+  color:
+    var(--business-accent);
+
+  border-color:
+    var(--business-accent);
+
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.business-sidebar-card {
+
+  margin-bottom:
+    20px;
+
+  padding:
+    22px;
+
+  background:
+    var(--business-card);
+
+  border:
+    1px solid
+    var(--business-border);
+
+  border-radius:
+    var(--business-radius);
+
+  box-shadow:
+    0 5px 18px
+    rgba(
+      15,
+      23,
+      42,
+      0.04
+    );
+
+}
+
+
+.business-sidebar-card h2 {
+
+  margin:
+    0 0 16px;
+
+  font-size:
+    1.1rem;
+
+}
+
+
+.business-quick-details {
+
+  display:
+    grid;
+
+  gap:
+    14px;
+
+}
+
+
+.business-quick-details > div {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    3px;
+
+  padding-bottom:
+    12px;
+
+  border-bottom:
+    1px solid
+    var(--business-border);
+
+}
+
+
+.business-quick-details > div:last-child {
+
+  padding-bottom:
+    0;
+
+  border-bottom:
+    0;
+
+}
+
+
+.business-quick-details span {
+
+  color:
+    var(--business-muted);
+
+  font-size:
+    0.78rem;
+
+}
+
+
+.business-quick-details strong {
+
+  font-size:
+    0.92rem;
+
+}
+
+
+.business-enquiry-card p {
+
+  margin:
+    0 0 16px;
+
+  color:
+    var(--business-muted);
+
+  line-height:
+    1.6;
+
+  font-size:
+    0.9rem;
+
+}
+
+
+.business-sidebar-button {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  min-height:
+    44px;
+
+  padding:
+    0 16px;
+
+  color:
+    #ffffff;
+
+  background:
+    var(--business-accent);
+
+  border-radius:
+    10px;
+
+  text-decoration:
+    none;
+
+  font-weight:
+    700;
+
+}
+
+
+.business-sidebar-button:hover {
+
+  background:
+    var(--business-accent-hover);
+
+}
+
+
+/* =========================================================
+   RELATED BUSINESSES
+========================================================= */
+
+.related-businesses-section {
+
+  padding:
+    45px 0;
+
+  background:
+    #ffffff;
+
+  border-top:
+    1px solid
+    var(--business-border);
+
+}
+
+
+.related-businesses-grid {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap:
+    18px;
+
+}
+
+
+/* =========================================================
+   FAQ
+========================================================= */
+
+.business-faq-list {
+
+  display:
+    grid;
+
+  gap:
+    10px;
+
+}
+
+
+.business-faq-item {
+
+  border:
+    1px solid
+    var(--business-border);
+
+  border-radius:
+    10px;
+
+  overflow:
+    hidden;
+
+}
+
+
+.business-faq-question {
+
+  width:
+    100%;
+
+  padding:
+    15px;
+
+  text-align:
+    left;
+
+  color:
+    var(--business-text);
+
+  background:
+    #f8fafc;
+
+  border:
+    0;
+
+  cursor:
+    pointer;
+
+  font-weight:
+    700;
+
+}
+
+
+.business-faq-answer {
+
+  padding:
+    15px;
+
+  color:
+    var(--business-muted);
+
+  line-height:
+    1.6;
+
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.business-error-section {
+
+  padding:
+    70px 0;
+
+}
+
+
+.business-error-card {
+
+  max-width:
+    600px;
+
+  margin:
+    0 auto;
+
+  padding:
+    45px 25px;
+
+  text-align:
+    center;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid
+    var(--business-border);
+
+  border-radius:
+    var(--business-radius);
+
+  box-shadow:
+    var(--business-shadow);
+
+}
+
+
+.business-error-icon {
+
+  margin-bottom:
+    12px;
+
+  font-size:
+    3rem;
+
+}
+
+
+.business-error-card h1 {
+
+  margin:
+    0 0 10px;
+
+  font-size:
+    1.7rem;
+
+}
+
+
+.business-error-card p {
+
+  margin:
+    0 0 22px;
+
+  color:
+    var(--business-muted);
+
+}
+
+
+.business-error-button {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  min-height:
+    44px;
+
+  padding:
+    0 18px;
+
+  color:
+    #ffffff;
+
+  background:
+    var(--business-accent);
+
+  border-radius:
+    10px;
+
+  text-decoration:
+    none;
+
+  font-weight:
+    700;
+
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.business-footer {
+
+  padding:
+    24px 0;
+
+  color:
+    var(--business-muted);
+
+  background:
+    #ffffff;
+
+  border-top:
+    1px solid
+    var(--business-border);
+
+}
+
+
+.business-footer
+.business-container {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    15px;
+
+}
+
+
+.business-footer p {
+
+  margin:
+    0;
+
+  font-size:
+    0.86rem;
+
+}
+
+
+.business-footer a {
+
+  color:
+    var(--business-accent);
+
+  text-decoration:
+    none;
+
+  font-size:
+    0.86rem;
+
+  font-weight:
+    600;
+
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (
+  max-width: 900px
+) {
+
+  .business-profile-card {
+
+    margin-left:
+      12px;
+
+    margin-right:
+      12px;
+
+    flex-direction:
+      column;
+
+    align-items:
+      stretch;
+
+  }
+
+
+  .business-actions {
+
+    justify-content:
+      flex-start;
+
+  }
+
+
+  .business-layout {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .business-sidebar {
+
+    display:
+      grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(
+          0,
+          1fr
+        )
+      );
+
+    gap:
+      18px;
+
+  }
+
+
+  .business-sidebar-card {
+
+    margin-bottom:
+      0;
+
+  }
+
+}
+
+
+@media (
+  max-width: 650px
+) {
+
+  .business-container {
+
+    width:
+      min(
+        1180px,
+        calc(100% - 20px)
+      );
+
+  }
+
+  .business-cover-wrap {
+
+    height:
+      220px;
+
+    border-radius:
+      12px;
+
+  }
+
+  .business-profile-card {
+
+    margin-top:
+      -35px;
+
+    margin-left:
+      6px;
+
+    margin-right:
+      6px;
+
+    padding:
+      18px;
+
+  }
+
+  .business-profile-main {
+
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+  }
+
+  .business-logo-wrap {
+
+    width:
+      88px;
+
+    height:
+      88px;
+
+  }
+
+  .business-name {
+
+    font-size:
+      1.55rem;
+
+  }
+
+  .business-actions {
+
+    display:
+      grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(
+          0,
+          1fr
+        )
+      );
+
+    width:
+      100%;
+
+  }
+
+  .business-action-button {
+
+    width:
+      100%;
+
+  }
+
+  .business-section {
+
+    padding:
+      20px;
+
+  }
+
+  .business-info-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+  .business-hours-card {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+  .business-sidebar {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+  .related-businesses-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+  .business-footer
+  .business-container {
+
+    flex-direction:
+      column;
+
+    align-items:
+      flex-start;
+
+  }
+
+}

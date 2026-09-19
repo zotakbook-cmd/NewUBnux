@@ -1,6 +1,17 @@
+
 /* =========================================================
    UBnux API Client
    File: assets/js/api.js
+
+   Responsibilities:
+   - Centralized Google Apps Script API client
+   - States
+   - Districts
+   - Categories
+   - Businesses
+   - Business by ID
+   - Business by SEO slug
+   - Centralized request handling
 ========================================================= */
 
 (function (window) {
@@ -8,11 +19,72 @@
   "use strict";
 
 
+  /* =======================================================
+     CONFIG
+  ====================================================== */
+
   const config =
     window.UBNUX_CONFIG;
 
 
-  async function request(
+  /* =======================================================
+     VALIDATE CONFIG
+  ====================================================== */
+
+  if (
+    !config ||
+    !config.API_URL
+  ) {
+
+    console.error(
+      "UBnux API configuration is missing."
+    );
+
+  }
+
+
+  /* =======================================================
+     NORMALIZE API URL
+  ====================================================== */
+
+  function getAPIURL() {
+
+    const apiURL =
+      String(
+        config &&
+        config.API_URL
+          ? config.API_URL
+          : ""
+      )
+        .trim();
+
+
+    if (!apiURL) {
+
+      throw new Error(
+        "UBnux API URL is not configured."
+      );
+
+    }
+
+
+    /*
+     * Prevent accidental duplicate ?
+     */
+
+    return apiURL.replace(
+      /[?&]+$/,
+      ""
+    );
+
+  }
+
+
+  /* =======================================================
+     BUILD REQUEST URL
+  ====================================================== */
+
+  function buildURL(
     action,
     params
   ) {
@@ -37,6 +109,7 @@
         const value =
           params[key];
 
+
         if (
           value !== undefined &&
           value !== null &&
@@ -45,7 +118,7 @@
 
           query.set(
             key,
-            String(value)
+            String(value).trim()
           );
 
         }
@@ -53,20 +126,73 @@
       });
 
 
-    const url =
-      config.API_URL +
+    return (
+      getAPIURL() +
       "?" +
-      query.toString();
+      query.toString()
+    );
+
+  }
 
 
-    const response =
-      await fetch(
-        url,
-        {
-          method: "GET",
-          cache: "no-store"
-        }
+  /* =======================================================
+     CENTRAL REQUEST
+  ====================================================== */
+
+  async function request(
+    action,
+    params
+  ) {
+
+    if (!action) {
+
+      throw new Error(
+        "API action is required."
       );
+
+    }
+
+
+    const url =
+      buildURL(
+        action,
+        params
+      );
+
+
+    let response;
+
+
+    try {
+
+      response =
+        await fetch(
+          url,
+          {
+            method:
+              "GET",
+
+            cache:
+              "no-store",
+
+            headers: {
+
+              "Accept":
+                "application/json"
+
+            }
+          }
+        );
+
+    } catch (
+      error
+    ) {
+
+      throw new Error(
+        "Unable to connect to UBnux API."
+      );
+
+    }
 
 
     if (!response.ok) {
@@ -79,8 +205,23 @@
     }
 
 
-    const data =
-      await response.json();
+    let data;
+
+
+    try {
+
+      data =
+        await response.json();
+
+    } catch (
+      error
+    ) {
+
+      throw new Error(
+        "API returned invalid JSON."
+      );
+
+    }
 
 
     if (
@@ -103,6 +244,10 @@
   }
 
 
+  /* =======================================================
+     STATES
+  ====================================================== */
+
   async function getStates() {
 
     return request(
@@ -112,6 +257,10 @@
   }
 
 
+  /* =======================================================
+     DISTRICTS
+  ====================================================== */
+
   async function getDistricts(
     stateCode
   ) {
@@ -119,13 +268,19 @@
     return request(
       "districts",
       {
+
         state:
           stateCode
+
       }
     );
 
   }
 
+
+  /* =======================================================
+     CATEGORIES
+  ====================================================== */
 
   async function getCategories() {
 
@@ -135,6 +290,10 @@
 
   }
 
+
+  /* =======================================================
+     BUSINESSES
+  ====================================================== */
 
   async function getBusinesses(
     options
@@ -149,16 +308,20 @@
       {
 
         state:
-          options.state || "",
+          options.state ||
+          "",
 
         district:
-          options.district || "",
+          options.district ||
+          "",
 
         category:
-          options.category || "",
+          options.category ||
+          "",
 
         page:
-          options.page || 1,
+          options.page ||
+          1,
 
         limit:
           options.limit ||
@@ -174,24 +337,136 @@
   }
 
 
+  /* =======================================================
+     BUSINESS BY ID
+  ====================================================== */
+
   async function getBusiness(
     businessId
   ) {
 
+    if (
+      !businessId
+    ) {
+
+      throw new Error(
+        "Business ID is required."
+      );
+
+    }
+
+
     return request(
       "business",
       {
+
         id:
           businessId
+
       }
     );
 
   }
 
 
+  /* =======================================================
+     BUSINESS BY SEO SLUG
+     
+     Example URL:
+
+     /in/bihar/siwan/libraries/abc-library/
+
+     Request:
+
+     ?action=business
+     &state=bihar
+     &district=siwan
+     &category=libraries
+     &slug=abc-library
+  ====================================================== */
+
+  async function getBusinessBySlug(
+    stateSlug,
+    districtSlug,
+    categorySlug,
+    businessSlug
+  ) {
+
+    if (
+      !stateSlug
+    ) {
+
+      throw new Error(
+        "State slug is required."
+      );
+
+    }
+
+
+    if (
+      !districtSlug
+    ) {
+
+      throw new Error(
+        "District slug is required."
+      );
+
+    }
+
+
+    if (
+      !categorySlug
+    ) {
+
+      throw new Error(
+        "Category slug is required."
+      );
+
+    }
+
+
+    if (
+      !businessSlug
+    ) {
+
+      throw new Error(
+        "Business slug is required."
+      );
+
+    }
+
+
+    return request(
+      "business",
+      {
+
+        state:
+          stateSlug,
+
+        district:
+          districtSlug,
+
+        category:
+          categorySlug,
+
+        slug:
+          businessSlug
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     PUBLIC API
+  ====================================================== */
+
   window.UBnuxAPI = {
 
     request,
+
+    buildURL,
 
     getStates,
 
@@ -201,7 +476,9 @@
 
     getBusinesses,
 
-    getBusiness
+    getBusiness,
+
+    getBusinessBySlug
 
   };
 
