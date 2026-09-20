@@ -229,14 +229,30 @@
        BUSINESS PAGE
   ====================================================== -->
 
-  <main
-    id="businessPage"
-    class="business-page"
-    hidden
+ <!-- =====================================================
+     BUSINESS PAGE
+====================================================== -->
+
+<main
+  id="businessPage"
+  class="business-page"
+  hidden
+>
+
+  <!-- ===================================================
+       BUSINESS PAGE CONTENT
+
+       IMPORTANT:
+       business-page.js expects:
+       #businessPageContent
+  ==================================================== -->
+
+  <div
+    id="businessPageContent"
+    class="business-page-content"
   >
 
     <div class="container">
-
 
       <!-- =================================================
            BREADCRUMB
@@ -258,7 +274,6 @@
         class="business-hero"
       >
 
-
         <!-- ===============================================
              COVER
         ================================================ -->
@@ -274,7 +289,6 @@
         ================================================ -->
 
         <div class="business-main-info">
-
 
           <!-- =============================================
                LOGO
@@ -292,10 +306,7 @@
 
           <div class="business-heading">
 
-
-            <!-- ===========================================
-                 BADGES
-            ============================================ -->
+            <!-- BADGES -->
 
             <div
               id="businessBadges"
@@ -303,18 +314,14 @@
             ></div>
 
 
-            <!-- ===========================================
-                 BUSINESS NAME
-            ============================================ -->
+            <!-- BUSINESS NAME -->
 
             <h1 id="businessName">
               Business
             </h1>
 
 
-            <!-- ===========================================
-                 LOCATION
-            ============================================ -->
+            <!-- LOCATION -->
 
             <p
               id="businessAddress"
@@ -322,9 +329,7 @@
             ></p>
 
 
-            <!-- ===========================================
-                 RATING
-            ============================================ -->
+            <!-- RATING -->
 
             <div
               id="businessRating"
@@ -344,13 +349,11 @@
 
       <div class="business-content-grid">
 
-
         <!-- ===============================================
              MAIN CONTENT
         ================================================ -->
 
         <article class="business-content">
-
 
           <!-- =============================================
                ABOUT
@@ -453,7 +456,6 @@
 
           </section>
 
-
         </article>
 
 
@@ -463,7 +465,6 @@
 
         <aside class="business-sidebar">
 
-
           <!-- =============================================
                CONTACT
           ============================================== -->
@@ -472,7 +473,6 @@
             id="businessContactActions"
             class="business-contact-actions"
           >
-
 
             <!-- CALL -->
 
@@ -513,7 +513,6 @@
               Visit Website
             </a>
 
-
           </div>
 
 
@@ -536,15 +535,15 @@
 
           </div>
 
-
         </aside>
 
       </div>
 
     </div>
 
-  </main>
+  </div>
 
+</main>
 
   <!-- =====================================================
        ERROR
@@ -601,35 +600,12 @@
        the listing application.
   ====================================================== -->
 
-
-  <script
-    src="/assets/js/config.js"
-  ></script>
-
-
-  <script
-    src="/assets/js/api.js"
-  ></script>
-
-
-  <script
-    src="/assets/js/seo/seo-router.js"
-  ></script>
-
-
-  <script
-    src="/assets/js/seo/seo-meta.js"
-  ></script>
-
-
-  <script
-    src="/assets/js/seo/schema.js"
-  ></script>
-
-
-  <script
-    src="/assets/js/seo/business-page.js"
-  ></script>
+<script src="/assets/js/config.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/seo/seo-router.js"></script>
+<script src="/assets/js/seo/seo-meta.js"></script>
+<script src="/assets/js/seo/schema.js"></script>
+<script src="/assets/js/seo/business-page.js"></script>
 
 
 </body>
