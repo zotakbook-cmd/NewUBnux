@@ -4,7 +4,7 @@
    assets/js/seo/business-page.js
 
    Version:
-   3.1.0
+   3.2.0
 
    Responsibilities:
    - Read SEO business URL
@@ -13,6 +13,7 @@
    - Update SEO metadata
    - Generate basic Schema data
    - Handle loading / error states
+   - Control page visibility
    - NEVER redirect the browser
    ========================================================= */
 
@@ -154,18 +155,52 @@
 
     hideLoader();
 
-    var errorBox =
-      $("#businessPageError");
+    var page =
+      $("#businessPage");
 
     var content =
       $("#businessPageContent");
 
+    var errorBox =
+      $("#businessPageError");
+
+
+    /*
+       Show parent page so that
+       error section can actually be seen.
+    */
+
+    if (page) {
+
+      page.hidden = false;
+
+      page.removeAttribute(
+        "hidden"
+      );
+
+      page.style.display =
+        "";
+
+    }
+
+
+    /*
+       Hide normal business content.
+    */
+
     if (content) {
+
+      content.hidden = true;
 
       content.style.display =
         "none";
 
     }
+
+
+    /*
+       Error container missing.
+    */
 
     if (!errorBox) {
 
@@ -178,13 +213,39 @@
 
     }
 
+
+    /*
+       Show error.
+    */
+
+    errorBox.hidden = false;
+
+    errorBox.removeAttribute(
+      "hidden"
+    );
+
     errorBox.style.display =
       "block";
+
 
     var messageElement =
       errorBox.querySelector(
         "[data-error-message]"
       );
+
+
+    /*
+       Support existing static
+       #businessErrorMessage also.
+    */
+
+    if (!messageElement) {
+
+      messageElement =
+        $("#businessErrorMessage");
+
+    }
+
 
     if (messageElement) {
 
@@ -197,12 +258,161 @@
         "<div class=\"business-error-inner\">" +
         "<h2>Business not found</h2>" +
         "<p>" +
-        escapeHTML(message) +
+        escapeHTML(
+          message
+        ) +
         "</p>" +
         "<a href=\"/\" class=\"business-error-home\">" +
         "Go to Home" +
         "</a>" +
         "</div>";
+
+    }
+
+  }
+
+
+  /* =======================================================
+     BUSINESS PAGE VISIBILITY
+     ======================================================= */
+
+  function showBusinessPage() {
+
+    var page =
+      $("#businessPage");
+
+    var content =
+      $("#businessPageContent");
+
+    var errorBox =
+      $("#businessPageError");
+
+
+    /*
+       IMPORTANT:
+
+       business.html contains:
+
+       <main
+         id="businessPage"
+         class="business-page"
+         hidden
+       >
+
+       Therefore content alone cannot
+       make the page visible.
+
+       We explicitly remove hidden.
+    */
+
+    if (page) {
+
+      page.hidden = false;
+
+      page.removeAttribute(
+        "hidden"
+      );
+
+      page.style.display =
+        "";
+
+    }
+
+
+    /*
+       Show business content.
+    */
+
+    if (content) {
+
+      content.hidden = false;
+
+      content.removeAttribute(
+        "hidden"
+      );
+
+      content.style.display =
+        "block";
+
+    }
+
+
+    /*
+       Hide error state.
+    */
+
+    if (errorBox) {
+
+      errorBox.hidden = true;
+
+      errorBox.style.display =
+        "none";
+
+    }
+
+
+    console.debug(
+      "[UBnux Business] Business page visible."
+    );
+
+  }
+
+
+  function hideBusinessPage() {
+
+    var page =
+      $("#businessPage");
+
+    var content =
+      $("#businessPageContent");
+
+    var errorBox =
+      $("#businessPageError");
+
+
+    /*
+       Hide parent.
+    */
+
+    if (page) {
+
+      page.hidden = true;
+
+      page.setAttribute(
+        "hidden",
+        ""
+      );
+
+      page.style.display =
+        "none";
+
+    }
+
+
+    /*
+       Hide content.
+    */
+
+    if (content) {
+
+      content.hidden = true;
+
+      content.style.display =
+        "none";
+
+    }
+
+
+    /*
+       Hide error.
+    */
+
+    if (errorBox) {
+
+      errorBox.hidden = true;
+
+      errorBox.style.display =
+        "none";
 
     }
 
@@ -218,6 +428,7 @@
     var pathname =
       window.location.pathname ||
       "/";
+
 
     return pathname
       .split("/")
@@ -236,6 +447,10 @@
 
   }
 
+
+  /* =======================================================
+     BUSINESS ROUTE
+     ======================================================= */
 
   function getBusinessRoute() {
 
@@ -258,6 +473,7 @@
        3 = category
        4 = business
     */
+
 
     if (
       segments.length !== 5
@@ -291,19 +507,31 @@
         true,
 
       stateSlug:
-        safe(segments[1]),
+        safe(
+          segments[1]
+        ),
 
       districtSlug:
-        safe(segments[2]),
+        safe(
+          segments[2]
+        ),
 
       categorySlug:
-        safe(segments[3]),
+        safe(
+          segments[3]
+        ),
 
       businessSlug:
-        safe(segments[4])
+        safe(
+          segments[4]
+        )
 
     };
 
+
+    /*
+       Validate all SEO segments.
+    */
 
     if (
       !route.stateSlug ||
@@ -316,6 +544,10 @@
 
     }
 
+
+    /*
+       Build canonical path.
+    */
 
     route.canonicalPath =
       "/in/" +
@@ -336,6 +568,10 @@
       ) +
       "/";
 
+
+    /*
+       Build canonical URL.
+    */
 
     route.canonicalURL =
       CONFIG.SITE_URL +
@@ -441,7 +677,9 @@
 
     element.setAttribute(
       "content",
-      String(content)
+      String(
+        content
+      )
     );
 
   }
@@ -491,7 +729,9 @@
 
     element.setAttribute(
       "content",
-      String(content)
+      String(
+        content
+      )
     );
 
   }
@@ -515,6 +755,7 @@
       var key =
         keys[i];
 
+
       if (
         business[key] !==
         undefined &&
@@ -530,6 +771,7 @@
       }
 
     }
+
 
     return "";
 
@@ -653,6 +895,8 @@
 
     /*
        Backend SEO data has priority
+       only when business sheet value
+       is not already available.
     */
 
     if (
@@ -681,6 +925,10 @@
     }
 
 
+    /*
+       Default SEO title.
+    */
+
     if (!seoTitle) {
 
       seoTitle =
@@ -691,6 +939,10 @@
 
     }
 
+
+    /*
+       Default description.
+    */
 
     if (!seoDescription) {
 
@@ -705,6 +957,11 @@
 
     }
 
+
+    /*
+       Keep description within
+       normal search snippet length.
+    */
 
     if (
       seoDescription.length >
@@ -721,9 +978,17 @@
     }
 
 
+    /*
+       Document title.
+    */
+
     document.title =
       seoTitle;
 
+
+    /*
+       Standard meta.
+    */
 
     setMeta(
       "description",
@@ -737,16 +1002,28 @@
     );
 
 
+    /*
+       Canonical.
+    */
+
     setCanonical(
       route.canonicalURL
     );
 
+
+    /*
+       Image.
+    */
 
     var image =
       getBusinessImage(
         business
       );
 
+
+    /*
+       Open Graph.
+    */
 
     setPropertyMeta(
       "og:title",
@@ -784,6 +1061,10 @@
     );
 
 
+    /*
+       Twitter.
+    */
+
     setMeta(
       "twitter:card",
       "summary_large_image"
@@ -820,6 +1101,7 @@
       document.querySelector(
         "#ubnux-business-schema"
       );
+
 
     if (old) {
 
@@ -1027,6 +1309,10 @@
     };
 
 
+    /*
+       Telephone.
+    */
+
     if (telephone) {
 
       schema.telephone =
@@ -1034,6 +1320,10 @@
 
     }
 
+
+    /*
+       Address.
+    */
 
     if (
       address ||
@@ -1069,6 +1359,10 @@
     }
 
 
+    /*
+       Geo.
+    */
+
     if (
       latitude &&
       longitude
@@ -1090,6 +1384,10 @@
     }
 
 
+    /*
+       Rating.
+    */
+
     if (
       rating &&
       reviewCount
@@ -1100,6 +1398,7 @@
           rating
         );
 
+
       var reviewNumber =
         Number(
           reviewCount
@@ -1107,8 +1406,12 @@
 
 
       if (
-        !isNaN(ratingNumber) &&
-        !isNaN(reviewNumber) &&
+        !isNaN(
+          ratingNumber
+        ) &&
+        !isNaN(
+          reviewNumber
+        ) &&
         reviewNumber > 0
       ) {
 
@@ -1130,6 +1433,10 @@
     }
 
 
+    /*
+       Website.
+    */
+
     var website =
       safe(
         businessValue(
@@ -1147,10 +1454,16 @@
     if (website) {
 
       schema.sameAs =
-        [website];
+        [
+          website
+        ];
 
     }
 
+
+    /*
+       Inject JSON-LD.
+    */
 
     var script =
       document.createElement(
@@ -1202,7 +1515,9 @@
 
        {
          success:true,
-         data:{ business:{...} }
+         data:{
+           business:{...}
+         }
        }
 
        {
@@ -1214,7 +1529,18 @@
 
        {
          success:true,
+         result:{
+           business:{...}
+         }
+       }
+
+       {
+         success:true,
          data:{...business...}
+       }
+
+       {
+         BusinessID:"..."
        }
     */
 
@@ -1395,23 +1721,23 @@
 
     var response =
       await
-      window
-        .UBnuxAPI
-        .getBusiness({
+        window
+          .UBnuxAPI
+          .getBusiness({
 
-          state:
-            route.stateSlug,
+            state:
+              route.stateSlug,
 
-          district:
-            route.districtSlug,
+            district:
+              route.districtSlug,
 
-          category:
-            route.categorySlug,
+            category:
+              route.categorySlug,
 
-          slug:
-            route.businessSlug
+            slug:
+              route.businessSlug
 
-        });
+          });
 
 
     console.debug(
@@ -1689,7 +2015,12 @@
       );
 
 
-    var phoneHTML = "";
+    /* =====================================================
+       CALL BUTTON
+       ===================================================== */
+
+    var phoneHTML =
+      "";
 
 
     if (mobile) {
@@ -1707,7 +2038,12 @@
     }
 
 
-    var whatsappHTML = "";
+    /* =====================================================
+       WHATSAPP BUTTON
+       ===================================================== */
+
+    var whatsappHTML =
+      "";
 
 
     if (whatsapp) {
@@ -1738,7 +2074,12 @@
     }
 
 
-    var websiteHTML = "";
+    /* =====================================================
+       WEBSITE BUTTON
+       ===================================================== */
+
+    var websiteHTML =
+      "";
 
 
     if (website) {
@@ -1758,7 +2099,12 @@
     }
 
 
-    var verifiedHTML = "";
+    /* =====================================================
+       VERIFIED BADGE
+       ===================================================== */
+
+    var verifiedHTML =
+      "";
 
 
     if (
@@ -1766,10 +2112,12 @@
         verified
       ).toLowerCase() ===
       "yes" ||
+
       String(
         verified
       ).toLowerCase() ===
       "true" ||
+
       verified === "1"
     ) {
 
@@ -1781,7 +2129,12 @@
     }
 
 
-    var featuredHTML = "";
+    /* =====================================================
+       FEATURED BADGE
+       ===================================================== */
+
+    var featuredHTML =
+      "";
 
 
     if (
@@ -1789,10 +2142,12 @@
         featured
       ).toLowerCase() ===
       "yes" ||
+
       String(
         featured
       ).toLowerCase() ===
       "true" ||
+
       featured === "1"
     ) {
 
@@ -1804,14 +2159,19 @@
     }
 
 
-    var ratingHTML = "";
+    /* =====================================================
+       RATING
+       ===================================================== */
+
+    var ratingHTML =
+      "";
 
 
     if (rating) {
 
       ratingHTML =
         '<div class="business-rating">' +
-        '<strong>' +
+        "<strong>" +
         escapeHTML(
           rating
         ) +
@@ -1829,6 +2189,10 @@
 
     }
 
+
+    /* =====================================================
+       ADDRESS
+       ===================================================== */
 
     var addressParts =
       [];
@@ -1871,7 +2235,12 @@
         : "Address not available";
 
 
-    var hoursHTML = "";
+    /* =====================================================
+       OPENING HOURS
+       ===================================================== */
+
+    var hoursHTML =
+      "";
 
 
     if (
@@ -1899,7 +2268,12 @@
     }
 
 
-    var workingDaysHTML = "";
+    /* =====================================================
+       WORKING DAYS
+       ===================================================== */
+
+    var workingDaysHTML =
+      "";
 
 
     if (workingDays) {
@@ -1915,7 +2289,12 @@
     }
 
 
-    var statusHTML = "";
+    /* =====================================================
+       BUSINESS STATUS
+       ===================================================== */
+
+    var statusHTML =
+      "";
 
 
     if (businessStatus) {
@@ -1929,6 +2308,10 @@
 
     }
 
+
+    /* =====================================================
+       RENDER HTML
+       ===================================================== */
 
     content.innerHTML =
 
@@ -2002,16 +2385,20 @@
             "</h2>" +
 
             '<div class="business-description">' +
+
               (
                 description
+
                   ? escapeHTML(
                       description
                     ).replace(
                       /\n/g,
                       "<br>"
                     )
+
                   : "Business description is not available."
               ) +
+
             "</div>" +
 
           "</section>" +
@@ -2025,6 +2412,7 @@
 
               (
                 mobile
+
                   ? "<div>" +
                     "<strong>Mobile</strong>" +
                     "<span>" +
@@ -2033,11 +2421,14 @@
                     ) +
                     "</span>" +
                     "</div>"
+
                   : ""
               ) +
 
+
               (
                 address
+
                   ? "<div>" +
                     "<strong>Address</strong>" +
                     "<span>" +
@@ -2046,11 +2437,14 @@
                     ) +
                     "</span>" +
                     "</div>"
+
                   : ""
               ) +
 
+
               (
                 area
+
                   ? "<div>" +
                     "<strong>Area</strong>" +
                     "<span>" +
@@ -2059,11 +2453,14 @@
                     ) +
                     "</span>" +
                     "</div>"
+
                   : ""
               ) +
 
+
               (
                 pincode
+
                   ? "<div>" +
                     "<strong>Pincode</strong>" +
                     "<span>" +
@@ -2072,22 +2469,31 @@
                     ) +
                     "</span>" +
                     "</div>"
+
                   : ""
               ) +
 
-              hoursHTML
-                ? "<div>" +
-                  hoursHTML +
-                  "</div>"
-                : "" +
 
-              workingDaysHTML
-                ? "<div>" +
-                  workingDaysHTML +
-                  "</div>"
-                : ""
+              (
+                hoursHTML
 
-            +
+                  ? "<div>" +
+                    hoursHTML +
+                    "</div>"
+
+                  : ""
+              ) +
+
+
+              (
+                workingDaysHTML
+
+                  ? "<div>" +
+                    workingDaysHTML +
+                    "</div>"
+
+                  : ""
+              ) +
 
             "</div>" +
 
@@ -2098,8 +2504,66 @@
       "</div>";
 
 
+    /* =====================================================
+       FORCE VISIBILITY AFTER RENDER
+       ===================================================== */
+
+    var page =
+      $("#businessPage");
+
+    var errorBox =
+      $("#businessPageError");
+
+
+    /*
+       Main parent was hidden in business.html.
+    */
+
+    if (page) {
+
+      page.hidden = false;
+
+      page.removeAttribute(
+        "hidden"
+      );
+
+      page.style.display =
+        "";
+
+    }
+
+
+    /*
+       Content visible.
+    */
+
+    content.hidden = false;
+
+    content.removeAttribute(
+      "hidden"
+    );
+
     content.style.display =
       "block";
+
+
+    /*
+       Error hidden.
+    */
+
+    if (errorBox) {
+
+      errorBox.hidden = true;
+
+      errorBox.style.display =
+        "none";
+
+    }
+
+
+    console.debug(
+      "[UBnux Business] Business HTML rendered."
+    );
 
   }
 
@@ -2110,14 +2574,29 @@
 
   async function initializeBusinessPage() {
 
+    console.debug(
+      "[UBnux Business] Initializing..."
+    );
+
+
+    /*
+       Keep page hidden while data loads.
+       Loader works independently.
+    */
+
+    hideBusinessPage();
+
     showLoader();
 
 
     /*
        IMPORTANT:
 
-       This page MUST NEVER modify
-       window.location.href.
+       NEVER modify:
+
+       window.location.href
+       window.location.replace()
+       window.location.assign()
 
        Browser URL remains:
 
@@ -2137,6 +2616,10 @@
     );
 
 
+    /* =====================================================
+       INVALID ROUTE
+       ===================================================== */
+
     if (!route) {
 
       showError(
@@ -2150,11 +2633,31 @@
 
     try {
 
+      /* ===================================================
+         LOAD BUSINESS
+         =================================================== */
+
       var loaded =
         await
-        loadBusiness(
-          route
+          loadBusiness(
+            route
+          );
+
+
+      /* ===================================================
+         VALIDATE RESPONSE
+         =================================================== */
+
+      if (
+        !loaded ||
+        !loaded.business
+      ) {
+
+        throw new Error(
+          "Business information was not found."
         );
+
+      }
 
 
       var business =
@@ -2162,21 +2665,55 @@
 
 
       var seo =
-        loaded.seo;
+        loaded.seo || {};
 
 
-      updateSEO(
-        business,
-        route,
-        seo
-      );
+      /* ===================================================
+         SEO
+         =================================================== */
+
+      try {
+
+        updateSEO(
+          business,
+          route,
+          seo
+        );
+
+      } catch (seoError) {
+
+        console.warn(
+          "[UBnux Business] SEO update failed:",
+          seoError
+        );
+
+      }
 
 
-      createSchema(
-        business,
-        route
-      );
+      /* ===================================================
+         SCHEMA
+         =================================================== */
 
+      try {
+
+        createSchema(
+          business,
+          route
+        );
+
+      } catch (schemaError) {
+
+        console.warn(
+          "[UBnux Business] Schema creation failed:",
+          schemaError
+        );
+
+      }
+
+
+      /* ===================================================
+         RENDER
+         =================================================== */
 
       renderBusiness(
         business,
@@ -2184,8 +2721,36 @@
       );
 
 
+      /*
+         VERY IMPORTANT:
+
+         business.html contains:
+
+         <main
+           id="businessPage"
+           class="business-page"
+           hidden
+         >
+
+         Therefore renderBusiness()
+         alone is not enough.
+
+         Explicitly show parent page.
+      */
+
+      showBusinessPage();
+
+
+      /* ===================================================
+         HIDE LOADER
+         =================================================== */
+
       hideLoader();
 
+
+      /* ===================================================
+         SUCCESS
+         =================================================== */
 
       console.info(
         "[UBnux Business] Loaded successfully:",
@@ -2222,13 +2787,19 @@
   window.UBNUX_BUSINESS_PAGE = {
 
     version:
-      "3.1.0",
+      "3.2.0",
 
     init:
       initializeBusinessPage,
 
     getRoute:
-      getBusinessRoute
+      getBusinessRoute,
+
+    show:
+      showBusinessPage,
+
+    hide:
+      hideBusinessPage
 
   };
 
