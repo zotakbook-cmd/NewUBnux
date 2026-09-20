@@ -1,7 +1,9 @@
-
 /* =========================================================
    UBnux API Client
    File: assets/js/api.js
+
+   Version:
+   2.3.0
 
    Responsibilities:
    - Centralized Google Apps Script API client
@@ -10,8 +12,10 @@
    - Categories
    - Businesses
    - Business by ID
-   - Business by SEO slug
+   - Business by SEO path
    - Centralized request handling
+   - Safe API URL handling
+   - Consistent error handling
 ========================================================= */
 
 (function (window) {
@@ -24,7 +28,7 @@
   ====================================================== */
 
   const config =
-    window.UBNUX_CONFIG;
+    window.UBNUX_CONFIG || {};
 
 
   /* =======================================================
@@ -37,7 +41,7 @@
   ) {
 
     console.error(
-      "UBnux API configuration is missing."
+      "[UBnux API] API configuration is missing."
     );
 
   }
@@ -51,12 +55,8 @@
 
     const apiURL =
       String(
-        config &&
-        config.API_URL
-          ? config.API_URL
-          : ""
-      )
-        .trim();
+        config.API_URL || ""
+      ).trim();
 
 
     if (!apiURL) {
@@ -69,7 +69,8 @@
 
 
     /*
-     * Prevent accidental duplicate ?
+     * Remove accidental trailing
+     * ? or &
      */
 
     return apiURL.replace(
@@ -89,6 +90,15 @@
     params
   ) {
 
+    if (!action) {
+
+      throw new Error(
+        "API action is required."
+      );
+
+    }
+
+
     params =
       params || {};
 
@@ -97,11 +107,19 @@
       new URLSearchParams();
 
 
+    /*
+     * API ACTION
+     */
+
     query.set(
       "action",
-      action
+      String(action).trim()
     );
 
+
+    /*
+     * PARAMETERS
+     */
 
     Object.keys(params)
       .forEach(function (key) {
@@ -163,6 +181,10 @@
     let response;
 
 
+    /* =====================================================
+       FETCH
+    ===================================================== */
+
     try {
 
       response =
@@ -188,6 +210,12 @@
       error
     ) {
 
+      console.error(
+        "[UBnux API] Network error:",
+        error
+      );
+
+
       throw new Error(
         "Unable to connect to UBnux API."
       );
@@ -195,7 +223,13 @@
     }
 
 
-    if (!response.ok) {
+    /* =====================================================
+       HTTP ERROR
+    ===================================================== */
+
+    if (
+      !response.ok
+    ) {
 
       throw new Error(
         "API request failed: " +
@@ -204,6 +238,10 @@
 
     }
 
+
+    /* =====================================================
+       JSON PARSE
+    ===================================================== */
 
     let data;
 
@@ -217,6 +255,12 @@
       error
     ) {
 
+      console.error(
+        "[UBnux API] Invalid JSON response:",
+        error
+      );
+
+
       throw new Error(
         "API returned invalid JSON."
       );
@@ -224,16 +268,42 @@
     }
 
 
+    /* =====================================================
+       API RESPONSE VALIDATION
+    ===================================================== */
+
     if (
       !data ||
       data.success !== true
     ) {
 
-      throw new Error(
+      const message =
         data &&
         data.message
-          ? data.message
-          : "API returned an error."
+          ? String(data.message)
+          : "API returned an error.";
+
+
+      console.error(
+        "[UBnux API] Server error:",
+        {
+          action:
+            action,
+
+          params:
+            params || {},
+
+          message:
+            message,
+
+          response:
+            data
+        }
+      );
+
+
+      throw new Error(
+        message
       );
 
     }
@@ -265,6 +335,17 @@
     stateCode
   ) {
 
+    if (
+      !stateCode
+    ) {
+
+      throw new Error(
+        "State code is required."
+      );
+
+    }
+
+
     return request(
       "districts",
       {
@@ -292,7 +373,7 @@
 
 
   /* =======================================================
-     BUSINESSES
+     BUSINESSES LIST
   ====================================================== */
 
   async function getBusinesses(
@@ -301,6 +382,20 @@
 
     options =
       options || {};
+
+
+    const page =
+      Number(
+        options.page || 1
+      );
+
+
+    const limit =
+      Number(
+        options.limit ||
+        config.BUSINESS_PAGE_SIZE ||
+        20
+      );
 
 
     return request(
@@ -320,16 +415,19 @@
           "",
 
         page:
-          options.page ||
-          1,
+          page > 0
+            ? page
+            : 1,
 
         limit:
-          options.limit ||
-          config.BUSINESS_PAGE_SIZE,
+          limit > 0
+            ? limit
+            : 20,
 
         sort:
           options.sort ||
-          config.DEFAULT_SORT
+          config.DEFAULT_SORT ||
+          ""
 
       }
     );
@@ -338,32 +436,186 @@
 
 
   /* =======================================================
-     BUSINESS BY ID
+     BUSINESS
+     
+     Supports BOTH:
+
+     1. Business ID
+
+        getBusiness("B001")
+
+     2. SEO parameters
+
+        getBusiness({
+          state: "bihar",
+          district: "siwan",
+          category: "clothing-and-fashion",
+          slug: "siwan-fashion-house"
+        })
+
+     Backend action:
+
+        action=business
   ====================================================== */
 
   async function getBusiness(
-    businessId
+    input
   ) {
 
+    /* =====================================================
+       CASE 1
+       Simple Business ID
+    ===================================================== */
+
     if (
-      !businessId
+      typeof input === "string" ||
+      typeof input === "number"
     ) {
 
-      throw new Error(
-        "Business ID is required."
+      const businessId =
+        String(input).trim();
+
+
+      if (!businessId) {
+
+        throw new Error(
+          "Business ID is required."
+        );
+
+      }
+
+
+      return request(
+        "business",
+        {
+
+          id:
+            businessId
+
+        }
       );
 
     }
 
 
-    return request(
-      "business",
-      {
+    /* =====================================================
+       CASE 2
+       Object Parameters
+    ===================================================== */
 
-        id:
-          businessId
+    if (
+      !input ||
+      typeof input !== "object"
+    ) {
 
-      }
+      throw new Error(
+        "Business ID or SEO parameters are required."
+      );
+
+    }
+
+
+    const stateSlug =
+      String(
+        input.state ||
+        input.stateSlug ||
+        ""
+      ).trim();
+
+
+    const districtSlug =
+      String(
+        input.district ||
+        input.districtSlug ||
+        ""
+      ).trim();
+
+
+    const categorySlug =
+      String(
+        input.category ||
+        input.categorySlug ||
+        ""
+      ).trim();
+
+
+    const businessSlug =
+      String(
+        input.slug ||
+        input.businessSlug ||
+        ""
+      ).trim();
+
+
+    /* =====================================================
+       SEO REQUEST
+    ===================================================== */
+
+    if (
+      stateSlug &&
+      districtSlug &&
+      categorySlug &&
+      businessSlug
+    ) {
+
+      return request(
+        "business",
+        {
+
+          state:
+            stateSlug,
+
+          district:
+            districtSlug,
+
+          category:
+            categorySlug,
+
+          slug:
+            businessSlug
+
+        }
+      );
+
+    }
+
+
+    /* =====================================================
+       OBJECT WITH BUSINESS ID
+    ===================================================== */
+
+    const businessId =
+      String(
+        input.id ||
+        input.BusinessID ||
+        input.businessId ||
+        ""
+      ).trim();
+
+
+    if (
+      businessId
+    ) {
+
+      return request(
+        "business",
+        {
+
+          id:
+            businessId
+
+        }
+      );
+
+    }
+
+
+    /* =====================================================
+       INVALID PARAMETERS
+    ===================================================== */
+
+    throw new Error(
+      "Complete business SEO path or Business ID is required."
     );
 
   }
@@ -372,11 +624,11 @@
   /* =======================================================
      BUSINESS BY SEO SLUG
      
-     Example URL:
+     Example:
 
      /in/bihar/siwan/libraries/abc-library/
 
-     Request:
+     Backend:
 
      ?action=business
      &state=bihar
@@ -436,23 +688,56 @@
     }
 
 
-    return request(
-      "business",
-      {
+    return getBusiness({
 
-        state:
-          stateSlug,
+      state:
+        stateSlug,
 
-        district:
-          districtSlug,
+      district:
+        districtSlug,
 
-        category:
-          categorySlug,
+      category:
+        categorySlug,
 
-        slug:
-          businessSlug
+      slug:
+        businessSlug
 
-      }
+    });
+
+  }
+
+
+  /* =======================================================
+     BUSINESS BY SEO OBJECT
+     
+     Convenience method:
+
+     getBusinessBySEO({
+       state,
+       district,
+       category,
+       slug
+     })
+  ====================================================== */
+
+  async function getBusinessBySEO(
+    params
+  ) {
+
+    if (
+      !params ||
+      typeof params !== "object"
+    ) {
+
+      throw new Error(
+        "SEO business parameters are required."
+      );
+
+    }
+
+
+    return getBusiness(
+      params
     );
 
   }
@@ -462,25 +747,122 @@
      PUBLIC API
   ====================================================== */
 
-  window.UBnuxAPI = {
+  const api = {
 
-    request,
+    /*
+     * Core
+     */
 
-    buildURL,
+    request:
+      request,
 
-    getStates,
+    buildURL:
+      buildURL,
 
-    getDistricts,
+    getAPIURL:
+      getAPIURL,
 
-    getCategories,
 
-    getBusinesses,
+    /*
+     * Master data
+     */
 
-    getBusiness,
+    getStates:
+      getStates,
 
-    getBusinessBySlug
+    getDistricts:
+      getDistricts,
+
+    getCategories:
+      getCategories,
+
+
+    /*
+     * Businesses
+     */
+
+    getBusinesses:
+      getBusinesses,
+
+    getBusiness:
+      getBusiness,
+
+    getBusinessBySlug:
+      getBusinessBySlug,
+
+    getBusinessBySEO:
+      getBusinessBySEO
 
   };
+
+
+  /* =======================================================
+     EXPORT
+  ====================================================== */
+
+  window.UBnuxAPI =
+    api;
+
+
+  /*
+   * Backward compatibility
+   */
+
+  window.ZilaBizAPI =
+    api;
+
+
+  /* =======================================================
+     DEBUG
+  ====================================================== */
+
+  console.debug(
+    "[UBnux API] Initialized.",
+    {
+      version:
+        "2.3.0",
+
+      apiURL:
+        getSafeAPIURLForDebug()
+    }
+  );
+
+
+  /* =======================================================
+     SAFE DEBUG URL
+  ====================================================== */
+
+  function getSafeAPIURLForDebug() {
+
+    try {
+
+      const url =
+        getAPIURL();
+
+
+      /*
+       * API URL को console में पूरा expose
+       * करने के बजाय केवल origin/path दिखाएं.
+       */
+
+      const parsed =
+        new URL(url);
+
+
+      return (
+        parsed.origin +
+        parsed.pathname
+      );
+
+    } catch (
+      error
+    ) {
+
+      return "";
+
+    }
+
+  }
 
 
 })(window);
