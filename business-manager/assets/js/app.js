@@ -1,37 +1,1330 @@
-(function(w,d){"use strict";
-const C=w.UBnuxManagerConfig;
-const S={districts:[],categories:[],businesses:[],slugOK:false,checkedSlug:""};
-const RESERVED=new Set(["admin","api","search","about","contact","login","privacy","terms","business","in","assets","functions","favicon.ico","robots.txt","sitemap.xml","business-manager","manager"]);
-const $=id=>d.getElementById(id);
-const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-function toast(m,t=""){const e=d.createElement("div");e.className="toast "+t;e.textContent=m;$("toastHost").appendChild(e);setTimeout(()=>e.remove(),3200)}
-function session(){try{return JSON.parse(localStorage.getItem(C.SESSION_KEY)||"null")}catch(_){return null}}
-function token(){return session()?.token||""}
-function setSession(v){localStorage.setItem(C.SESSION_KEY,JSON.stringify(v))}
-function clearSession(){localStorage.removeItem(C.SESSION_KEY)}
-async function api(action,params={},post=false){if(!C.API_URL||C.API_URL.startsWith("PASTE_"))throw new Error("Set API_URL in assets/js/config.js first.");const ctrl=new AbortController();const tm=setTimeout(()=>ctrl.abort(),C.REQUEST_TIMEOUT||25000);try{let r;if(post){const body={...params,action,token:params.token||token()};r=await fetch(C.API_URL,{method:"POST",redirect:"follow",signal:ctrl.signal,headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)})}else{const u=new URL(C.API_URL);u.searchParams.set("action",action);Object.entries(params).forEach(([k,v])=>{if(v!==""&&v!=null)u.searchParams.set(k,String(v))});if(token())u.searchParams.set("token",token());r=await fetch(u.href,{cache:"no-store",redirect:"follow",signal:ctrl.signal})}if(!r.ok)throw new Error("HTTP "+r.status);const data=await r.json();if(!data||data.success!==true)throw new Error(data?.message||"Request failed.");return data}finally{clearTimeout(tm)}}
-function slugify(v){return String(v||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim().replace(/&/g," and ").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").replace(/-{2,}/g,"-").slice(0,80)}
-function publicURL(s){return C.PUBLIC_ORIGIN.replace(/\/+$/,"/")+encodeURIComponent(s)+"/"}
-function slugStatus(type,msg){const e=$("slugStatus");e.className="slug-status "+type;e.textContent=msg}
-function invalidateSlug(){S.slugOK=false;S.checkedSlug="";slugStatus("neutral","Check availability before saving.");$("currentUrlBox").hidden=true}
-function setExistingSlug(s){s=slugify(s);$("customSlug").value=s;if(s){S.slugOK=true;S.checkedSlug=s;slugStatus("available","✓ Current saved URL");showURL(s)}else invalidateSlug()}
-function showURL(s){if(!s)return;const u=publicURL(s);$("currentUrl").href=u;$("currentUrl").textContent=u;$("currentUrlBox").hidden=false}
-async function checkSlug(){const s=slugify($("customSlug").value);$("customSlug").value=s;const bid=$("businessId").value.trim();if(s.length<3){slugStatus("unavailable","Use at least 3 characters.");return false}if(RESERVED.has(s)){slugStatus("unavailable","This URL is reserved by UBnux.");return false}slugStatus("checking","Checking availability...");try{const r=await api("manager-check-slug",{slug:s,businessId:bid});S.slugOK=!!r.available;S.checkedSlug=s;slugStatus(r.available?"available":"unavailable",r.available?"✓ Available — "+publicURL(s):"✕ This custom URL is already taken.");if(r.available)showURL(s);return !!r.available}catch(e){slugStatus("unavailable",e.message);return false}}
-function nav(view){d.querySelectorAll(".view").forEach(x=>x.hidden=true);$("view-"+view).hidden=false;d.querySelectorAll(".nav-btn").forEach(x=>x.classList.toggle("active",x.dataset.view===view));const meta={dashboard:["Dashboard","UBnux marketplace overview"],businesses:["Businesses","Search and manage business listings"],editor:["Business Editor","Create or update a UBnux business"]}[view];$("pageTitle").textContent=meta[0];$("pageSub").textContent=meta[1];if(view==="dashboard")loadDashboard();if(view==="businesses")loadBusinesses();if(view==="editor"&&!$("businessId").value)resetForm()}
-function fillSelect(id,rows,key,label,placeholder){$(id).innerHTML='<option value="">'+placeholder+"</option>"+rows.map(x=>'<option value="'+esc(x[key])+'">'+esc(x[label])+"</option>").join("")}
-function setMaster(r){S.districts=r.districts||[];S.categories=r.categories||[];fillSelect("districtId",S.districts,"DistrictID","DistrictName","Select district");fillSelect("categoryId",S.categories,"CategoryID","CategoryName","Select category");fillSelect("filterDistrict",S.districts,"DistrictID","DistrictName","All districts");fillSelect("filterCategory",S.categories,"CategoryID","CategoryName","All categories")}
-function renderTable(id,rows,compact=false){const h=$(id);if(!rows.length){h.innerHTML='<div class="empty">No businesses found.</div>';return}h.innerHTML='<div class="table-wrap"><table><thead><tr><th>Business</th><th>District</th><th>Category</th><th>Status</th><th>Custom URL</th>'+(compact?"":"<th>Actions</th>")+'</tr></thead><tbody>'+rows.map(b=>{const st=String(b.BusinessStatus||"Active");const slug=String(b.Slug||"");return '<tr><td><strong>'+esc(b.BusinessName)+'</strong><br><small>'+esc(b.BusinessID)+'</small></td><td>'+esc(b.DistrictName||"")+'</td><td>'+esc(b.CategoryName||"")+'</td><td><span class="badge '+esc(st.toLowerCase())+'">'+esc(st)+'</span></td><td>'+(slug?'<a target="_blank" rel="noopener" href="'+esc(publicURL(slug))+'">'+esc(slug)+"</a>":"—")+'</td>'+(compact?"":'<td><button class="mini-btn" data-edit="'+esc(b.BusinessID)+'">Edit</button> <button class="mini-btn" data-del="'+esc(b.BusinessID)+'">Delete</button></td>')+"</tr>"}).join("")+"</tbody></table></div>";if(!compact){h.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editBusiness(b.dataset.edit));h.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteBusiness(b.dataset.del))}}
-async function loadBusinesses(){try{const r=await api("manager-businesses",{search:$("searchBox").value.trim(),districtId:$("filterDistrict").value,categoryId:$("filterCategory").value,limit:500});S.businesses=r.businesses||[];renderTable("businessTable",S.businesses,false)}catch(e){toast(e.message,"error")}}
-async function loadDashboard(){try{const r=await api("manager-businesses",{limit:500,dashboard:1});const rows=r.businesses||[];$("statTotal").textContent=r.total??rows.length;$("statActive").textContent=r.activeCount??0;$("statVerified").textContent=r.verifiedCount??0;$("statUrls").textContent=r.slugCount??0;renderTable("recentTable",rows.slice(0,8),true)}catch(e){toast(e.message,"error")}}
-function val(id){return $(id).value.trim()}function chk(id){return $(id).checked}function setVal(id,v){$(id).value=v??""}
-function resetForm(){$("businessForm").reset();setVal("businessId","");setVal("businessStatus","Active");$("formTitle").textContent="Add Business";$("saveBtn").textContent="Save Business";setExistingSlug("")}
-function collect(){return{BusinessID:val("businessId"),DistrictID:val("districtId"),CategoryID:val("categoryId"),BusinessName:val("businessName"),Slug:slugify(val("customSlug")),OwnerName:val("ownerName"),Mobile:val("mobile"),WhatsApp:val("whatsapp"),Email:val("email"),Address:val("address"),Area:val("area"),Pincode:val("pincode"),ShortDescription:val("shortDescription"),LongDescription:val("longDescription"),Description:val("shortDescription"),LogoURL:val("logoUrl"),CoverURL:val("coverUrl"),OpeningTime:val("openingTime"),ClosingTime:val("closingTime"),WorkingDays:val("workingDays"),BusinessStatus:val("businessStatus")||"Active",EstablishedYear:val("establishedYear"),Verified:chk("verified"),Featured:chk("featured"),WebsiteURL:val("websiteUrl"),InstagramURL:val("instagramUrl"),FacebookURL:val("facebookUrl"),SEO_Title:val("seoTitle"),SEO_Description:val("seoDescription")}}
-function populate(b){Object.entries({businessId:b.BusinessID,districtId:b.DistrictID,categoryId:b.CategoryID,businessName:b.BusinessName,ownerName:b.OwnerName,mobile:b.Mobile,whatsapp:b.WhatsApp,email:b.Email,address:b.Address,area:b.Area,pincode:b.Pincode,shortDescription:b.ShortDescription||b.Description,longDescription:b.LongDescription,logoUrl:b.LogoURL,coverUrl:b.CoverURL,openingTime:b.OpeningTime,closingTime:b.ClosingTime,workingDays:b.WorkingDays,businessStatus:b.BusinessStatus||"Active",establishedYear:b.EstablishedYear,websiteUrl:b.WebsiteURL,instagramUrl:b.InstagramURL,facebookUrl:b.FacebookURL,seoTitle:b.SEO_Title,seoDescription:b.SEO_Description}).forEach(([k,v])=>setVal(k,v));$("verified").checked=[true,"true","yes",1,"1"].includes(typeof b.Verified==="string"?b.Verified.toLowerCase():b.Verified);$("featured").checked=[true,"true","yes",1,"1"].includes(typeof b.Featured==="string"?b.Featured.toLowerCase():b.Featured);setExistingSlug(b.Slug);$("formTitle").textContent="Edit Business";$("saveBtn").textContent="Update Business"}
-async function editBusiness(id){try{const r=await api("manager-business",{businessId:id});populate(r.business||{});nav("editor")}catch(e){toast(e.message,"error")}}
-async function deleteBusiness(id){if(!confirm("Delete this business?"))return;try{await api("manager-delete-business",{businessId:id},true);toast("Business removed.","success");loadBusinesses();loadDashboard()}catch(e){toast(e.message,"error")}}
-async function saveBusiness(ev){ev.preventDefault();const b=collect();if(!b.BusinessName||!b.DistrictID||!b.CategoryID){toast("Business name, district and category are required.","error");return}if(!b.Slug){$("customSlug").value=slugify(b.BusinessName)}const ok=await checkSlug();if(!ok){toast("Choose an available custom URL.","error");return}b.Slug=val("customSlug");try{await api("manager-save-business",{business:b},true);toast(b.BusinessID?"Business updated.":"Business created.","success");resetForm();nav("businesses")}catch(e){toast(e.message,"error")}}
-async function bootstrap(){try{const r=await api("manager-bootstrap");setMaster(r);const u=r.user||session()?.user||{};$("adminName").textContent=u.Name||"Admin";$("adminRole").textContent=u.Role||"Administrator";$("loginView").hidden=true;$("appView").hidden=false;nav("dashboard")}catch(e){clearSession();$("loginView").hidden=false;$("appView").hidden=true}}
-async function login(ev){ev.preventDefault();$("loginMessage").textContent="Signing in...";try{const r=await api("manager-login",{userId:val("loginUserId"),password:$("loginPassword").value},true);setSession({token:r.token,user:r.user,expiresAt:r.expiresAt});$("loginMessage").textContent="";bootstrap()}catch(e){$("loginMessage").textContent=e.message}}
-function bind(){d.querySelectorAll("[data-view]").forEach(x=>x.onclick=()=>nav(x.dataset.view));$("loginForm").onsubmit=login;$("logoutBtn").onclick=async()=>{try{await api("manager-logout",{},true)}catch(_){}clearSession();location.reload()};$("businessForm").onsubmit=saveBusiness;$("cancelBtn").onclick=()=>nav("businesses");$("generateSlugBtn").onclick=()=>{$("customSlug").value=slugify($("businessName").value);invalidateSlug()};$("checkSlugBtn").onclick=checkSlug;$("customSlug").oninput=()=>{$("customSlug").value=slugify($("customSlug").value);invalidateSlug()};$("businessName").onblur=()=>{if(!val("customSlug")){$("customSlug").value=slugify(val("businessName"));invalidateSlug()}};$("copyUrlBtn").onclick=async()=>{await navigator.clipboard.writeText(publicURL(val("customSlug")));toast("Custom URL copied.","success")};$("openUrlBtn").onclick=()=>window.open(publicURL(val("customSlug")),"_blank","noopener");let tm;$("searchBox").oninput=()=>{clearTimeout(tm);tm=setTimeout(loadBusinesses,300)};$("filterDistrict").onchange=loadBusinesses;$("filterCategory").onchange=loadBusinesses;$("urlPrefix").textContent=C.PUBLIC_ORIGIN.replace(/\/+$/,"/")}
-d.addEventListener("DOMContentLoaded",()=>{bind();session()?bootstrap():($("loginView").hidden=false)});
-})(window,document);
+/* =========================================================
+   UBnux Business Manager
+   File: assets/js/app.js
+   Version: 3.0.0
+
+   Responsibilities:
+   - Application bootstrap
+   - Login success handling
+   - Session restore
+   - Dashboard initialization
+   - Navigation
+   - Business loading
+   - Logout
+   - View management
+   ========================================================= */
+
+(function (window, document) {
+
+  "use strict";
+
+
+  /* =======================================================
+     DEPENDENCIES
+  ======================================================= */
+
+  const Config =
+    window.UBnuxManagerConfig;
+
+  const Auth =
+    window.UBnuxManagerAuth;
+
+  const API =
+    window.UBnuxManagerAPI;
+
+  const Businesses =
+    window.UBnuxBusinesses;
+
+  const Dashboard =
+    window.UBnuxDashboard;
+
+
+  if (!Config) {
+
+    console.error(
+      "UBnux Manager: Config is missing."
+    );
+
+    return;
+
+  }
+
+
+  if (!Auth) {
+
+    console.error(
+      "UBnux Manager: Auth module is missing."
+    );
+
+    return;
+
+  }
+
+
+  if (!API) {
+
+    console.error(
+      "UBnux Manager: API module is missing."
+    );
+
+    return;
+
+  }
+
+
+  /* =======================================================
+     STATE
+  ======================================================= */
+
+  const state = {
+
+    initialized:
+      false,
+
+    booting:
+      false,
+
+    loggedIn:
+      false,
+
+    currentView:
+      "dashboard",
+
+    loadingBusinesses:
+      false
+
+  };
+
+
+  /* =======================================================
+     DOM
+  ======================================================= */
+
+  function el(
+    id
+  ) {
+
+    return document.getElementById(
+      id
+    );
+
+  }
+
+
+  /* =======================================================
+     LOG
+  ======================================================= */
+
+  function log(
+    ...args
+  ) {
+
+    console.log(
+      "[UBnux Manager]",
+      ...args
+    );
+
+  }
+
+
+  /* =======================================================
+     TOAST
+  ======================================================= */
+
+  function toast(
+    message,
+    type
+  ) {
+
+    const host =
+      el(
+        "toastHost"
+      );
+
+
+    if (!host) {
+
+      return;
+
+    }
+
+
+    const item =
+      document.createElement(
+        "div"
+      );
+
+
+    item.className =
+      "toast " +
+      (
+        type ||
+        "info"
+      );
+
+
+    item.textContent =
+      String(
+        message || ""
+      );
+
+
+    host.appendChild(
+      item
+    );
+
+
+    requestAnimationFrame(
+      function () {
+
+        item.classList.add(
+          "show"
+        );
+
+      }
+    );
+
+
+    setTimeout(
+      function () {
+
+        item.classList.remove(
+          "show"
+        );
+
+
+        setTimeout(
+          function () {
+
+            item.remove();
+
+          },
+          250
+        );
+
+      },
+      3000
+    );
+
+  }
+
+
+  /* =======================================================
+     SHOW LOGIN
+  ======================================================= */
+
+  function showLogin() {
+
+    const loginView =
+      el(
+        "loginView"
+      );
+
+    const appView =
+      el(
+        "appView"
+      );
+
+
+    if (loginView) {
+
+      loginView.hidden =
+        false;
+
+      loginView.style.display =
+        "";
+
+    }
+
+
+    if (appView) {
+
+      appView.hidden =
+        true;
+
+      appView.style.display =
+        "none";
+
+    }
+
+
+    state.loggedIn =
+      false;
+
+  }
+
+
+  /* =======================================================
+     SHOW APP
+  ======================================================= */
+
+  function showApp() {
+
+    const loginView =
+      el(
+        "loginView"
+      );
+
+    const appView =
+      el(
+        "appView"
+      );
+
+
+    if (loginView) {
+
+      loginView.hidden =
+        true;
+
+      loginView.style.display =
+        "none";
+
+    }
+
+
+    if (appView) {
+
+      appView.hidden =
+        false;
+
+      appView.removeAttribute(
+        "hidden"
+      );
+
+      appView.style.display =
+        "";
+
+    }
+
+
+    state.loggedIn =
+      true;
+
+
+    log(
+      "Application view displayed."
+    );
+
+  }
+
+
+  /* =======================================================
+     ADMIN INFO
+  ======================================================= */
+
+  function updateAdminInfo(
+    user
+  ) {
+
+    user =
+      user || {};
+
+
+    const name =
+      String(
+        user.UserID ||
+        user.userId ||
+        user.Name ||
+        user.name ||
+        "Admin"
+      ).trim();
+
+
+    const role =
+      String(
+        user.Role ||
+        user.role ||
+        "Administrator"
+      ).trim();
+
+
+    const nameElement =
+      el(
+        "adminName"
+      );
+
+
+    const roleElement =
+      el(
+        "adminRole"
+      );
+
+
+    if (nameElement) {
+
+      nameElement.textContent =
+        name;
+
+    }
+
+
+    if (roleElement) {
+
+      roleElement.textContent =
+        role;
+
+    }
+
+  }
+
+
+  /* =======================================================
+     PAGE TITLE
+  ======================================================= */
+
+  const VIEW_META = {
+
+    dashboard: {
+
+      title:
+        "Dashboard",
+
+      subtitle:
+        "UBnux marketplace overview"
+
+    },
+
+
+    businesses: {
+
+      title:
+        "Businesses",
+
+      subtitle:
+        "Search, edit and manage listings."
+
+    },
+
+
+    editor: {
+
+      title:
+        "Add Business",
+
+      subtitle:
+        "Create or update a UBnux business listing."
+
+    }
+
+  };
+
+
+  function updatePageHeader(
+    view
+  ) {
+
+    const meta =
+      VIEW_META[
+        view
+      ] ||
+      VIEW_META.dashboard;
+
+
+    const title =
+      el(
+        "pageTitle"
+      );
+
+
+    const sub =
+      el(
+        "pageSub"
+      );
+
+
+    if (title) {
+
+      title.textContent =
+        meta.title;
+
+    }
+
+
+    if (sub) {
+
+      sub.textContent =
+        meta.subtitle;
+
+    }
+
+  }
+
+
+  /* =======================================================
+     SHOW VIEW
+  ======================================================= */
+
+  function showView(
+    view
+  ) {
+
+    view =
+      String(
+        view || "dashboard"
+      ).trim();
+
+
+    const allowedViews = [
+
+      "dashboard",
+      "businesses",
+      "editor"
+
+    ];
+
+
+    if (
+      !allowedViews.includes(
+        view
+      )
+    ) {
+
+      view =
+        "dashboard";
+
+    }
+
+
+    state.currentView =
+      view;
+
+
+    /*
+     * Hide all views.
+     */
+
+    document
+      .querySelectorAll(
+        ".view"
+      )
+      .forEach(
+        function (
+          section
+        ) {
+
+          section.hidden =
+            true;
+
+          section.style.display =
+            "none";
+
+        }
+      );
+
+
+    /*
+     * Show selected view.
+     */
+
+    const selected =
+      el(
+        "view-" +
+        view
+      );
+
+
+    if (selected) {
+
+      selected.hidden =
+        false;
+
+      selected.removeAttribute(
+        "hidden"
+      );
+
+      selected.style.display =
+        "";
+
+    }
+
+
+    /*
+     * Navigation state.
+     */
+
+    document
+      .querySelectorAll(
+        ".nav-btn"
+      )
+      .forEach(
+        function (
+          button
+        ) {
+
+          const buttonView =
+            button.getAttribute(
+              "data-view"
+            );
+
+
+          button.classList.toggle(
+            "active",
+            buttonView ===
+            view
+          );
+
+        }
+      );
+
+
+    updatePageHeader(
+      view
+    );
+
+
+    /*
+     * View-specific actions.
+     */
+
+    if (
+      view ===
+      "businesses"
+    ) {
+
+      if (
+        Businesses &&
+        typeof Businesses.loadBusinesses ===
+        "function"
+      ) {
+
+        Businesses.loadBusinesses();
+
+      }
+
+    }
+
+
+    if (
+      view ===
+      "dashboard"
+    ) {
+
+      if (
+        Dashboard &&
+        typeof Dashboard.refresh ===
+        "function"
+      ) {
+
+        Dashboard.refresh();
+
+      }
+
+    }
+
+
+    if (
+      view ===
+      "editor"
+    ) {
+
+      updatePageHeader(
+        "editor"
+      );
+
+    }
+
+
+    log(
+      "View:",
+      view
+    );
+
+  }
+
+
+  /* =======================================================
+     LOAD BUSINESSES
+  ======================================================= */
+
+  async function loadBusinesses() {
+
+    if (!Businesses) {
+
+      console.error(
+        "UBnux Businesses module missing."
+      );
+
+      return null;
+
+    }
+
+
+    if (
+      state.loadingBusinesses
+    ) {
+
+      return null;
+
+    }
+
+
+    state.loadingBusinesses =
+      true;
+
+
+    try {
+
+      const response =
+        await Businesses.loadBusinesses();
+
+
+      if (
+        !response ||
+        response.success !==
+        true
+      ) {
+
+        /*
+         * Don't immediately logout here.
+         * API errors should remain visible.
+         */
+
+        log(
+          "Business loading failed:",
+          response
+        );
+
+
+        return response;
+
+      }
+
+
+      /*
+       * Dashboard gets updated automatically
+       * through ubnux:businesses-loaded event.
+       */
+
+      if (
+        Dashboard &&
+        typeof Dashboard.refresh ===
+        "function"
+      ) {
+
+        Dashboard.refresh();
+
+      }
+
+
+      return response;
+
+
+    } catch (error) {
+
+      console.error(
+        "Business loading error:",
+        error
+      );
+
+
+      toast(
+        error.message ||
+        "Unable to load businesses.",
+        "error"
+      );
+
+
+      return {
+
+        success:
+          false,
+
+        message:
+          error.message
+
+      };
+
+
+    } finally {
+
+      state.loadingBusinesses =
+        false;
+
+    }
+
+  }
+
+
+  /* =======================================================
+     AFTER LOGIN
+  ======================================================= */
+
+  async function handleLoginSuccess(
+    result
+  ) {
+
+    log(
+      "Login successful:",
+      result
+    );
+
+
+    /*
+     * Determine logged-in user.
+     */
+
+    let user =
+      null;
+
+
+    if (
+      result &&
+      result.user
+    ) {
+
+      user =
+        result.user;
+
+    }
+
+
+    if (!user) {
+
+      user =
+        Auth.getUser();
+
+    }
+
+
+    /*
+     * IMPORTANT:
+     * Show app immediately.
+     */
+
+    showApp();
+
+
+    updateAdminInfo(
+      user
+    );
+
+
+    /*
+     * Start dashboard.
+     */
+
+    showView(
+      "dashboard"
+    );
+
+
+    toast(
+      "Login successful.",
+      "success"
+    );
+
+
+    /*
+     * Load business data.
+     */
+
+    await loadBusinesses();
+
+
+    /*
+     * Mark initialized.
+     */
+
+    state.initialized =
+      true;
+
+
+    log(
+      "Manager initialized after login."
+    );
+
+  }
+
+
+  /* =======================================================
+     LOGOUT
+  ======================================================= */
+
+  async function logout() {
+
+    try {
+
+      await Auth.logout();
+
+    } catch (error) {
+
+      console.warn(
+        "Logout error:",
+        error
+      );
+
+    }
+
+
+    state.initialized =
+      false;
+
+    state.loggedIn =
+      false;
+
+
+    showLogin();
+
+
+    /*
+     * Reset editor if available.
+     */
+
+    if (
+      Businesses &&
+      typeof Businesses.resetForm ===
+      "function"
+    ) {
+
+      Businesses.resetForm();
+
+    }
+
+
+    toast(
+      "Logged out.",
+      "success"
+    );
+
+  }
+
+
+  /* =======================================================
+     NAVIGATION BIND
+  ======================================================= */
+
+  function bindNavigation() {
+
+    /*
+     * Sidebar buttons
+     */
+
+    document
+      .querySelectorAll(
+        "[data-view]"
+      )
+      .forEach(
+        function (
+          element
+        ) {
+
+          if (
+            element.dataset.ubnuxViewBound ===
+            "true"
+          ) {
+
+            return;
+
+          }
+
+
+          element.dataset.ubnuxViewBound =
+            "true";
+
+
+          element.addEventListener(
+            "click",
+            function (
+              event
+            ) {
+
+              /*
+               * Only navigation elements.
+               */
+
+              const view =
+                element.getAttribute(
+                  "data-view"
+                );
+
+
+              if (!view) {
+
+                return;
+
+              }
+
+
+              event.preventDefault();
+
+
+              /*
+               * Add Business button
+               * should reset form.
+               */
+
+              if (
+                view ===
+                "editor"
+              ) {
+
+                if (
+                  Businesses &&
+                  typeof Businesses.resetForm ===
+                  "function"
+                ) {
+
+                  Businesses.resetForm();
+
+                }
+
+              }
+
+
+              showView(
+                view
+              );
+
+            }
+          );
+
+        }
+      );
+
+  }
+
+
+  /* =======================================================
+     LOGOUT BIND
+  ======================================================= */
+
+  function bindLogout() {
+
+    const button =
+      el(
+        "logoutBtn"
+      );
+
+
+    if (!button) {
+
+      return;
+
+    }
+
+
+    if (
+      button.dataset.ubnuxLogoutBound ===
+      "true"
+    ) {
+
+      return;
+
+    }
+
+
+    button.dataset.ubnuxLogoutBound =
+      "true";
+
+
+    button.addEventListener(
+      "click",
+      function () {
+
+        logout();
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     AUTH EVENT
+  ======================================================= */
+
+  function bindAuthEvents() {
+
+    window.addEventListener(
+      "ubnux:auth",
+      function (
+        event
+      ) {
+
+        const detail =
+          event &&
+          event.detail
+            ? event.detail
+            : {};
+
+
+        if (
+          detail.type ===
+          "login"
+        ) {
+
+          handleLoginSuccess(
+            detail.data ||
+            {}
+          );
+
+        }
+
+
+        if (
+          detail.type ===
+          "logout"
+        ) {
+
+          showLogin();
+
+        }
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     RESTORE SESSION
+  ======================================================= */
+
+  async function restoreSession() {
+
+    const token =
+      Auth.getToken();
+
+
+    if (!token) {
+
+      showLogin();
+
+      return false;
+
+    }
+
+
+    log(
+      "Existing session found. Verifying..."
+    );
+
+
+    /*
+     * Temporarily show login.
+     * We switch to app only after verification.
+     */
+
+    showLogin();
+
+
+    try {
+
+      const result =
+        await Auth.verifySession();
+
+
+      if (
+        !result ||
+        result.success !==
+        true
+      ) {
+
+        log(
+          "Session invalid."
+        );
+
+
+        showLogin();
+
+        return false;
+
+      }
+
+
+      const user =
+        Auth.getUser();
+
+
+      showApp();
+
+
+      updateAdminInfo(
+        user
+      );
+
+
+      state.loggedIn =
+        true;
+
+
+      showView(
+        "dashboard"
+      );
+
+
+      await loadBusinesses();
+
+
+      state.initialized =
+        true;
+
+
+      log(
+        "Session restored successfully."
+      );
+
+
+      return true;
+
+
+    } catch (error) {
+
+      console.error(
+        "Session restore failed:",
+        error
+      );
+
+
+      Auth.clearSession();
+
+
+      showLogin();
+
+
+      return false;
+
+    }
+
+  }
+
+
+  /* =======================================================
+     INITIALIZE
+  ======================================================= */
+
+  async function initialize() {
+
+    if (
+      state.booting
+    ) {
+
+      return;
+
+    }
+
+
+    state.booting =
+      true;
+
+
+    log(
+      "Starting Business Manager..."
+    );
+
+
+    /*
+     * Make sure initial UI state is correct.
+     */
+
+    showLogin();
+
+
+    bindNavigation();
+
+    bindLogout();
+
+    bindAuthEvents();
+
+
+    /*
+     * Auth.js already binds the login form.
+     *
+     * IMPORTANT:
+     * Register our success callback before
+     * user can submit the form.
+     */
+
+    Auth.onLoginSuccess =
+      handleLoginSuccess;
+
+
+    /*
+     * Restore previous session.
+     */
+
+    await restoreSession();
+
+
+    state.booting =
+      false;
+
+
+    log(
+      "Business Manager ready."
+    );
+
+  }
+
+
+  /* =======================================================
+     PUBLIC API
+  ======================================================= */
+
+  window.UBnuxManagerApp = {
+
+    version:
+      "3.0.0",
+
+    state:
+      state,
+
+    initialize:
+      initialize,
+
+    showLogin:
+      showLogin,
+
+    showApp:
+      showApp,
+
+    showView:
+      showView,
+
+    loadBusinesses:
+      loadBusinesses,
+
+    logout:
+      logout,
+
+    updateAdminInfo:
+      updateAdminInfo
+
+  };
+
+
+  /*
+   * Backward-compatible aliases.
+   */
+
+  window.UBnuxBusinessManager =
+    window.UBnuxManagerApp;
+
+
+  /* =======================================================
+     START
+  ======================================================= */
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      initialize
+    );
+
+  } else {
+
+    initialize();
+
+  }
+
+
+  console.log(
+    "UBnux Manager App v3.0.0 initialized."
+  );
+
+
+})(window, document);
