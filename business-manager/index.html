@@ -1,140 +1,1405 @@
 <!DOCTYPE html>
 <html lang="en-IN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>UBnux Business Manager</title>
-  <meta name="robots" content="noindex,nofollow">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/style.css">
-</head>
-<body>
-<div id="toastHost" class="toast-host"></div>
 
-<section id="loginView" class="auth-shell">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+
+  <title>UBnux Business Manager</title>
+
+  <meta
+    name="robots"
+    content="noindex,nofollow"
+  >
+
+  <meta
+    name="theme-color"
+    content="#111111"
+  >
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  >
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./assets/css/style.css"
+  >
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     GLOBAL TOAST
+===================================================== -->
+
+<div
+  id="toastHost"
+  class="toast-host"
+  aria-live="polite"
+  aria-atomic="true"
+></div>
+
+
+<!-- =====================================================
+     LOGIN VIEW
+===================================================== -->
+
+<section
+  id="loginView"
+  class="auth-shell"
+>
+
   <div class="auth-card">
-    <div class="brand"><div class="brand-mark">U</div><div><b>UBnux</b><small>Business Manager</small></div></div>
-    <h1>Admin Sign In</h1>
-    <p class="muted">Manage businesses and custom UBnux URLs.</p>
-    <form id="loginForm" class="stack">
-      <label><span>User ID</span><input id="loginUserId" required autocomplete="username"></label>
-      <label><span>Password</span><input id="loginPassword" type="password" required autocomplete="current-password"></label>
-      <button id="loginBtn" class="btn primary" type="submit">Sign In</button>
-      <div id="loginMessage" class="message"></div>
+
+
+    <!-- BRAND -->
+
+    <div class="brand">
+
+      <div class="brand-mark">
+        U
+      </div>
+
+      <div>
+
+        <b>
+          UBnux
+        </b>
+
+        <small>
+          Business Manager
+        </small>
+
+      </div>
+
+    </div>
+
+
+    <!-- LOGIN HEADING -->
+
+    <h1>
+      Admin Sign In
+    </h1>
+
+
+    <p class="muted">
+      Manage businesses and custom UBnux URLs.
+    </p>
+
+
+    <!-- LOGIN FORM -->
+
+    <form
+      id="loginForm"
+      class="stack"
+      data-login-form
+      autocomplete="on"
+    >
+
+
+      <!-- USER ID -->
+
+      <label>
+
+        <span>
+          User ID
+        </span>
+
+        <input
+          id="loginUserId"
+          name="userId"
+          type="text"
+          required
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          placeholder="Enter User ID"
+        >
+
+      </label>
+
+
+      <!-- PASSWORD -->
+
+      <label>
+
+        <span>
+          Password
+        </span>
+
+        <input
+          id="loginPassword"
+          name="password"
+          type="password"
+          required
+          autocomplete="current-password"
+          placeholder="Enter password"
+        >
+
+      </label>
+
+
+      <!-- LOGIN BUTTON -->
+
+      <button
+        id="loginBtn"
+        class="btn primary"
+        type="submit"
+      >
+        Sign In
+      </button>
+
+
+      <!-- LOGIN MESSAGE -->
+
+      <div
+        id="loginMessage"
+        class="message"
+        data-login-message
+        role="status"
+        aria-live="polite"
+      ></div>
+
+
     </form>
+
+
   </div>
+
 </section>
 
-<div id="appView" class="app" hidden>
+
+
+<!-- =====================================================
+     APPLICATION
+===================================================== -->
+
+<div
+  id="appView"
+  class="app"
+  hidden
+>
+
+
+  <!-- ===================================================
+       SIDEBAR
+  ==================================================== -->
+
   <aside class="sidebar">
-    <div class="brand side-brand"><div class="brand-mark">U</div><div><b>UBnux</b><small>Business Manager</small></div></div>
-    <nav>
-      <button class="nav-btn active" data-view="dashboard">Dashboard</button>
-      <button class="nav-btn" data-view="businesses">Businesses</button>
-      <button class="nav-btn" data-view="editor">Add Business</button>
-    </nav>
-    <div class="side-bottom">
-      <div><strong id="adminName">Admin</strong><small id="adminRole">Administrator</small></div>
-      <button id="logoutBtn" class="btn ghost">Logout</button>
+
+
+    <!-- SIDEBAR BRAND -->
+
+    <div class="brand side-brand">
+
+      <div class="brand-mark">
+        U
+      </div>
+
+      <div>
+
+        <b>
+          UBnux
+        </b>
+
+        <small>
+          Business Manager
+        </small>
+
+      </div>
+
     </div>
+
+
+    <!-- NAVIGATION -->
+
+    <nav
+      aria-label="Business Manager navigation"
+    >
+
+      <button
+        type="button"
+        class="nav-btn active"
+        data-view="dashboard"
+      >
+        Dashboard
+      </button>
+
+
+      <button
+        type="button"
+        class="nav-btn"
+        data-view="businesses"
+      >
+        Businesses
+      </button>
+
+
+      <button
+        type="button"
+        class="nav-btn"
+        data-view="editor"
+      >
+        Add Business
+      </button>
+
+    </nav>
+
+
+    <!-- SIDEBAR BOTTOM -->
+
+    <div class="side-bottom">
+
+
+      <div>
+
+        <strong
+          id="adminName"
+        >
+          Admin
+        </strong>
+
+        <small
+          id="adminRole"
+        >
+          Administrator
+        </small>
+
+      </div>
+
+
+      <button
+        id="logoutBtn"
+        class="btn ghost"
+        type="button"
+      >
+        Logout
+      </button>
+
+
+    </div>
+
+
   </aside>
 
+
+
+  <!-- ===================================================
+       MAIN
+  ==================================================== -->
+
   <main class="main">
+
+
+    <!-- TOPBAR -->
+
     <header class="topbar">
-      <div><h2 id="pageTitle">Dashboard</h2><p id="pageSub">UBnux marketplace overview</p></div>
-      <button class="btn primary" data-view="editor">+ Add Business</button>
+
+
+      <div>
+
+        <h2
+          id="pageTitle"
+        >
+          Dashboard
+        </h2>
+
+        <p
+          id="pageSub"
+        >
+          UBnux marketplace overview
+        </p>
+
+      </div>
+
+
+      <button
+        class="btn primary"
+        type="button"
+        data-view="editor"
+      >
+        + Add Business
+      </button>
+
+
     </header>
 
-    <section id="view-dashboard" class="view">
+
+
+    <!-- =================================================
+         DASHBOARD
+    ================================================== -->
+
+    <section
+      id="view-dashboard"
+      class="view"
+      data-view-panel="dashboard"
+    >
+
+
+      <!-- STATS -->
+
       <div class="stats">
-        <article><span>Total Businesses</span><strong id="statTotal">0</strong></article>
-        <article><span>Active</span><strong id="statActive">0</strong></article>
-        <article><span>Verified</span><strong id="statVerified">0</strong></article>
-        <article><span>Custom URLs</span><strong id="statUrls">0</strong></article>
-      </div>
-      <div class="panel"><div class="panel-head"><div><h3>Recent Businesses</h3><p>Latest UBnux listings.</p></div></div><div id="recentTable"></div></div>
-    </section>
 
-    <section id="view-businesses" class="view" hidden>
+
+        <article>
+
+          <span>
+            Total Businesses
+          </span>
+
+          <strong
+            id="statTotal"
+          >
+            0
+          </strong>
+
+        </article>
+
+
+        <article>
+
+          <span>
+            Active
+          </span>
+
+          <strong
+            id="statActive"
+          >
+            0
+          </strong>
+
+        </article>
+
+
+        <article>
+
+          <span>
+            Verified
+          </span>
+
+          <strong
+            id="statVerified"
+          >
+            0
+          </strong>
+
+        </article>
+
+
+        <article>
+
+          <span>
+            Custom URLs
+          </span>
+
+          <strong
+            id="statUrls"
+          >
+            0
+          </strong>
+
+        </article>
+
+
+      </div>
+
+
+
+      <!-- RECENT BUSINESSES -->
+
       <div class="panel">
-        <div class="panel-head wrap"><div><h3>Businesses</h3><p>Search, edit and manage listings.</p></div>
-          <div class="filters"><input id="searchBox" placeholder="Search business, ID, mobile..."><select id="filterDistrict"><option value="">All districts</option></select><select id="filterCategory"><option value="">All categories</option></select></div>
-        </div>
-        <div id="businessTable"></div>
-      </div>
-    </section>
 
-    <section id="view-editor" class="view" hidden>
-      <form id="businessForm">
-        <input id="businessId" type="hidden">
-        <div class="editor-grid">
+
+        <div class="panel-head">
+
+
           <div>
-            <div class="panel"><div class="panel-head"><div><h3 id="formTitle">Add Business</h3><p>Core listing information.</p></div></div>
-              <div class="form-grid">
-                <label class="wide"><span>Business Name *</span><input id="businessName" required></label>
-                <label><span>District *</span><select id="districtId" required></select></label>
-                <label><span>Category *</span><select id="categoryId" required></select></label>
-                <label><span>Owner Name</span><input id="ownerName"></label>
-                <label><span>Mobile</span><input id="mobile"></label>
-                <label><span>WhatsApp</span><input id="whatsapp"></label>
-                <label><span>Email</span><input id="email" type="email"></label>
-                <label class="wide"><span>Address</span><input id="address"></label>
-                <label><span>Area</span><input id="area"></label>
-                <label><span>Pincode</span><input id="pincode"></label>
-                <label class="wide"><span>Short Description</span><textarea id="shortDescription" rows="3"></textarea></label>
-                <label class="wide"><span>Long Description</span><textarea id="longDescription" rows="6"></textarea></label>
-              </div>
-            </div>
 
-            <div class="panel"><div class="panel-head"><div><h3>Media & Business Info</h3><p>Optional listing details.</p></div></div>
-              <div class="form-grid">
-                <label class="wide"><span>Logo URL</span><input id="logoUrl"></label>
-                <label class="wide"><span>Cover URL</span><input id="coverUrl"></label>
-                <label><span>Opening Time</span><input id="openingTime" type="time"></label>
-                <label><span>Closing Time</span><input id="closingTime" type="time"></label>
-                <label class="wide"><span>Working Days</span><input id="workingDays" placeholder="Mon,Tue,Wed,Thu,Fri,Sat"></label>
-                <label><span>Status</span><select id="businessStatus"><option>Active</option><option>Inactive</option><option>Pending</option></select></label>
-                <label><span>Established Year</span><input id="establishedYear"></label>
-                <label class="check"><input id="verified" type="checkbox"> Verified</label>
-                <label class="check"><input id="featured" type="checkbox"> Featured</label>
-                <label class="wide"><span>Website URL</span><input id="websiteUrl"></label>
-                <label><span>Instagram URL</span><input id="instagramUrl"></label>
-                <label><span>Facebook URL</span><input id="facebookUrl"></label>
-                <label class="wide"><span>SEO Title</span><input id="seoTitle"></label>
-                <label class="wide"><span>SEO Description</span><textarea id="seoDescription" rows="3"></textarea></label>
-              </div>
-            </div>
+            <h3>
+              Recent Businesses
+            </h3>
+
+            <p>
+              Latest UBnux listings.
+            </p>
+
           </div>
 
-          <aside>
-            <div class="panel sticky">
-              <div class="panel-head"><div><h3>Custom Business URL</h3><p>Generate a globally unique URL.</p></div></div>
-              <div class="url-box">
-                <small id="urlPrefix">https://ubnux.com/</small>
-                <input id="customSlug" class="slug" placeholder="business-name" autocomplete="off">
-              </div>
-              <div id="slugStatus" class="slug-status neutral">Generate or enter a slug.</div>
-              <div class="row-actions"><button id="generateSlugBtn" type="button" class="btn light">Generate</button><button id="checkSlugBtn" type="button" class="btn light">Check Availability</button></div>
-              <div id="currentUrlBox" class="current-url" hidden><small>Public URL</small><a id="currentUrl" target="_blank" rel="noopener"></a><div class="row-actions zero"><button id="copyUrlBtn" class="btn light" type="button">Copy</button><button id="openUrlBtn" class="btn light" type="button">Open</button></div></div>
-              <hr>
-              <button id="saveBtn" class="btn primary full" type="submit">Save Business</button>
-              <button id="cancelBtn" class="btn ghost full" type="button">Cancel</button>
-            </div>
-          </aside>
+
         </div>
-      </form>
+
+
+        <div
+          id="recentTable"
+        ></div>
+
+
+      </div>
+
+
     </section>
+
+
+
+    <!-- =================================================
+         BUSINESSES
+    ================================================== -->
+
+    <section
+      id="view-businesses"
+      class="view"
+      data-view-panel="businesses"
+      hidden
+    >
+
+
+      <div class="panel">
+
+
+        <div
+          class="panel-head wrap"
+        >
+
+
+          <div>
+
+            <h3>
+              Businesses
+            </h3>
+
+            <p>
+              Search, edit and manage listings.
+            </p>
+
+          </div>
+
+
+          <!-- FILTERS -->
+
+          <div class="filters">
+
+
+            <input
+              id="searchBox"
+              type="search"
+              placeholder="Search business, ID, mobile..."
+              autocomplete="off"
+            >
+
+
+            <select
+              id="filterDistrict"
+            >
+
+              <option value="">
+                All districts
+              </option>
+
+            </select>
+
+
+            <select
+              id="filterCategory"
+            >
+
+              <option value="">
+                All categories
+              </option>
+
+            </select>
+
+
+          </div>
+
+
+        </div>
+
+
+        <div
+          id="businessTable"
+        ></div>
+
+
+      </div>
+
+
+    </section>
+
+
+
+    <!-- =================================================
+         BUSINESS EDITOR
+    ================================================== -->
+
+    <section
+      id="view-editor"
+      class="view"
+      data-view-panel="editor"
+      hidden
+    >
+
+
+      <form
+        id="businessForm"
+        autocomplete="off"
+      >
+
+
+        <!-- BUSINESS ID -->
+
+        <input
+          id="businessId"
+          name="BusinessID"
+          type="hidden"
+        >
+
+
+        <div class="editor-grid">
+
+
+          <!-- =================================================
+               LEFT COLUMN
+          ================================================== -->
+
+          <div>
+
+
+            <!-- CORE INFORMATION -->
+
+            <div class="panel">
+
+
+              <div class="panel-head">
+
+
+                <div>
+
+                  <h3
+                    id="formTitle"
+                  >
+                    Add Business
+                  </h3>
+
+                  <p>
+                    Core listing information.
+                  </p>
+
+                </div>
+
+
+              </div>
+
+
+              <div class="form-grid">
+
+
+                <!-- BUSINESS NAME -->
+
+                <label class="wide">
+
+                  <span>
+                    Business Name *
+                  </span>
+
+                  <input
+                    id="businessName"
+                    name="BusinessName"
+                    type="text"
+                    required
+                  >
+
+                </label>
+
+
+                <!-- DISTRICT -->
+
+                <label>
+
+                  <span>
+                    District *
+                  </span>
+
+                  <select
+                    id="districtId"
+                    name="DistrictID"
+                    required
+                  >
+
+                    <option value="">
+                      Select District
+                    </option>
+
+                  </select>
+
+                </label>
+
+
+                <!-- CATEGORY -->
+
+                <label>
+
+                  <span>
+                    Category *
+                  </span>
+
+                  <select
+                    id="categoryId"
+                    name="CategoryID"
+                    required
+                  >
+
+                    <option value="">
+                      Select Category
+                    </option>
+
+                  </select>
+
+                </label>
+
+
+                <!-- OWNER -->
+
+                <label>
+
+                  <span>
+                    Owner Name
+                  </span>
+
+                  <input
+                    id="ownerName"
+                    name="OwnerName"
+                    type="text"
+                  >
+
+                </label>
+
+
+                <!-- MOBILE -->
+
+                <label>
+
+                  <span>
+                    Mobile
+                  </span>
+
+                  <input
+                    id="mobile"
+                    name="Mobile"
+                    type="tel"
+                    inputmode="tel"
+                  >
+
+                </label>
+
+
+                <!-- WHATSAPP -->
+
+                <label>
+
+                  <span>
+                    WhatsApp
+                  </span>
+
+                  <input
+                    id="whatsapp"
+                    name="WhatsApp"
+                    type="tel"
+                    inputmode="tel"
+                  >
+
+                </label>
+
+
+                <!-- EMAIL -->
+
+                <label>
+
+                  <span>
+                    Email
+                  </span>
+
+                  <input
+                    id="email"
+                    name="Email"
+                    type="email"
+                  >
+
+                </label>
+
+
+                <!-- ADDRESS -->
+
+                <label class="wide">
+
+                  <span>
+                    Address
+                  </span>
+
+                  <input
+                    id="address"
+                    name="Address"
+                    type="text"
+                  >
+
+                </label>
+
+
+                <!-- AREA -->
+
+                <label>
+
+                  <span>
+                    Area
+                  </span>
+
+                  <input
+                    id="area"
+                    name="Area"
+                    type="text"
+                  >
+
+                </label>
+
+
+                <!-- PINCODE -->
+
+                <label>
+
+                  <span>
+                    Pincode
+                  </span>
+
+                  <input
+                    id="pincode"
+                    name="Pincode"
+                    type="text"
+                    inputmode="numeric"
+                  >
+
+                </label>
+
+
+                <!-- SHORT DESCRIPTION -->
+
+                <label class="wide">
+
+                  <span>
+                    Short Description
+                  </span>
+
+                  <textarea
+                    id="shortDescription"
+                    name="ShortDescription"
+                    rows="3"
+                  ></textarea>
+
+                </label>
+
+
+                <!-- LONG DESCRIPTION -->
+
+                <label class="wide">
+
+                  <span>
+                    Long Description
+                  </span>
+
+                  <textarea
+                    id="longDescription"
+                    name="LongDescription"
+                    rows="6"
+                  ></textarea>
+
+                </label>
+
+
+              </div>
+
+
+            </div>
+
+
+
+            <!-- =================================================
+                 MEDIA & BUSINESS INFO
+            ================================================== -->
+
+            <div class="panel">
+
+
+              <div class="panel-head">
+
+
+                <div>
+
+                  <h3>
+                    Media & Business Info
+                  </h3>
+
+                  <p>
+                    Optional listing details.
+                  </p>
+
+                </div>
+
+
+              </div>
+
+
+              <div class="form-grid">
+
+
+                <!-- LOGO -->
+
+                <label class="wide">
+
+                  <span>
+                    Logo URL
+                  </span>
+
+                  <input
+                    id="logoUrl"
+                    name="LogoURL"
+                    type="url"
+                  >
+
+                </label>
+
+
+                <!-- COVER -->
+
+                <label class="wide">
+
+                  <span>
+                    Cover URL
+                  </span>
+
+                  <input
+                    id="coverUrl"
+                    name="CoverURL"
+                    type="url"
+                  >
+
+                </label>
+
+
+                <!-- OPENING -->
+
+                <label>
+
+                  <span>
+                    Opening Time
+                  </span>
+
+                  <input
+                    id="openingTime"
+                    name="OpeningTime"
+                    type="time"
+                  >
+
+                </label>
+
+
+                <!-- CLOSING -->
+
+                <label>
+
+                  <span>
+                    Closing Time
+                  </span>
+
+                  <input
+                    id="closingTime"
+                    name="ClosingTime"
+                    type="time"
+                  >
+
+                </label>
+
+
+                <!-- WORKING DAYS -->
+
+                <label class="wide">
+
+                  <span>
+                    Working Days
+                  </span>
+
+                  <input
+                    id="workingDays"
+                    name="WorkingDays"
+                    type="text"
+                    placeholder="Mon,Tue,Wed,Thu,Fri,Sat"
+                  >
+
+                </label>
+
+
+                <!-- STATUS -->
+
+                <label>
+
+                  <span>
+                    Status
+                  </span>
+
+                  <select
+                    id="businessStatus"
+                    name="BusinessStatus"
+                  >
+
+                    <option value="Active">
+                      Active
+                    </option>
+
+                    <option value="Inactive">
+                      Inactive
+                    </option>
+
+                    <option value="Pending">
+                      Pending
+                    </option>
+
+                  </select>
+
+                </label>
+
+
+                <!-- ESTABLISHED -->
+
+                <label>
+
+                  <span>
+                    Established Year
+                  </span>
+
+                  <input
+                    id="establishedYear"
+                    name="EstablishedYear"
+                    type="number"
+                    min="1800"
+                    max="2100"
+                  >
+
+                </label>
+
+
+                <!-- VERIFIED -->
+
+                <label class="check">
+
+                  <input
+                    id="verified"
+                    name="Verified"
+                    type="checkbox"
+                  >
+
+                  <span>
+                    Verified
+                  </span>
+
+                </label>
+
+
+                <!-- FEATURED -->
+
+                <label class="check">
+
+                  <input
+                    id="featured"
+                    name="Featured"
+                    type="checkbox"
+                  >
+
+                  <span>
+                    Featured
+                  </span>
+
+                </label>
+
+
+                <!-- WEBSITE -->
+
+                <label class="wide">
+
+                  <span>
+                    Website URL
+                  </span>
+
+                  <input
+                    id="websiteUrl"
+                    name="WebsiteURL"
+                    type="url"
+                  >
+
+                </label>
+
+
+                <!-- INSTAGRAM -->
+
+                <label>
+
+                  <span>
+                    Instagram URL
+                  </span>
+
+                  <input
+                    id="instagramUrl"
+                    name="InstagramURL"
+                    type="url"
+                  >
+
+                </label>
+
+
+                <!-- FACEBOOK -->
+
+                <label>
+
+                  <span>
+                    Facebook URL
+                  </span>
+
+                  <input
+                    id="facebookUrl"
+                    name="FacebookURL"
+                    type="url"
+                  >
+
+                </label>
+
+
+                <!-- YOUTUBE -->
+
+                <label>
+
+                  <span>
+                    YouTube URL
+                  </span>
+
+                  <input
+                    id="youtubeUrl"
+                    name="YoutubeURL"
+                    type="url"
+                  >
+
+                </label>
+
+
+                <!-- GOOGLE PLACE -->
+
+                <label>
+
+                  <span>
+                    Google Place URL
+                  </span>
+
+                  <input
+                    id="googlePlaceUrl"
+                    name="GooglePlaceURL"
+                    type="url"
+                  >
+
+                </label>
+
+
+                <!-- SEO TITLE -->
+
+                <label class="wide">
+
+                  <span>
+                    SEO Title
+                  </span>
+
+                  <input
+                    id="seoTitle"
+                    name="SEO_Title"
+                    type="text"
+                  >
+
+                </label>
+
+
+                <!-- SEO DESCRIPTION -->
+
+                <label class="wide">
+
+                  <span>
+                    SEO Description
+                  </span>
+
+                  <textarea
+                    id="seoDescription"
+                    name="SEO_Description"
+                    rows="3"
+                  ></textarea>
+
+                </label>
+
+
+              </div>
+
+
+            </div>
+
+
+          </div>
+
+
+
+          <!-- =================================================
+               RIGHT COLUMN
+          ================================================== -->
+
+          <aside>
+
+
+            <div
+              class="panel sticky"
+            >
+
+
+              <!-- CUSTOM URL -->
+
+              <div class="panel-head">
+
+
+                <div>
+
+                  <h3>
+                    Custom Business URL
+                  </h3>
+
+                  <p>
+                    Generate a globally unique URL.
+                  </p>
+
+                </div>
+
+
+              </div>
+
+
+
+              <!-- URL INPUT -->
+
+              <div class="url-box">
+
+
+                <small
+                  id="urlPrefix"
+                >
+                  https://ubnux.com/
+                </small>
+
+
+                <input
+                  id="customSlug"
+                  name="Slug"
+                  class="slug"
+                  type="text"
+                  placeholder="business-name"
+                  autocomplete="off"
+                  autocapitalize="none"
+                  spellcheck="false"
+                >
+
+
+              </div>
+
+
+
+              <!-- SLUG STATUS -->
+
+              <div
+                id="slugStatus"
+                class="slug-status neutral"
+                role="status"
+                aria-live="polite"
+              >
+                Generate or enter a slug.
+              </div>
+
+
+
+              <!-- SLUG ACTIONS -->
+
+              <div
+                class="row-actions"
+              >
+
+                <button
+                  id="generateSlugBtn"
+                  type="button"
+                  class="btn light"
+                >
+                  Generate
+                </button>
+
+
+                <button
+                  id="checkSlugBtn"
+                  type="button"
+                  class="btn light"
+                >
+                  Check Availability
+                </button>
+
+              </div>
+
+
+
+              <!-- CURRENT URL -->
+
+              <div
+                id="currentUrlBox"
+                class="current-url"
+                hidden
+              >
+
+                <small>
+                  Public URL
+                </small>
+
+
+                <a
+                  id="currentUrl"
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                ></a>
+
+
+                <div
+                  class="row-actions zero"
+                >
+
+                  <button
+                    id="copyUrlBtn"
+                    class="btn light"
+                    type="button"
+                  >
+                    Copy
+                  </button>
+
+
+                  <button
+                    id="openUrlBtn"
+                    class="btn light"
+                    type="button"
+                  >
+                    Open
+                  </button>
+
+                </div>
+
+
+              </div>
+
+
+
+              <hr>
+
+
+
+              <!-- SAVE -->
+
+              <button
+                id="saveBtn"
+                class="btn primary full"
+                type="submit"
+              >
+                Save Business
+              </button>
+
+
+              <!-- CANCEL -->
+
+              <button
+                id="cancelBtn"
+                class="btn ghost full"
+                type="button"
+              >
+                Cancel
+              </button>
+
+
+            </div>
+
+
+          </aside>
+
+
+        </div>
+
+
+      </form>
+
+
+    </section>
+
+
   </main>
+
+
 </div>
 
-<script src="./assets/js/config.js"></script>
-<script src="./assets/js/api.js"></script>
-<script src="./assets/js/auth.js"></script>
-<script src="./assets/js/custom-url.js"></script>
-<script src="./assets/js/businesses.js"></script>
-<script src="./assets/js/dashboard.js"></script>
-<script src="./assets/js/app.js"></script>
+
+
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
+
+<script
+  src="./assets/js/config.js"
+></script>
+
+<script
+  src="./assets/js/api.js"
+></script>
+
+<script
+  src="./assets/js/auth.js"
+></script>
+
+<script
+  src="./assets/js/custom-url.js"
+></script>
+
+<script
+  src="./assets/js/businesses.js"
+></script>
+
+<script
+  src="./assets/js/dashboard.js"
+></script>
+
+<script
+  src="./assets/js/app.js"
+></script>
+
+
 </body>
 </html>
