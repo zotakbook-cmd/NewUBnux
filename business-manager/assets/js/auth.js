@@ -1,20 +1,31 @@
 /* =========================================================
    UBnux Business Manager Authentication
    File: assets/js/auth.js
-   Version: 1.0.0
+   Version: 2.0.0
+
+   Responsibilities:
+   - Login
+   - Logout
+   - Session storage
+   - Session validation
+   - Login form handling
    ========================================================= */
 
-(function (window, document) {
+(function (
+  window,
+  document
+) {
 
   "use strict";
 
 
   /* =======================================================
-     CONFIG / API
-     ======================================================= */
+     CONFIG
+  ======================================================= */
 
   const Config =
     window.UBnuxManagerConfig;
+
 
   const API =
     window.UBnuxManagerAPI;
@@ -44,14 +55,14 @@
 
   /* =======================================================
      AUTH OBJECT
-     ======================================================= */
+  ======================================================= */
 
   const Auth = {};
 
 
   /* =======================================================
-     SESSION STORAGE
-     ======================================================= */
+     SAVE SESSION
+  ======================================================= */
 
   function saveSession(
     session
@@ -73,6 +84,7 @@
         )
       );
 
+
       return true;
 
     } catch (error) {
@@ -81,6 +93,7 @@
         "Unable to save manager session:",
         error
       );
+
 
       return false;
 
@@ -91,7 +104,7 @@
 
   /* =======================================================
      GET SESSION
-     ======================================================= */
+  ======================================================= */
 
   function getSession() {
 
@@ -111,7 +124,9 @@
 
 
       const session =
-        JSON.parse(raw);
+        JSON.parse(
+          raw
+        );
 
 
       if (
@@ -128,11 +143,6 @@
 
     } catch (error) {
 
-      console.warn(
-        "Invalid manager session found."
-      );
-
-
       clearSession();
 
       return null;
@@ -144,7 +154,7 @@
 
   /* =======================================================
      CLEAR SESSION
-     ======================================================= */
+  ======================================================= */
 
   function clearSession() {
 
@@ -157,7 +167,7 @@
     } catch (error) {
 
       console.warn(
-        "Unable to clear manager session:",
+        "Unable to clear session:",
         error
       );
 
@@ -167,8 +177,8 @@
 
 
   /* =======================================================
-     SESSION TOKEN
-     ======================================================= */
+     GET SESSION TOKEN
+  ======================================================= */
 
   function getToken() {
 
@@ -199,8 +209,8 @@
 
 
   /* =======================================================
-     USER
-     ======================================================= */
+     GET USER
+  ======================================================= */
 
   function getUser() {
 
@@ -218,7 +228,6 @@
     return (
       session.user ||
       session.admin ||
-      session.data ||
       null
     );
 
@@ -226,23 +235,8 @@
 
 
   /* =======================================================
-     IS LOGGED IN
-     ======================================================= */
-
-  function isLoggedIn() {
-
-    const token =
-      getToken();
-
-
-    return !!token;
-
-  }
-
-
-  /* =======================================================
      LOGIN
-     ======================================================= */
+  ======================================================= */
 
   async function login(
     userId,
@@ -265,7 +259,8 @@
 
       return {
 
-        success: false,
+        success:
+          false,
 
         message:
           "User ID is required."
@@ -279,7 +274,8 @@
 
       return {
 
-        success: false,
+        success:
+          false,
 
         message:
           "Password is required."
@@ -289,23 +285,17 @@
     }
 
 
-    /*
-     * Disable duplicate login
-     */
-
     if (
       Auth._loggingIn
     ) {
 
       return {
 
-        success: false,
+        success:
+          false,
 
         message:
-          "Login request is already in progress.",
-
-        code:
-          "LOGIN_IN_PROGRESS"
+          "Login request is already in progress."
 
       };
 
@@ -344,18 +334,13 @@
 
         return {
 
-          success: false,
+          success:
+            false,
 
           message:
             response &&
-            (
-              response.message ||
-              response.error
-            )
-              ? (
-                  response.message ||
-                  response.error
-                )
+            response.message
+              ? response.message
               : "Invalid User ID or password.",
 
           data:
@@ -367,7 +352,7 @@
 
 
       /*
-       * Save complete backend response.
+       * Save complete server response.
        */
 
       saveSession(
@@ -376,7 +361,7 @@
 
 
       /*
-       * Notify application
+       * Notify app.
        */
 
       dispatchAuthEvent(
@@ -398,7 +383,8 @@
 
       return {
 
-        success: false,
+        success:
+          false,
 
         message:
           error &&
@@ -421,7 +407,7 @@
 
   /* =======================================================
      LOGOUT
-     ======================================================= */
+  ======================================================= */
 
   async function logout() {
 
@@ -460,7 +446,8 @@
 
     return {
 
-      success: true
+      success:
+        true
 
     };
 
@@ -468,8 +455,8 @@
 
 
   /* =======================================================
-     VERIFY / BOOTSTRAP SESSION
-     ======================================================= */
+     VERIFY SESSION
+  ======================================================= */
 
   async function verifySession() {
 
@@ -481,9 +468,11 @@
 
       return {
 
-        success: false,
+        success:
+          false,
 
-        authenticated: false,
+        authenticated:
+          false,
 
         message:
           "No active session."
@@ -499,6 +488,12 @@
         await API.bootstrap(
           token
         );
+
+
+      console.log(
+        "UBnux session response:",
+        response
+      );
 
 
       if (
@@ -517,9 +512,11 @@
 
         return {
 
-          success: false,
+          success:
+            false,
 
-          authenticated: false,
+          authenticated:
+            false,
 
           message:
             response &&
@@ -531,11 +528,6 @@
 
       }
 
-
-      /*
-       * Backend may return
-       * refreshed session/user data.
-       */
 
       const currentSession =
         getSession() || {};
@@ -562,9 +554,11 @@
 
       return {
 
-        success: true,
+        success:
+          true,
 
-        authenticated: true,
+        authenticated:
+          true,
 
         data:
           updatedSession
@@ -582,9 +576,11 @@
 
       return {
 
-        success: false,
+        success:
+          false,
 
-        authenticated: false,
+        authenticated:
+          false,
 
         message:
           error &&
@@ -601,7 +597,7 @@
 
   /* =======================================================
      AUTH EVENT
-     ======================================================= */
+  ======================================================= */
 
   function dispatchAuthEvent(
     type,
@@ -645,8 +641,8 @@
 
 
   /* =======================================================
-     FORM HELPER
-     ======================================================= */
+     LOGIN FORM
+  ======================================================= */
 
   function bindLoginForm(
     form
@@ -675,32 +671,42 @@
 
     form.addEventListener(
       "submit",
-      async function (event) {
+      async function (
+        event
+      ) {
 
         event.preventDefault();
 
 
         const userInput =
           form.querySelector(
-            '[name="userId"], [name="userid"], [name="username"], #userId, #username'
+            '[name="userId"],' +
+            '[name="userid"],' +
+            '[name="username"],' +
+            '#userId,' +
+            '#username'
           );
 
 
         const passwordInput =
           form.querySelector(
-            '[name="password"], #password'
+            '[name="password"],' +
+            '#password'
           );
 
 
         const submitButton =
           form.querySelector(
-            'button[type="submit"], input[type="submit"]'
+            'button[type="submit"],' +
+            'input[type="submit"]'
           );
 
 
         const messageElement =
           form.querySelector(
-            "[data-login-message], .login-message, #loginMessage"
+            '[data-login-message],' +
+            '.login-message,' +
+            '#loginMessage'
           );
 
 
@@ -716,17 +722,16 @@
             : "";
 
 
-        /*
-         * Loading state
-         */
-
         if (submitButton) {
 
           submitButton.disabled =
             true;
 
-          submitButton.dataset.originalText =
-            submitButton.textContent;
+
+          submitButton.dataset
+            .originalText =
+              submitButton.textContent;
+
 
           submitButton.textContent =
             "Signing in...";
@@ -755,6 +760,7 @@
 
 
           if (
+            result &&
             result.success === true
           ) {
 
@@ -770,8 +776,8 @@
 
 
             /*
-             * Let app.js decide where
-             * to navigate.
+             * app.js can handle
+             * dashboard navigation.
              */
 
             if (
@@ -790,8 +796,10 @@
             if (messageElement) {
 
               messageElement.textContent =
-                result.message ||
-                "Login failed.";
+                result &&
+                result.message
+                  ? result.message
+                  : "Login failed.";
 
               messageElement.className =
                 "login-message error";
@@ -826,8 +834,10 @@
             submitButton.disabled =
               false;
 
+
             submitButton.textContent =
-              submitButton.dataset.originalText ||
+              submitButton.dataset
+                .originalText ||
               "Login";
 
           }
@@ -835,21 +845,22 @@
         }
 
       }
-
     );
 
   }
 
 
   /* =======================================================
-     AUTO BIND LOGIN FORMS
-     ======================================================= */
+     BIND ALL LOGIN FORMS
+  ======================================================= */
 
   function bindLoginForms() {
 
     const forms =
       document.querySelectorAll(
-        'form[data-login-form], #loginForm, .login-form'
+        'form[data-login-form],' +
+        '#loginForm,' +
+        '.login-form'
       );
 
 
@@ -868,7 +879,7 @@
 
   /* =======================================================
      EXPORT
-     ======================================================= */
+  ======================================================= */
 
   Auth.login =
     login;
@@ -886,7 +897,11 @@
     getUser;
 
   Auth.isLoggedIn =
-    isLoggedIn;
+    function () {
+
+      return !!getToken();
+
+    };
 
   Auth.verifySession =
     verifySession;
@@ -905,33 +920,32 @@
 
 
   /*
-   * Callback used by app.js
+   * app.js can assign this callback.
    */
 
   Auth.onLoginSuccess =
     null;
 
 
+  /* =======================================================
+     GLOBAL EXPORT
+  ======================================================= */
+
   window.UBnuxManagerAuth =
     Auth;
-
-
-  /*
-   * Backward-compatible aliases
-   */
 
   window.UBnuxAuth =
     Auth;
 
 
   console.log(
-    "UBnux Manager Auth initialized."
+    "UBnux Manager Auth v2.0.0 initialized."
   );
 
 
   /* =======================================================
      DOM READY
-     ======================================================= */
+  ======================================================= */
 
   if (
     document.readyState ===
