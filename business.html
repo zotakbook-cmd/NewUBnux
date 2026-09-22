@@ -4,7 +4,7 @@
 <head>
 
   <!-- =====================================================
-       BASIC
+       BASIC META
   ====================================================== -->
 
   <meta charset="UTF-8">
@@ -14,49 +14,27 @@
     content="width=device-width, initial-scale=1.0"
   >
 
+  <title>Business | UBnux</title>
+
+  <meta
+    name="description"
+    content="Find business details, services, contact information, location and more on UBnux."
+  >
+
   <meta
     name="robots"
     content="index,follow,max-image-preview:large"
   >
 
-  <meta
-    name="theme-color"
-    content="#ffffff"
-  >
-
-
-  <!-- =====================================================
-       TITLE
-       business-page.js will replace this dynamically
-  ====================================================== -->
-
-  <title>
-    Business | UBnux
-  </title>
-
-
-  <!-- =====================================================
-       DESCRIPTION
-  ====================================================== -->
-
-  <meta
-    name="description"
-    content="Discover local businesses on UBnux."
-  >
-
-
   <!-- =====================================================
        CANONICAL
-       Initially generated from current browser URL.
-       SEO module will update it with the final canonical.
   ====================================================== -->
 
   <link
-    id="canonicalLink"
     rel="canonical"
-    href=""
+    href="https://ubnux.com/"
+    id="canonicalURL"
   >
-
 
   <!-- =====================================================
        OPEN GRAPH
@@ -64,29 +42,38 @@
 
   <meta
     property="og:type"
-    content="business.business"
+    content="website"
+    id="ogType"
   >
 
   <meta
     property="og:title"
     content="Business | UBnux"
+    id="ogTitle"
   >
 
   <meta
     property="og:description"
-    content="Discover local businesses on UBnux."
+    content="Find business details, services, contact information, location and more on UBnux."
+    id="ogDescription"
   >
 
   <meta
     property="og:url"
-    content=""
+    content="https://ubnux.com/"
+    id="ogURL"
   >
 
   <meta
     property="og:image"
-    content=""
+    content="https://ubnux.com/assets/images/default-business.jpg"
+    id="ogImage"
   >
 
+  <meta
+    property="og:site_name"
+    content="UBnux"
+  >
 
   <!-- =====================================================
        TWITTER
@@ -100,85 +87,32 @@
   <meta
     name="twitter:title"
     content="Business | UBnux"
+    id="twitterTitle"
   >
 
   <meta
     name="twitter:description"
-    content="Discover local businesses on UBnux."
+    content="Find business details, services, contact information, location and more on UBnux."
+    id="twitterDescription"
   >
 
   <meta
     name="twitter:image"
-    content=""
+    content="https://ubnux.com/assets/images/default-business.jpg"
+    id="twitterImage"
   >
 
-
   <!-- =====================================================
-       CANONICAL BOOTSTRAP
+       FAVICON
   ====================================================== -->
 
-  <script>
-
-    (function () {
-
-      "use strict";
-
-
-      try {
-
-        var link =
-          document.getElementById(
-            "canonicalLink"
-          );
-
-
-        if (!link) {
-
-          return;
-
-        }
-
-
-        var pathname =
-          window.location.pathname ||
-          "/";
-
-
-        /*
-         * Keep the public SEO URL.
-         */
-
-        if (
-          pathname !== "/" &&
-          !pathname.endsWith("/")
-        ) {
-
-          pathname += "/";
-
-        }
-
-
-        link.href =
-          window.location.origin +
-          pathname;
-
-
-      } catch (error) {
-
-        console.warn(
-          "UBnux canonical bootstrap failed:",
-          error
-        );
-
-      }
-
-    })();
-
-  </script>
-
+  <link
+    rel="icon"
+    href="/assets/images/favicon.ico"
+  >
 
   <!-- =====================================================
-       CSS
+       MAIN SITE CSS
   ====================================================== -->
 
   <link
@@ -186,426 +120,280 @@
     href="/assets/css/style.css"
   >
 
+  <!-- =====================================================
+       BUSINESS PAGE CSS
+       Category Templates
+  ====================================================== -->
+
   <link
     rel="stylesheet"
     href="/assets/css/business.css"
   >
 
+  <!-- =====================================================
+       OPTIONAL PAGE META / STRUCTURED DATA
+  ====================================================== -->
+
+  <meta
+    name="theme-color"
+    content="#111827"
+  >
 
 </head>
 
 
 <body>
 
-
   <!-- =====================================================
-       PAGE LOADER
+       SITE HEADER
   ====================================================== -->
 
-  <div
-    id="businessPageLoader"
-    class="business-page-loader"
-    aria-live="polite"
-    aria-busy="true"
+  <header
+    id="siteHeader"
+    class="site-header"
   >
 
-    <div class="business-loader-inner">
+    <!--
+      If your main header is injected dynamically,
+      this container will be used by the existing
+      UBnux header system.
+    -->
 
-      <div
-        class="business-loader-spinner"
-        aria-hidden="true"
-      ></div>
+    <div id="headerContainer"></div>
 
-      <p>
-        Loading business...
-      </p>
-
-    </div>
-
-  </div>
+  </header>
 
 
   <!-- =====================================================
        BUSINESS PAGE
   ====================================================== -->
 
- <!-- =====================================================
-     BUSINESS PAGE
-====================================================== -->
-
-<main
-  id="businessPage"
-  class="business-page"
-  hidden
->
-
-  <!-- ===================================================
-       BUSINESS PAGE CONTENT
-
-       IMPORTANT:
-       business-page.js expects:
-       #businessPageContent
-  ==================================================== -->
-
-  <div
-    id="businessPageContent"
-    class="business-page-content"
-  >
-
-    <div class="container">
-
-      <!-- =================================================
-           BREADCRUMB
-      ================================================== -->
-
-      <nav
-        id="businessBreadcrumb"
-        class="breadcrumb"
-        aria-label="Breadcrumb"
-      ></nav>
-
-
-      <!-- =================================================
-           HERO
-      ================================================== -->
-
-      <section
-        id="businessHero"
-        class="business-hero"
-      >
-
-        <!-- ===============================================
-             COVER
-        ================================================ -->
-
-        <div
-          id="businessCover"
-          class="business-cover"
-        ></div>
-
-
-        <!-- ===============================================
-             MAIN INFO
-        ================================================ -->
-
-        <div class="business-main-info">
-
-          <!-- =============================================
-               LOGO
-          ============================================== -->
-
-          <div
-            id="businessLogo"
-            class="business-logo-wrap"
-          ></div>
-
-
-          <!-- =============================================
-               HEADING
-          ============================================== -->
-
-          <div class="business-heading">
-
-            <!-- BADGES -->
-
-            <div
-              id="businessBadges"
-              class="business-badges"
-            ></div>
-
-
-            <!-- BUSINESS NAME -->
-
-            <h1 id="businessName">
-              Business
-            </h1>
-
-
-            <!-- LOCATION -->
-
-            <p
-              id="businessAddress"
-              class="business-location"
-            ></p>
-
-
-            <!-- RATING -->
-
-            <div
-              id="businessRating"
-              class="business-rating"
-            ></div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
-           CONTENT GRID
-      ================================================== -->
-
-      <div class="business-content-grid">
-
-        <!-- ===============================================
-             MAIN CONTENT
-        ================================================ -->
-
-        <article class="business-content">
-
-          <!-- =============================================
-               ABOUT
-          ============================================== -->
-
-          <section
-            id="aboutBusinessSection"
-            class="business-section"
-          >
-
-            <h2>
-
-              About
-
-              <span id="aboutBusinessName">
-                this business
-              </span>
-
-            </h2>
-
-
-            <div
-              id="businessDescription"
-              class="business-description"
-            ></div>
-
-          </section>
-
-
-          <!-- =============================================
-               ADDRESS
-          ============================================== -->
-
-          <section
-            id="businessAddressSection"
-            class="business-section"
-            hidden
-          >
-
-            <h2>
-              Address &amp; Location
-            </h2>
-
-
-            <address
-              id="businessFullAddress"
-              class="business-address"
-            ></address>
-
-          </section>
-
-
-          <!-- =============================================
-               BUSINESS HOURS
-          ============================================== -->
-
-          <section
-            id="businessHoursSection"
-            class="business-section"
-            hidden
-          >
-
-            <h2>
-              Business Hours
-            </h2>
-
-
-            <div
-              id="businessHours"
-            ></div>
-
-
-            <div
-              id="businessWorkingDays"
-              class="business-working-days"
-            ></div>
-
-          </section>
-
-
-          <!-- =============================================
-               RELATED BUSINESSES
-          ============================================== -->
-
-          <section
-            id="relatedBusinessesSection"
-            class="business-section"
-            hidden
-          >
-
-            <h2>
-              Related Businesses
-            </h2>
-
-
-            <div
-              id="relatedBusinesses"
-              class="related-business-grid"
-            ></div>
-
-          </section>
-
-        </article>
-
-
-        <!-- ===============================================
-             SIDEBAR
-        ================================================ -->
-
-        <aside class="business-sidebar">
-
-          <!-- =============================================
-               CONTACT
-          ============================================== -->
-
-          <div
-            id="businessContactActions"
-            class="business-contact-actions"
-          >
-
-            <!-- CALL -->
-
-            <a
-              id="callBusiness"
-              class="contact-button"
-              href="#"
-              hidden
-            >
-              Call Business
-            </a>
-
-
-            <!-- WHATSAPP -->
-
-            <a
-              id="whatsappBusiness"
-              class="contact-button"
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              hidden
-            >
-              WhatsApp
-            </a>
-
-
-            <!-- WEBSITE -->
-
-            <a
-              id="websiteBusiness"
-              class="contact-button"
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              hidden
-            >
-              Visit Website
-            </a>
-
-          </div>
-
-
-          <!-- =============================================
-               LOCATION
-          ============================================== -->
-
-          <div
-            class="business-location-card"
-          >
-
-            <h2>
-              Location
-            </h2>
-
-
-            <p
-              id="sidebarLocation"
-            ></p>
-
-          </div>
-
-        </aside>
-
-      </div>
-
-    </div>
-
-  </div>
-
-</main>
-
-  <!-- =====================================================
-       ERROR
-  ====================================================== -->
-
-  <section
-    id="businessPageError"
-    class="business-error"
+  <main
+    id="businessPage"
+    class="business-page"
     hidden
   >
 
-    <div class="container">
+    <!-- ===================================================
+         BUSINESS PAGE CONTENT
+         Template will render here
+    ==================================================== -->
+
+    <div
+      id="businessPageContent"
+      class="business-page-content"
+    ></div>
+
+
+    <!-- ===================================================
+         ERROR STATE
+    ==================================================== -->
+
+    <section
+      id="businessPageError"
+      class="business-error"
+      hidden
+    >
 
       <div class="business-error-inner">
 
-        <div
-          class="business-error-icon"
-          aria-hidden="true"
-        >
-          🔎
+        <div class="business-error-icon">
+          !
         </div>
-
 
         <h1>
           Business Not Found
         </h1>
 
-
         <p id="businessErrorMessage">
           We could not find the business you are looking for.
         </p>
 
-
         <a
           href="/"
-          class="business-error-button"
+          class="business-error-home"
         >
-          Go to UBnux
+          Go to UBnux Home
         </a>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         LOADING STATE
+    ==================================================== -->
+
+    <div
+      id="businessPageLoader"
+      class="business-page-loader"
+      hidden
+    >
+
+      <div class="business-loader-inner">
+
+        <div class="business-loader-spinner"></div>
+
+        <p>
+          Loading business...
+        </p>
 
       </div>
 
     </div>
 
-  </section>
+  </main>
 
 
   <!-- =====================================================
-       JAVASCRIPT
-       -----------------------------------------------------
-       IMPORTANT:
-       Do not load app.js here.
-       Business pages must remain independent from
-       the listing application.
+       FOOTER
   ====================================================== -->
 
-<script src="/assets/js/config.js"></script>
-<script src="/assets/js/api.js"></script>
-<script src="/assets/js/seo/seo-router.js"></script>
-<script src="/assets/js/seo/seo-meta.js"></script>
-<script src="/assets/js/seo/schema.js"></script>
-<script src="/assets/js/seo/business-page.js"></script>
+  <footer
+    id="siteFooter"
+    class="site-footer"
+  >
+
+    <div id="footerContainer"></div>
+
+  </footer>
+
+
+  <!-- =====================================================
+       CORE JAVASCRIPT
+  ====================================================== -->
+
+  <script src="/assets/js/config.js"></script>
+
+  <script src="/assets/js/api.js"></script>
+
+
+  <!-- =====================================================
+       SEO ROUTER
+  ====================================================== -->
+
+  <script src="/assets/js/seo/seo-router.js"></script>
+
+  <script src="/assets/js/seo/seo-meta.js"></script>
+
+  <script src="/assets/js/seo/schema.js"></script>
+
+
+  <!-- =====================================================
+       BUSINESS TEMPLATE SYSTEM
+  ====================================================== -->
+
+  <!-- Template Utilities -->
+
+  <script
+    src="/assets/js/seo/business/template-utils.js"
+  ></script>
+
+
+  <!-- Template Registry -->
+
+  <script
+    src="/assets/js/seo/business/template-registry.js"
+  ></script>
+
+
+  <!-- =====================================================
+       BUSINESS CATEGORY TEMPLATES
+  ====================================================== -->
+
+  <!-- Default -->
+
+  <script
+    src="/assets/js/seo/business/templates/default-template.js"
+  ></script>
+
+
+  <!-- Restaurant -->
+
+  <script
+    src="/assets/js/seo/business/templates/restaurant-template.js"
+  ></script>
+
+
+  <!-- Clothing & Fashion -->
+
+  <script
+    src="/assets/js/seo/business/templates/clothing-template.js"
+  ></script>
+
+
+  <!-- Hotel -->
+
+  <script
+    src="/assets/js/seo/business/templates/hotel-template.js"
+  ></script>
+
+
+  <!-- Salon -->
+
+  <script
+    src="/assets/js/seo/business/templates/salon-template.js"
+  ></script>
+
+
+  <!-- Hospital -->
+
+  <script
+    src="/assets/js/seo/business/templates/hospital-template.js"
+  ></script>
+
+
+  <!-- Coaching -->
+
+  <script
+    src="/assets/js/seo/business/templates/coaching-template.js"
+  ></script>
+
+
+  <!-- Real Estate -->
+
+  <script
+    src="/assets/js/seo/business/templates/realestate-template.js"
+  ></script>
+
+
+  <!-- Automobile -->
+
+  <script
+    src="/assets/js/seo/business/templates/automobile-template.js"
+  ></script>
+
+
+  <!-- Electronics -->
+
+  <script
+    src="/assets/js/seo/business/templates/electronics-template.js"
+  ></script>
+
+
+  <!-- Grocery -->
+
+  <script
+    src="/assets/js/seo/business/templates/grocery-template.js"
+  ></script>
+
+
+  <!-- Services -->
+
+  <script
+    src="/assets/js/seo/business/templates/service-template.js"
+  ></script>
+
+
+  <!-- =====================================================
+       BUSINESS PAGE CONTROLLER
+       MUST BE LAST
+  ====================================================== -->
+
+  <script
+    src="/assets/js/seo/business-page.js"
+  ></script>
 
 
 </body>
