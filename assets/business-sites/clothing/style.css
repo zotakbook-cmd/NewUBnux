@@ -1,0 +1,3864 @@
+/* =========================================================
+   UBnux Clothing Business Website
+   File:
+   assets/business-sites/clothing/style.css
+
+   Version:
+   1.0.0
+
+   Purpose:
+   - Premium clothing / fashion business website
+   - Independent category CSS
+   - No dependency on generic business.css
+   - Responsive
+   - Mobile navigation
+   - Hero
+   - Collection
+   - About
+   - Gallery
+   - Contact
+   - Footer
+   ========================================================= */
+
+
+/* =========================================================
+   ROOT
+   ========================================================= */
+
+.clothing-site {
+
+  --fashion-black: #111111;
+  --fashion-dark: #191919;
+  --fashion-text: #242424;
+  --fashion-muted: #777777;
+  --fashion-light: #f7f5f1;
+  --fashion-white: #ffffff;
+  --fashion-border: #e7e3dc;
+  --fashion-accent: #b18a55;
+  --fashion-accent-dark: #8d6a3f;
+  --fashion-soft: #eee9e1;
+
+  --container:
+    1240px;
+
+  --header-height:
+    82px;
+
+  --radius:
+    2px;
+
+  --transition:
+    280ms cubic-bezier(.22,.61,.36,1);
+
+  color:
+    var(--fashion-text);
+
+  background:
+    var(--fashion-white);
+
+  font-family:
+    Inter,
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  font-size:
+    16px;
+
+  line-height:
+    1.6;
+
+  box-sizing:
+    border-box;
+
+}
+
+
+/* =========================================================
+   BOX SIZING
+   ========================================================= */
+
+.clothing-site *,
+.clothing-site *::before,
+.clothing-site *::after {
+
+  box-sizing:
+    border-box;
+
+}
+
+
+/* =========================================================
+   RESET
+   ========================================================= */
+
+.clothing-site h1,
+.clothing-site h2,
+.clothing-site h3,
+.clothing-site h4,
+.clothing-site p {
+
+  margin:
+    0;
+
+}
+
+.clothing-site a {
+
+  color:
+    inherit;
+
+  text-decoration:
+    none;
+
+}
+
+.clothing-site button {
+
+  font:
+    inherit;
+
+}
+
+.clothing-site img {
+
+  max-width:
+    100%;
+
+  display:
+    block;
+
+}
+
+
+/* =========================================================
+   CONTAINER
+   ========================================================= */
+
+.clothing-container {
+
+  width:
+    min(
+      calc(100% - 48px),
+      var(--container)
+    );
+
+  margin-left:
+    auto;
+
+  margin-right:
+    auto;
+
+}
+
+
+/* =========================================================
+   ANNOUNCEMENT
+   ========================================================= */
+
+.clothing-announcement {
+
+  min-height:
+    34px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  background:
+    var(--fashion-black);
+
+  color:
+    rgba(255,255,255,.88);
+
+  font-size:
+    11px;
+
+  letter-spacing:
+    .08em;
+
+  text-transform:
+    uppercase;
+
+}
+
+.clothing-announcement
+.clothing-container {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    12px;
+
+}
+
+.announcement-separator {
+
+  opacity:
+    .45;
+
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.clothing-header {
+
+  position:
+    sticky;
+
+  top:
+    0;
+
+  z-index:
+    1000;
+
+  height:
+    var(--header-height);
+
+  background:
+    rgba(255,255,255,.96);
+
+  border-bottom:
+    1px solid rgba(0,0,0,.08);
+
+  backdrop-filter:
+    blur(14px);
+
+  -webkit-backdrop-filter:
+    blur(14px);
+
+  transition:
+    box-shadow var(--transition);
+
+}
+
+.clothing-header.scrolled {
+
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.08);
+
+}
+
+
+.clothing-header-inner {
+
+  height:
+    100%;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    30px;
+
+}
+
+
+/* =========================================================
+   BRAND
+   ========================================================= */
+
+.clothing-brand {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap:
+    11px;
+
+  min-width:
+    220px;
+
+}
+
+.clothing-brand-logo {
+
+  position:
+    relative;
+
+  width:
+    43px;
+
+  height:
+    43px;
+
+  flex:
+    0 0 43px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  overflow:
+    hidden;
+
+  background:
+    var(--fashion-black);
+
+  color:
+    var(--fashion-white);
+
+}
+
+.clothing-brand-logo img {
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  object-fit:
+    cover;
+
+  position:
+    relative;
+
+  z-index:
+    2;
+
+}
+
+.clothing-brand-logo img[src=""] {
+
+  display:
+    none;
+
+}
+
+.clothing-brand-logo-placeholder {
+
+  position:
+    absolute;
+
+  inset:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    20px;
+
+  z-index:
+    1;
+
+}
+
+
+.clothing-brand-text {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  line-height:
+    1.1;
+
+  min-width:
+    0;
+
+}
+
+.clothing-brand-text strong {
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    16px;
+
+  font-weight:
+    600;
+
+  letter-spacing:
+    -.01em;
+
+  white-space:
+    nowrap;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+}
+
+.clothing-brand-text small {
+
+  margin-top:
+    5px;
+
+  color:
+    var(--fashion-muted);
+
+  font-size:
+    9px;
+
+  letter-spacing:
+    .14em;
+
+  text-transform:
+    uppercase;
+
+}
+
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+.clothing-navigation {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    34px;
+
+}
+
+.clothing-navigation a {
+
+  position:
+    relative;
+
+  padding:
+    8px 0;
+
+  color:
+    #333;
+
+  font-size:
+    12px;
+
+  font-weight:
+    500;
+
+  letter-spacing:
+    .08em;
+
+  text-transform:
+    uppercase;
+
+}
+
+.clothing-navigation a::after {
+
+  content:
+    "";
+
+  position:
+    absolute;
+
+  left:
+    0;
+
+  right:
+    100%;
+
+  bottom:
+    2px;
+
+  height:
+    1px;
+
+  background:
+    var(--fashion-accent);
+
+  transition:
+    right var(--transition);
+
+}
+
+.clothing-navigation a:hover::after,
+.clothing-navigation a:focus-visible::after {
+
+  right:
+    0;
+
+}
+
+
+/* =========================================================
+   HEADER ACTIONS
+   ========================================================= */
+
+.clothing-header-actions {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    9px;
+
+}
+
+.clothing-header-call {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap:
+    6px;
+
+  padding:
+    9px 13px;
+
+  border:
+    1px solid var(--fashion-border);
+
+  color:
+    var(--fashion-text);
+
+  font-size:
+    11px;
+
+  font-weight:
+    600;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    .05em;
+
+  transition:
+    all var(--transition);
+
+}
+
+.clothing-header-call:hover {
+
+  border-color:
+    var(--fashion-black);
+
+  background:
+    var(--fashion-black);
+
+  color:
+    var(--fashion-white);
+
+}
+
+.clothing-phone-icon {
+
+  font-size:
+    12px;
+
+}
+
+
+.clothing-header-whatsapp {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  min-height:
+    38px;
+
+  padding:
+    0 17px;
+
+  background:
+    var(--fashion-black);
+
+  color:
+    var(--fashion-white);
+
+  font-size:
+    10px;
+
+  font-weight:
+    600;
+
+  letter-spacing:
+    .09em;
+
+  text-transform:
+    uppercase;
+
+  transition:
+    all var(--transition);
+
+}
+
+.clothing-header-whatsapp:hover {
+
+  background:
+    var(--fashion-accent);
+
+}
+
+
+/* =========================================================
+   MOBILE MENU BUTTON
+   ========================================================= */
+
+.clothing-menu-button {
+
+  width:
+    42px;
+
+  height:
+    38px;
+
+  display:
+    none;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    5px;
+
+  border:
+    1px solid var(--fashion-border);
+
+  background:
+    var(--fashion-white);
+
+  cursor:
+    pointer;
+
+}
+
+.clothing-menu-button span {
+
+  display:
+    block;
+
+  width:
+    18px;
+
+  height:
+    1px;
+
+  background:
+    var(--fashion-black);
+
+  transition:
+    transform var(--transition),
+    opacity var(--transition);
+
+}
+
+.clothing-menu-button.active
+span:nth-child(1) {
+
+  transform:
+    translateY(6px)
+    rotate(45deg);
+
+}
+
+.clothing-menu-button.active
+span:nth-child(2) {
+
+  opacity:
+    0;
+
+}
+
+.clothing-menu-button.active
+span:nth-child(3) {
+
+  transform:
+    translateY(-6px)
+    rotate(-45deg);
+
+}
+
+
+/* =========================================================
+   MOBILE MENU
+   ========================================================= */
+
+.clothing-mobile-menu {
+
+  position:
+    absolute;
+
+  top:
+    100%;
+
+  left:
+    0;
+
+  right:
+    0;
+
+  background:
+    rgba(255,255,255,.98);
+
+  border-bottom:
+    1px solid var(--fashion-border);
+
+  box-shadow:
+    0 20px 35px rgba(0,0,0,.08);
+
+}
+
+.clothing-mobile-menu[hidden] {
+
+  display:
+    none;
+
+}
+
+.clothing-mobile-menu nav {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  padding:
+    12px 24px 20px;
+
+}
+
+.clothing-mobile-menu a {
+
+  padding:
+    14px 0;
+
+  border-bottom:
+    1px solid var(--fashion-border);
+
+  font-size:
+    12px;
+
+  font-weight:
+    600;
+
+  letter-spacing:
+    .08em;
+
+  text-transform:
+    uppercase;
+
+}
+
+.clothing-mobile-menu a:last-child {
+
+  border-bottom:
+    0;
+
+}
+
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.clothing-hero {
+
+  position:
+    relative;
+
+  min-height:
+    min(
+      760px,
+      calc(100vh - 116px)
+    );
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  overflow:
+    hidden;
+
+  background:
+    var(--fashion-dark);
+
+  color:
+    var(--fashion-white);
+
+}
+
+.clothing-hero-background {
+
+  position:
+    absolute;
+
+  inset:
+    0;
+
+  overflow:
+    hidden;
+
+}
+
+.clothing-hero-image {
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  object-fit:
+    cover;
+
+  object-position:
+    center;
+
+  opacity:
+    .72;
+
+  transform:
+    scale(1.015);
+
+  transition:
+    transform 1.2s ease;
+
+}
+
+.clothing-hero:hover
+.clothing-hero-image {
+
+  transform:
+    scale(1.035);
+
+}
+
+.clothing-hero-overlay {
+
+  position:
+    absolute;
+
+  inset:
+    0;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0,0,0,.82) 0%,
+      rgba(0,0,0,.58) 38%,
+      rgba(0,0,0,.20) 75%,
+      rgba(0,0,0,.32) 100%
+    );
+
+}
+
+
+.clothing-hero-inner {
+
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  padding:
+    90px 0 110px;
+
+}
+
+.clothing-hero-content {
+
+  width:
+    min(
+      680px,
+      100%
+    );
+
+}
+
+
+.clothing-hero-eyebrow {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    12px;
+
+  margin-bottom:
+    22px;
+
+  color:
+    rgba(255,255,255,.84);
+
+  font-size:
+    11px;
+
+  font-weight:
+    600;
+
+  letter-spacing:
+    .19em;
+
+  text-transform:
+    uppercase;
+
+}
+
+.clothing-eyebrow-line {
+
+  width:
+    42px;
+
+  height:
+    1px;
+
+  background:
+    var(--fashion-accent);
+
+}
+
+
+.clothing-hero h1 {
+
+  max-width:
+    760px;
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    clamp(
+      48px,
+      7vw,
+      92px
+    );
+
+  font-weight:
+    400;
+
+  line-height:
+    .98;
+
+  letter-spacing:
+    -.045em;
+
+}
+
+
+.clothing-hero-description {
+
+  max-width:
+    570px;
+
+  margin-top:
+    27px;
+
+  color:
+    rgba(255,255,255,.82);
+
+  font-size:
+    17px;
+
+  line-height:
+    1.8;
+
+}
+
+
+.clothing-hero-rating {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  margin-top:
+    24px;
+
+  color:
+    rgba(255,255,255,.78);
+
+  font-size:
+    12px;
+
+}
+
+.clothing-stars {
+
+  color:
+    #d4b47d;
+
+  letter-spacing:
+    2px;
+
+  font-size:
+    13px;
+
+}
+
+.rating-divider {
+
+  opacity:
+    .45;
+
+}
+
+
+.clothing-hero-actions {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    12px;
+
+  margin-top:
+    36px;
+
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.clothing-button {
+
+  min-height:
+    50px;
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  padding:
+    0 24px;
+
+  border:
+    1px solid transparent;
+
+  font-size:
+    11px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .1em;
+
+  text-transform:
+    uppercase;
+
+  transition:
+    all var(--transition);
+
+}
+
+.clothing-button-primary {
+
+  background:
+    var(--fashion-accent);
+
+  color:
+    var(--fashion-white);
+
+}
+
+.clothing-button-primary:hover {
+
+  background:
+    var(--fashion-accent-dark);
+
+  transform:
+    translateY(-2px);
+
+}
+
+
+.clothing-button-light {
+
+  border-color:
+    rgba(255,255,255,.45);
+
+  background:
+    rgba(255,255,255,.08);
+
+  color:
+    var(--fashion-white);
+
+  backdrop-filter:
+    blur(8px);
+
+}
+
+.clothing-button-light:hover {
+
+  background:
+    var(--fashion-white);
+
+  border-color:
+    var(--fashion-white);
+
+  color:
+    var(--fashion-black);
+
+}
+
+
+.clothing-button-dark {
+
+  background:
+    var(--fashion-black);
+
+  color:
+    var(--fashion-white);
+
+}
+
+.clothing-button-dark:hover {
+
+  background:
+    var(--fashion-accent);
+
+  transform:
+    translateY(-2px);
+
+}
+
+
+/* =========================================================
+   SCROLL INDICATOR
+   ========================================================= */
+
+.clothing-scroll-indicator {
+
+  position:
+    absolute;
+
+  z-index:
+    4;
+
+  right:
+    36px;
+
+  bottom:
+    34px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  color:
+    rgba(255,255,255,.72);
+
+  font-size:
+    9px;
+
+  letter-spacing:
+    .14em;
+
+  text-transform:
+    uppercase;
+
+  writing-mode:
+    vertical-rl;
+
+}
+
+.scroll-arrow {
+
+  font-size:
+    17px;
+
+}
+
+
+/* =========================================================
+   QUICK INFO
+   ========================================================= */
+
+.clothing-quick-info {
+
+  position:
+    relative;
+
+  z-index:
+    5;
+
+  background:
+    var(--fashion-white);
+
+  border-bottom:
+    1px solid var(--fashion-border);
+
+}
+
+.clothing-quick-grid {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+}
+
+.clothing-quick-item {
+
+  min-height:
+    105px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    15px;
+
+  padding:
+    20px 25px;
+
+  border-right:
+    1px solid var(--fashion-border);
+
+}
+
+.clothing-quick-item:last-child {
+
+  border-right:
+    0;
+
+}
+
+
+.quick-icon {
+
+  width:
+    40px;
+
+  height:
+    40px;
+
+  flex:
+    0 0 40px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border:
+    1px solid var(--fashion-border);
+
+  color:
+    var(--fashion-accent);
+
+  font-size:
+    17px;
+
+}
+
+.clothing-quick-item > div:last-child {
+
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+}
+
+.quick-label {
+
+  margin-bottom:
+    4px;
+
+  color:
+    var(--fashion-muted);
+
+  font-size:
+    9px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .12em;
+
+}
+
+.clothing-quick-item strong {
+
+  color:
+    var(--fashion-text);
+
+  font-size:
+    13px;
+
+  font-weight:
+    600;
+
+}
+
+.clothing-quick-item small {
+
+  margin-top:
+    2px;
+
+  color:
+    var(--fashion-muted);
+
+  font-size:
+    11px;
+
+}
+
+
+/* =========================================================
+   GENERIC SECTION
+   ========================================================= */
+
+.clothing-section {
+
+  padding:
+    110px 0;
+
+}
+
+.clothing-section-heading {
+
+  max-width:
+    680px;
+
+  margin:
+    0 auto 55px;
+
+  text-align:
+    center;
+
+}
+
+.section-kicker {
+
+  display:
+    inline-block;
+
+  margin-bottom:
+    13px;
+
+  color:
+    var(--fashion-accent-dark);
+
+  font-size:
+    10px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .18em;
+
+  text-transform:
+    uppercase;
+
+}
+
+.clothing-section-heading h2 {
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    clamp(
+      36px,
+      5vw,
+      58px
+    );
+
+  font-weight:
+    400;
+
+  line-height:
+    1.08;
+
+  letter-spacing:
+    -.035em;
+
+}
+
+.clothing-section-heading p {
+
+  margin-top:
+    18px;
+
+  color:
+    var(--fashion-muted);
+
+  font-size:
+    15px;
+
+  line-height:
+    1.8;
+
+}
+
+
+/* =========================================================
+   COLLECTION
+   ========================================================= */
+
+.clothing-collection {
+
+  background:
+    var(--fashion-light);
+
+}
+
+.clothing-category-grid {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap:
+    18px;
+
+}
+
+.clothing-category-card {
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  background:
+    var(--fashion-white);
+
+  border:
+    1px solid var(--fashion-border);
+
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition);
+
+}
+
+.clothing-category-card:hover {
+
+  transform:
+    translateY(-7px);
+
+  box-shadow:
+    0 18px 40px rgba(0,0,0,.09);
+
+}
+
+
+.category-card-image {
+
+  position:
+    relative;
+
+  height:
+    290px;
+
+  overflow:
+    hidden;
+
+  background:
+    #ddd8cf;
+
+}
+
+.category-placeholder {
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  display:
+    flex;
+
+  align-items:
+    flex-end;
+
+  justify-content:
+    flex-start;
+
+  padding:
+    22px;
+
+  color:
+    rgba(255,255,255,.82);
+
+  background:
+    linear-gradient(
+      145deg,
+      #393632,
+      #8c8171
+    );
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    24px;
+
+  letter-spacing:
+    .08em;
+
+}
+
+.clothing-category-card:nth-child(2)
+.category-placeholder {
+
+  background:
+    linear-gradient(
+      145deg,
+      #574d49,
+      #a98c82
+    );
+
+}
+
+.clothing-category-card:nth-child(3)
+.category-placeholder {
+
+  background:
+    linear-gradient(
+      145deg,
+      #404b53,
+      #8d9a9d
+    );
+
+}
+
+.clothing-category-card:nth-child(4)
+.category-placeholder {
+
+  background:
+    linear-gradient(
+      145deg,
+      #665543,
+      #bda078
+    );
+
+}
+
+
+.category-card-content {
+
+  padding:
+    25px;
+
+}
+
+.category-card-content > span {
+
+  color:
+    var(--fashion-accent-dark);
+
+  font-size:
+    9px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .14em;
+
+}
+
+.category-card-content h3 {
+
+  margin-top:
+    5px;
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    26px;
+
+  font-weight:
+    400;
+
+}
+
+.category-card-content p {
+
+  min-height:
+    52px;
+
+  margin-top:
+    9px;
+
+  color:
+    var(--fashion-muted);
+
+  font-size:
+    12px;
+
+  line-height:
+    1.7;
+
+}
+
+.category-card-content button {
+
+  margin-top:
+    15px;
+
+  padding:
+    0;
+
+  border:
+    0;
+
+  background:
+    transparent;
+
+  color:
+    var(--fashion-black);
+
+  font-size:
+    10px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .1em;
+
+  text-transform:
+    uppercase;
+
+  cursor:
+    pointer;
+
+}
+
+.category-card-content button span {
+
+  margin-left:
+    7px;
+
+  color:
+    var(--fashion-accent);
+
+  transition:
+    margin var(--transition);
+
+}
+
+.category-card-content button:hover span {
+
+  margin-left:
+    12px;
+
+}
+
+
+/* =========================================================
+   BRAND STRIP
+   ========================================================= */
+
+.clothing-brand-strip {
+
+  padding:
+    55px 0;
+
+  background:
+    var(--fashion-soft);
+
+}
+
+.brand-strip-inner {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    30px;
+
+  padding:
+    10px 0;
+
+}
+
+.brand-strip-inner > div span {
+
+  color:
+    var(--fashion-accent-dark);
+
+  font-size:
+    9px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .16em;
+
+}
+
+.brand-strip-inner h2 {
+
+  margin-top:
+    5px;
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    clamp(
+      25px,
+      3vw,
+      36px
+    );
+
+  font-weight:
+    400;
+
+}
+
+
+/* =========================================================
+   ABOUT
+   ========================================================= */
+
+.clothing-about {
+
+  background:
+    var(--fashion-white);
+
+}
+
+.clothing-about-grid {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(0, .95fr)
+    minmax(0, 1fr);
+
+  gap:
+    90px;
+
+  align-items:
+    center;
+
+}
+
+.clothing-about-visual {
+
+  position:
+    relative;
+
+  padding:
+    0 35px 35px 0;
+
+}
+
+.about-frame {
+
+  position:
+    relative;
+
+  min-height:
+    550px;
+
+  overflow:
+    hidden;
+
+  background:
+    var(--fashion-soft);
+
+}
+
+.about-frame img {
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  min-height:
+    550px;
+
+  object-fit:
+    cover;
+
+}
+
+.about-badge {
+
+  position:
+    absolute;
+
+  right:
+    0;
+
+  bottom:
+    0;
+
+  width:
+    135px;
+
+  height:
+    135px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  background:
+    var(--fashion-black);
+
+  color:
+    var(--fashion-white);
+
+  text-align:
+    center;
+
+}
+
+.about-badge strong {
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    30px;
+
+  font-weight:
+    400;
+
+}
+
+.about-badge span {
+
+  margin-top:
+    3px;
+
+  color:
+    rgba(255,255,255,.65);
+
+  font-size:
+    8px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .14em;
+
+}
+
+
+.clothing-about-content {
+
+  max-width:
+    590px;
+
+}
+
+.clothing-about-content h2 {
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    clamp(
+      38px,
+      5vw,
+      60px
+    );
+
+  font-weight:
+    400;
+
+  line-height:
+    1.05;
+
+  letter-spacing:
+    -.04em;
+
+}
+
+.clothing-about-content h2 em {
+
+  color:
+    var(--fashion-accent);
+
+  font-weight:
+    400;
+
+}
+
+.clothing-about-content > p {
+
+  margin-top:
+    25px;
+
+  color:
+    var(--fashion-muted);
+
+  font-size:
+    15px;
+
+  line-height:
+    1.9;
+
+}
+
+.about-owner {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  margin-top:
+    28px;
+
+  padding-top:
+    22px;
+
+  border-top:
+    1px solid var(--fashion-border);
+
+}
+
+.owner-label {
+
+  color:
+    var(--fashion-muted);
+
+  font-size:
+    9px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .14em;
+
+}
+
+.about-owner strong {
+
+  margin-top:
+    4px;
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    19px;
+
+  font-weight:
+    400;
+
+}
+
+.about-actions {
+
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    28px;
+
+  margin-top:
+    30px;
+
+}
+
+.clothing-text-link {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap:
+    7px;
+
+  color:
+    var(--fashion-black);
+
+  font-size:
+    10px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .1em;
+
+  text-transform:
+    uppercase;
+
+}
+
+.clothing-text-link span {
+
+  color:
+    var(--fashion-accent);
+
+  transition:
+    transform var(--transition);
+
+}
+
+.clothing-text-link:hover span {
+
+  transform:
+    translateX(5px);
+
+}
+
+
+/* =========================================================
+   GALLERY
+   ========================================================= */
+
+.clothing-gallery {
+
+  background:
+    var(--fashion-light);
+
+}
+
+.clothing-gallery-grid {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    1.25fr
+    .75fr
+    .75fr;
+
+  grid-auto-rows:
+    210px;
+
+  gap:
+    12px;
+
+}
+
+.gallery-item {
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  background:
+    #d9d3ca;
+
+}
+
+.gallery-item-large {
+
+  grid-row:
+    span 2;
+
+}
+
+.gallery-item-wide {
+
+  grid-column:
+    span 2;
+
+}
+
+.gallery-placeholder {
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  display:
+    flex;
+
+  align-items:
+    flex-end;
+
+  padding:
+    20px;
+
+  color:
+    rgba(255,255,255,.9);
+
+  background:
+    linear-gradient(
+      145deg,
+      #3d3a37,
+      #958a7c
+    );
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    19px;
+
+  letter-spacing:
+    .06em;
+
+  transition:
+    transform 700ms ease;
+
+}
+
+.gallery-item:nth-child(2)
+.gallery-placeholder {
+
+  background:
+    linear-gradient(
+      145deg,
+      #635750,
+      #ad988d
+    );
+
+}
+
+.gallery-item:nth-child(3)
+.gallery-placeholder {
+
+  background:
+    linear-gradient(
+      145deg,
+      #4b5558,
+      #8f9998
+    );
+
+}
+
+.gallery-item:nth-child(4)
+.gallery-placeholder {
+
+  background:
+    linear-gradient(
+      145deg,
+      #65503f,
+      #bca17f
+    );
+
+}
+
+.gallery-item:nth-child(5)
+.gallery-placeholder {
+
+  background:
+    linear-gradient(
+      145deg,
+      #303130,
+      #827d73
+    );
+
+}
+
+.gallery-item:hover
+.gallery-placeholder {
+
+  transform:
+    scale(1.04);
+
+}
+
+
+/* =========================================================
+   BUSINESS INFORMATION
+   ========================================================= */
+
+.clothing-info-section {
+
+  padding:
+    70px 0;
+
+  background:
+    var(--fashion-white);
+
+}
+
+.clothing-info-grid {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  border-top:
+    1px solid var(--fashion-border);
+
+  border-bottom:
+    1px solid var(--fashion-border);
+
+}
+
+.clothing-info-card {
+
+  min-height:
+    190px;
+
+  padding:
+    32px;
+
+  border-right:
+    1px solid var(--fashion-border);
+
+}
+
+.clothing-info-card:last-child {
+
+  border-right:
+    0;
+
+}
+
+.info-card-label {
+
+  display:
+    block;
+
+  margin-bottom:
+    16px;
+
+  color:
+    var(--fashion-accent-dark);
+
+  font-size:
+    9px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .15em;
+
+}
+
+.clothing-info-card > strong {
+
+  display:
+    block;
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    21px;
+
+  font-weight:
+    400;
+
+}
+
+.clothing-info-card p {
+
+  margin-top:
+    8px;
+
+  color:
+    var(--fashion-muted);
+
+  font-size:
+    12px;
+
+  line-height:
+    1.7;
+
+}
+
+.info-rating {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    12px;
+
+}
+
+.info-rating strong {
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    31px;
+
+  font-weight:
+    400;
+
+}
+
+.info-rating span {
+
+  color:
+    var(--fashion-accent);
+
+  letter-spacing:
+    2px;
+
+  font-size:
+    12px;
+
+}
+
+
+/* =========================================================
+   CONTACT
+   ========================================================= */
+
+.clothing-contact {
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  padding:
+    100px 0;
+
+  background:
+    var(--fashion-black);
+
+  color:
+    var(--fashion-white);
+
+}
+
+.clothing-contact-background {
+
+  position:
+    absolute;
+
+  inset:
+    0;
+
+  pointer-events:
+    none;
+
+}
+
+.contact-pattern {
+
+  position:
+    absolute;
+
+  width:
+    650px;
+
+  height:
+    650px;
+
+  right:
+    -220px;
+
+  top:
+    -240px;
+
+  border:
+    1px solid rgba(255,255,255,.08);
+
+  border-radius:
+    50%;
+
+  box-shadow:
+    0 0 0 80px rgba(255,255,255,.025),
+    0 0 0 160px rgba(255,255,255,.018),
+    0 0 0 240px rgba(255,255,255,.012);
+
+}
+
+.clothing-contact-inner {
+
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(0,1.25fr)
+    minmax(300px,.75fr);
+
+  gap:
+    80px;
+
+  align-items:
+    center;
+
+}
+
+.clothing-contact .section-kicker {
+
+  color:
+    #d1aa70;
+
+}
+
+.clothing-contact h2 {
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    clamp(
+      44px,
+      6vw,
+      72px
+    );
+
+  font-weight:
+    400;
+
+  line-height:
+    1;
+
+  letter-spacing:
+    -.045em;
+
+}
+
+.clothing-contact h2 em {
+
+  color:
+    #c09a63;
+
+  font-weight:
+    400;
+
+}
+
+.contact-content > p {
+
+  max-width:
+    520px;
+
+  margin-top:
+    20px;
+
+  color:
+    rgba(255,255,255,.68);
+
+  font-size:
+    15px;
+
+}
+
+.contact-address,
+.contact-hours {
+
+  display:
+    flex;
+
+  gap:
+    15px;
+
+  margin-top:
+    32px;
+
+}
+
+.contact-hours {
+
+  margin-top:
+    22px;
+
+}
+
+.contact-icon {
+
+  width:
+    42px;
+
+  height:
+    42px;
+
+  flex:
+    0 0 42px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border:
+    1px solid rgba(255,255,255,.16);
+
+  color:
+    #d0a86d;
+
+}
+
+.contact-address strong,
+.contact-hours strong {
+
+  display:
+    block;
+
+  font-size:
+    11px;
+
+  letter-spacing:
+    .08em;
+
+  text-transform:
+    uppercase;
+
+}
+
+.contact-address p,
+.contact-hours p {
+
+  margin-top:
+    3px;
+
+  color:
+    rgba(255,255,255,.58);
+
+  font-size:
+    12px;
+
+}
+
+
+.contact-actions {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    10px;
+
+}
+
+.clothing-contact-button {
+
+  min-height:
+    58px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    10px;
+
+  padding:
+    0 24px;
+
+  border:
+    1px solid rgba(255,255,255,.22);
+
+  background:
+    rgba(255,255,255,.05);
+
+  color:
+    var(--fashion-white);
+
+  font-size:
+    10px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .12em;
+
+  text-transform:
+    uppercase;
+
+  transition:
+    all var(--transition);
+
+}
+
+.clothing-contact-button:hover {
+
+  background:
+    var(--fashion-white);
+
+  border-color:
+    var(--fashion-white);
+
+  color:
+    var(--fashion-black);
+
+  transform:
+    translateY(-2px);
+
+}
+
+.clothing-contact-button-whatsapp {
+
+  background:
+    var(--fashion-accent);
+
+  border-color:
+    var(--fashion-accent);
+
+}
+
+.clothing-contact-button-whatsapp:hover {
+
+  background:
+    var(--fashion-white);
+
+  color:
+    var(--fashion-black);
+
+}
+
+.clothing-contact-link {
+
+  padding:
+    13px;
+
+  color:
+    rgba(255,255,255,.58);
+
+  text-align:
+    center;
+
+  font-size:
+    10px;
+
+  letter-spacing:
+    .08em;
+
+  text-transform:
+    uppercase;
+
+  transition:
+    color var(--transition);
+
+}
+
+.clothing-contact-link:hover {
+
+  color:
+    var(--fashion-white);
+
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.clothing-footer {
+
+  background:
+    #0b0b0b;
+
+  color:
+    var(--fashion-white);
+
+}
+
+.clothing-footer-main {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    1fr
+    1fr
+    auto;
+
+  gap:
+    50px;
+
+  align-items:
+    center;
+
+  padding:
+    55px 0;
+
+}
+
+.footer-brand {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    12px;
+
+}
+
+.footer-brand > div:last-child {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+}
+
+.footer-brand strong {
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    17px;
+
+  font-weight:
+    400;
+
+}
+
+.footer-brand small {
+
+  margin-top:
+    4px;
+
+  color:
+    rgba(255,255,255,.42);
+
+  font-size:
+    8px;
+
+  letter-spacing:
+    .13em;
+
+  text-transform:
+    uppercase;
+
+}
+
+.footer-description {
+
+  color:
+    rgba(255,255,255,.48);
+
+  font-size:
+    12px;
+
+  line-height:
+    1.7;
+
+}
+
+.footer-description strong {
+
+  color:
+    rgba(255,255,255,.75);
+
+  font-weight:
+    500;
+
+}
+
+.footer-actions {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    18px;
+
+}
+
+.footer-actions a {
+
+  color:
+    rgba(255,255,255,.65);
+
+  font-size:
+    9px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    .1em;
+
+  text-transform:
+    uppercase;
+
+  transition:
+    color var(--transition);
+
+}
+
+.footer-actions a:hover {
+
+  color:
+    var(--fashion-white);
+
+}
+
+
+.clothing-footer-bottom {
+
+  min-height:
+    62px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    20px;
+
+  border-top:
+    1px solid rgba(255,255,255,.08);
+
+  color:
+    rgba(255,255,255,.35);
+
+  font-size:
+    10px;
+
+}
+
+.clothing-footer-bottom a {
+
+  color:
+    #c5a16d;
+
+}
+
+
+/* =========================================================
+   EMPTY / MISSING IMAGE HANDLING
+   ========================================================= */
+
+.clothing-site img[src=""] {
+
+  visibility:
+    hidden;
+
+}
+
+.clothing-site
+[data-business-cover][src=""] {
+
+  background:
+    linear-gradient(
+      135deg,
+      #252525,
+      #8a7b69
+    );
+
+}
+
+.clothing-site
+[data-business-logo][src=""] {
+
+  visibility:
+    hidden;
+
+}
+
+
+/* =========================================================
+   FOCUS
+   ========================================================= */
+
+.clothing-site
+a:focus-visible,
+.clothing-site
+button:focus-visible {
+
+  outline:
+    2px solid var(--fashion-accent);
+
+  outline-offset:
+    3px;
+
+}
+
+
+/* =========================================================
+   SELECTION
+   ========================================================= */
+
+.clothing-site ::selection {
+
+  background:
+    var(--fashion-accent);
+
+  color:
+    var(--fashion-white);
+
+}
+
+
+/* =========================================================
+   RESPONSIVE — 1100px
+   ========================================================= */
+
+@media (
+  max-width: 1100px
+) {
+
+  .clothing-navigation {
+
+    gap:
+      20px;
+
+  }
+
+
+  .clothing-category-grid {
+
+    grid-template-columns:
+      repeat(2, 1fr);
+
+  }
+
+
+  .clothing-about-grid {
+
+    gap:
+      55px;
+
+  }
+
+
+  .clothing-footer-main {
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+  .footer-actions {
+
+    grid-column:
+      1 / -1;
+
+  }
+
+}
+
+
+/* =========================================================
+   RESPONSIVE — 900px
+   ========================================================= */
+
+@media (
+  max-width: 900px
+) {
+
+  .clothing-container {
+
+    width:
+      min(
+        calc(100% - 36px),
+        var(--container)
+      );
+
+  }
+
+
+  .clothing-navigation,
+  .clothing-header-call {
+
+    display:
+      none;
+
+  }
+
+
+  .clothing-menu-button {
+
+    display:
+      flex;
+
+  }
+
+
+  .clothing-hero {
+
+    min-height:
+      680px;
+
+  }
+
+
+  .clothing-hero-inner {
+
+    padding:
+      80px 0 100px;
+
+  }
+
+
+  .clothing-quick-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .clothing-quick-item {
+
+    border-right:
+      0;
+
+    border-bottom:
+      1px solid var(--fashion-border);
+
+  }
+
+  .clothing-quick-item:last-child {
+
+    border-bottom:
+      0;
+
+  }
+
+
+  .clothing-about-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .clothing-about-content {
+
+    max-width:
+      100%;
+
+  }
+
+
+  .clothing-contact-inner {
+
+    grid-template-columns:
+      1fr;
+
+    gap:
+      50px;
+
+  }
+
+
+  .clothing-info-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .clothing-info-card {
+
+    border-right:
+      0;
+
+    border-bottom:
+      1px solid var(--fashion-border);
+
+  }
+
+
+  .clothing-info-card:last-child {
+
+    border-bottom:
+      0;
+
+  }
+
+}
+
+
+/* =========================================================
+   RESPONSIVE — 700px
+   ========================================================= */
+
+@media (
+  max-width: 700px
+) {
+
+  .clothing-container {
+
+    width:
+      calc(100% - 28px);
+
+  }
+
+
+  .clothing-announcement {
+
+    font-size:
+      9px;
+
+  }
+
+
+  .clothing-header {
+
+    height:
+      72px;
+
+  }
+
+
+  .clothing-brand {
+
+    min-width:
+      0;
+
+  }
+
+
+  .clothing-brand-logo {
+
+    width:
+      38px;
+
+    height:
+      38px;
+
+    flex-basis:
+      38px;
+
+  }
+
+
+  .clothing-brand-text strong {
+
+    max-width:
+      180px;
+
+    font-size:
+      14px;
+
+  }
+
+
+  .clothing-header-whatsapp {
+
+    min-height:
+      35px;
+
+    padding:
+      0 12px;
+
+    font-size:
+      9px;
+
+  }
+
+
+  .clothing-hero {
+
+    min-height:
+      650px;
+
+  }
+
+
+  .clothing-hero-overlay {
+
+    background:
+      linear-gradient(
+        90deg,
+        rgba(0,0,0,.82),
+        rgba(0,0,0,.45)
+      );
+
+  }
+
+
+  .clothing-hero h1 {
+
+    font-size:
+      clamp(
+        43px,
+        13vw,
+        70px
+      );
+
+  }
+
+
+  .clothing-hero-description {
+
+    font-size:
+      14px;
+
+  }
+
+
+  .clothing-scroll-indicator {
+
+    display:
+      none;
+
+  }
+
+
+  .clothing-section {
+
+    padding:
+      75px 0;
+
+  }
+
+
+  .clothing-section-heading {
+
+    margin-bottom:
+      35px;
+
+  }
+
+
+  .clothing-section-heading h2 {
+
+    font-size:
+      38px;
+
+  }
+
+
+  .clothing-category-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .category-card-image {
+
+    height:
+      260px;
+
+  }
+
+
+  .brand-strip-inner {
+
+    flex-direction:
+      column;
+
+    align-items:
+      flex-start;
+
+  }
+
+
+  .clothing-about-visual {
+
+    padding:
+      0 16px 16px 0;
+
+  }
+
+
+  .about-frame,
+  .about-frame img {
+
+    min-height:
+      420px;
+
+  }
+
+
+  .clothing-gallery-grid {
+
+    grid-template-columns:
+      1fr 1fr;
+
+    grid-auto-rows:
+      170px;
+
+  }
+
+
+  .gallery-item-large {
+
+    grid-row:
+      span 2;
+
+  }
+
+
+  .gallery-item-wide {
+
+    grid-column:
+      1 / -1;
+
+  }
+
+
+  .clothing-contact {
+
+    padding:
+      75px 0;
+
+  }
+
+
+  .clothing-contact h2 {
+
+    font-size:
+      48px;
+
+  }
+
+
+  .clothing-footer-main {
+
+    grid-template-columns:
+      1fr;
+
+    gap:
+      30px;
+
+  }
+
+
+  .footer-actions {
+
+    grid-column:
+      auto;
+
+  }
+
+
+  .clothing-footer-bottom {
+
+    min-height:
+      auto;
+
+    padding:
+      22px 0;
+
+    flex-direction:
+      column;
+
+    align-items:
+      flex-start;
+
+  }
+
+}
+
+
+/* =========================================================
+   RESPONSIVE — 480px
+   ========================================================= */
+
+@media (
+  max-width: 480px
+) {
+
+  .clothing-container {
+
+    width:
+      calc(100% - 22px);
+
+  }
+
+
+  .clothing-announcement
+  .clothing-container {
+
+    gap:
+      6px;
+
+  }
+
+
+  .clothing-brand-text small {
+
+    display:
+      none;
+
+  }
+
+
+  .clothing-brand-text strong {
+
+    max-width:
+      145px;
+
+  }
+
+
+  .clothing-header-whatsapp {
+
+    display:
+      none;
+
+  }
+
+
+  .clothing-hero {
+
+    min-height:
+      600px;
+
+  }
+
+
+  .clothing-hero-inner {
+
+    padding:
+      60px 0 80px;
+
+  }
+
+
+  .clothing-hero-eyebrow {
+
+    font-size:
+      9px;
+
+  }
+
+
+  .clothing-hero h1 {
+
+    font-size:
+      45px;
+
+  }
+
+
+  .clothing-hero-description {
+
+    margin-top:
+      20px;
+
+    font-size:
+      13px;
+
+  }
+
+
+  .clothing-hero-actions {
+
+    align-items:
+      stretch;
+
+    flex-direction:
+      column;
+
+  }
+
+
+  .clothing-button {
+
+    width:
+      100%;
+
+  }
+
+
+  .clothing-quick-item {
+
+    min-height:
+      90px;
+
+    padding:
+      16px 4px;
+
+  }
+
+
+  .clothing-quick-item strong {
+
+    font-size:
+      12px;
+
+  }
+
+
+  .clothing-section-heading h2 {
+
+    font-size:
+      34px;
+
+  }
+
+
+  .clothing-category-card {
+
+    display:
+      grid;
+
+    grid-template-columns:
+      115px 1fr;
+
+  }
+
+
+  .category-card-image {
+
+    height:
+      100%;
+
+    min-height:
+      190px;
+
+  }
+
+
+  .category-card-content {
+
+    padding:
+      17px;
+
+  }
+
+
+  .category-card-content h3 {
+
+    font-size:
+      21px;
+
+  }
+
+
+  .category-card-content p {
+
+    min-height:
+      auto;
+
+    font-size:
+      11px;
+
+  }
+
+
+  .clothing-about-content h2 {
+
+    font-size:
+      40px;
+
+  }
+
+
+  .about-frame,
+  .about-frame img {
+
+    min-height:
+      350px;
+
+  }
+
+
+  .about-badge {
+
+    width:
+      105px;
+
+    height:
+      105px;
+
+  }
+
+
+  .about-badge strong {
+
+    font-size:
+      25px;
+
+  }
+
+
+  .clothing-gallery-grid {
+
+    display:
+      grid;
+
+    grid-template-columns:
+      1fr;
+
+    grid-auto-rows:
+      180px;
+
+  }
+
+
+  .gallery-item-large,
+  .gallery-item-wide {
+
+    grid-row:
+      auto;
+
+    grid-column:
+      auto;
+
+  }
+
+
+  .clothing-info-card {
+
+    padding:
+      25px 18px;
+
+  }
+
+
+  .clothing-contact-inner {
+
+    gap:
+      38px;
+
+  }
+
+
+  .clothing-contact h2 {
+
+    font-size:
+      43px;
+
+  }
+
+
+  .contact-address,
+  .contact-hours {
+
+    margin-top:
+      24px;
+
+  }
+
+
+  .clothing-footer-main {
+
+    padding:
+      40px 0;
+
+  }
+
+
+  .footer-actions {
+
+    flex-wrap:
+      wrap;
+
+  }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (
+  prefers-reduced-motion: reduce
+) {
+
+  .clothing-site *,
+  .clothing-site *::before,
+  .clothing-site *::after {
+
+    scroll-behavior:
+      auto !important;
+
+    transition-duration:
+      .01ms !important;
+
+    animation-duration:
+      .01ms !important;
+
+    animation-iteration-count:
+      1 !important;
+
+  }
+
+}
