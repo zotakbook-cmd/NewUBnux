@@ -1,14 +1,7 @@
 /* =========================================================
    UBnux Business Manager Authentication
-   File: assets/js/auth.js
-   Version: 2.0.0
-
-   Responsibilities:
-   - Login
-   - Logout
-   - Session storage
-   - Session validation
-   - Login form handling
+   File: auth.js
+   Version: 2.1.0
    ========================================================= */
 
 (function (
@@ -19,22 +12,17 @@
   "use strict";
 
 
-  /* =======================================================
-     CONFIG
-  ======================================================= */
-
   const Config =
     window.UBnuxManagerConfig;
-
 
   const API =
     window.UBnuxManagerAPI;
 
 
-  if (!Config) {
+  if (!Config || !API) {
 
     console.error(
-      "UBnuxManagerConfig is not available."
+      "UBnux authentication dependencies are missing."
     );
 
     return;
@@ -42,38 +30,24 @@
   }
 
 
-  if (!API) {
+  const Auth = {
 
-    console.error(
-      "UBnuxManagerAPI is not available."
-    );
+    _loggingIn:
+      false,
 
-    return;
+    onLoginSuccess:
+      null
 
-  }
-
-
-  /* =======================================================
-     AUTH OBJECT
-  ======================================================= */
-
-  const Auth = {};
+  };
 
 
   /* =======================================================
-     SAVE SESSION
+     SESSION
   ======================================================= */
 
   function saveSession(
     session
   ) {
-
-    if (!session) {
-
-      return false;
-
-    }
-
 
     try {
 
@@ -84,16 +58,14 @@
         )
       );
 
-
       return true;
 
     } catch (error) {
 
       console.error(
-        "Unable to save manager session:",
+        "Session save failed:",
         error
       );
-
 
       return false;
 
@@ -101,10 +73,6 @@
 
   }
 
-
-  /* =======================================================
-     GET SESSION
-  ======================================================= */
 
   function getSession() {
 
@@ -123,23 +91,9 @@
       }
 
 
-      const session =
-        JSON.parse(
-          raw
-        );
-
-
-      if (
-        !session ||
-        typeof session !== "object"
-      ) {
-
-        return null;
-
-      }
-
-
-      return session;
+      return JSON.parse(
+        raw
+      );
 
     } catch (error) {
 
@@ -152,33 +106,14 @@
   }
 
 
-  /* =======================================================
-     CLEAR SESSION
-  ======================================================= */
-
   function clearSession() {
 
-    try {
-
-      localStorage.removeItem(
-        Config.SESSION_KEY
-      );
-
-    } catch (error) {
-
-      console.warn(
-        "Unable to clear session:",
-        error
-      );
-
-    }
+    localStorage.removeItem(
+      Config.SESSION_KEY
+    );
 
   }
 
-
-  /* =======================================================
-     GET SESSION TOKEN
-  ======================================================= */
 
   function getToken() {
 
@@ -194,23 +129,13 @@
 
 
     return String(
-
       session.sessionToken ||
-
       session.token ||
-
-      session.SessionToken ||
-
       ""
-
     ).trim();
 
   }
 
-
-  /* =======================================================
-     GET USER
-  ======================================================= */
 
   function getUser() {
 
@@ -218,18 +143,20 @@
       getSession();
 
 
-    if (!session) {
+    return session
+      ? (
+          session.user ||
+          session.admin ||
+          null
+        )
+      : null;
 
-      return null;
-
-    }
+  }
 
 
-    return (
-      session.user ||
-      session.admin ||
-      null
-    );
+  function isLoggedIn() {
+
+    return !!getToken();
 
   }
 
@@ -262,6 +189,9 @@
         success:
           false,
 
+        code:
+          "USER_ID_REQUIRED",
+
         message:
           "User ID is required."
 
@@ -277,6 +207,9 @@
         success:
           false,
 
+        code:
+          "PASSWORD_REQUIRED",
+
         message:
           "Password is required."
 
@@ -285,14 +218,15 @@
     }
 
 
-    if (
-      Auth._loggingIn
-    ) {
+    if (Auth._loggingIn) {
 
       return {
 
         success:
           false,
+
+        code:
+          "LOGIN_IN_PROGRESS",
 
         message:
           "Login request is already in progress."
@@ -309,7 +243,7 @@
     try {
 
       console.log(
-        "UBnux Manager login:",
+        "UBnux login request:",
         userId
       );
 
@@ -322,14 +256,13 @@
 
 
       console.log(
-        "UBnux Manager login response:",
+        "UBnux login response:",
         response
       );
 
 
       if (
-        !response ||
-        response.success !== true
+        !response
       ) {
 
         return {
@@ -337,14 +270,11 @@
           success:
             false,
 
-          message:
-            response &&
-            response.message
-              ? response.message
-              : "Invalid User ID or password.",
+          code:
+            "EMPTY_RESPONSE",
 
-          data:
-            response || null
+          message:
+            "No response received from API."
 
         };
 
@@ -352,17 +282,138 @@
 
 
       /*
-       * Save complete server response.
+       * HTML response
        */
+
+      if (
+        response.code ===
+        "HTML_RESPONSE"
+      ) {
+
+        return {
+
+          success:
+            false,
+
+          code:
+            "API_HTML_RESPONSE",
+
+          message:
+            "Business Manager API returned an HTML page. Please check the Cloudflare → Apps Script connection."
+
+        };
+
+      }
+
+
+      /*
+       * Invalid JSON
+       */
+
+      if (
+        response.code ===
+        "INVALID_JSON"
+      ) {
+
+        return {
+
+          success:
+            false,
+
+          code:
+            "API_INVALID_JSON",
+
+          message:
+            "Business Manager API returned invalid JSON."
+
+        };
+
+      }
+
+
+      /*
+       * Network error
+       */
+
+      if (
+        response.code ===
+        "NETWORK_ERROR"
+      ) {
+
+        return {
+
+          success:
+            false,
+
+          code:
+            "NETWORK_ERROR",
+
+          message:
+            "Unable to connect to Business Manager API."
+
+        };
+
+      }
+
+
+      /*
+       * Actual backend credential error
+       */
+
+      if (
+        response.success !==
+        true
+      ) {
+
+        return {
+
+          success:
+            false,
+
+          code:
+            response.code ||
+            "LOGIN_FAILED",
+
+          message:
+            response.message ||
+            "Login failed.",
+
+          data:
+            response
+
+        };
+
+      }
+
+
+      /*
+       * Successful login
+       */
+
+      if (
+        !response.sessionToken
+      ) {
+
+        return {
+
+          success:
+            false,
+
+          code:
+            "NO_SESSION_TOKEN",
+
+          message:
+            "Login succeeded but no session token was returned."
+
+        };
+
+      }
+
 
       saveSession(
         response
       );
 
-
-      /*
-       * Notify app.
-       */
 
       dispatchAuthEvent(
         "login",
@@ -376,7 +427,7 @@
     } catch (error) {
 
       console.error(
-        "Manager login error:",
+        "UBnux login error:",
         error
       );
 
@@ -386,11 +437,12 @@
         success:
           false,
 
+        code:
+          "LOGIN_EXCEPTION",
+
         message:
-          error &&
-          error.message
-            ? error.message
-            : "Login failed."
+          error.message ||
+          "Login failed."
 
       };
 
@@ -428,7 +480,7 @@
     } catch (error) {
 
       console.warn(
-        "Server logout failed:",
+        "Logout API error:",
         error
       );
 
@@ -455,7 +507,7 @@
 
 
   /* =======================================================
-     VERIFY SESSION
+     VERIFY
   ======================================================= */
 
   async function verifySession() {
@@ -482,96 +534,19 @@
     }
 
 
-    try {
-
-      const response =
-        await API.bootstrap(
-          token
-        );
-
-
-      console.log(
-        "UBnux session response:",
-        response
+    const response =
+      await API.bootstrap(
+        token
       );
 
 
-      if (
-        !response ||
-        response.success !== true
-      ) {
+    if (
+      !response ||
+      response.success !==
+      true
+    ) {
 
-        clearSession();
-
-
-        dispatchAuthEvent(
-          "session-expired",
-          response
-        );
-
-
-        return {
-
-          success:
-            false,
-
-          authenticated:
-            false,
-
-          message:
-            response &&
-            response.message
-              ? response.message
-              : "Session expired."
-
-        };
-
-      }
-
-
-      const currentSession =
-        getSession() || {};
-
-
-      const updatedSession =
-        Object.assign(
-          {},
-          currentSession,
-          response
-        );
-
-
-      saveSession(
-        updatedSession
-      );
-
-
-      dispatchAuthEvent(
-        "session-valid",
-        updatedSession
-      );
-
-
-      return {
-
-        success:
-          true,
-
-        authenticated:
-          true,
-
-        data:
-          updatedSession
-
-      };
-
-
-    } catch (error) {
-
-      console.error(
-        "Session verification error:",
-        error
-      );
+      clearSession();
 
 
       return {
@@ -583,20 +558,46 @@
           false,
 
         message:
-          error &&
-          error.message
-            ? error.message
-            : "Session verification failed."
+          response &&
+          response.message
+            ? response.message
+            : "Session expired."
 
       };
 
     }
 
+
+    const oldSession =
+      getSession() || {};
+
+
+    saveSession(
+
+      Object.assign(
+        {},
+        oldSession,
+        response
+      )
+
+    );
+
+
+    return {
+
+      success:
+        true,
+
+      authenticated:
+        true
+
+    };
+
   }
 
 
   /* =======================================================
-     AUTH EVENT
+     EVENTS
   ======================================================= */
 
   function dispatchAuthEvent(
@@ -604,38 +605,27 @@
     data
   ) {
 
-    try {
+    window.dispatchEvent(
 
-      window.dispatchEvent(
+      new CustomEvent(
+        "ubnux:auth",
+        {
 
-        new CustomEvent(
-          "ubnux:auth",
-          {
+          detail: {
 
-            detail: {
+            type:
+              type,
 
-              type:
-                type,
-
-              data:
-                data
-
-            }
+            data:
+              data
 
           }
 
-        )
+        }
 
-      );
+      )
 
-    } catch (error) {
-
-      console.warn(
-        "Unable to dispatch auth event.",
-        error
-      );
-
-    }
+    );
 
   }
 
@@ -680,33 +670,25 @@
 
         const userInput =
           form.querySelector(
-            '[name="userId"],' +
-            '[name="userid"],' +
-            '[name="username"],' +
-            '#userId,' +
-            '#username'
+            "#loginUserId, [name='userId']"
           );
 
 
         const passwordInput =
           form.querySelector(
-            '[name="password"],' +
-            '#password'
+            "#loginPassword, [name='password']"
           );
 
 
-        const submitButton =
-          form.querySelector(
-            'button[type="submit"],' +
-            'input[type="submit"]'
+        const button =
+          document.getElementById(
+            "loginBtn"
           );
 
 
-        const messageElement =
-          form.querySelector(
-            '[data-login-message],' +
-            '.login-message,' +
-            '#loginMessage'
+        const message =
+          document.getElementById(
+            "loginMessage"
           );
 
 
@@ -722,30 +704,24 @@
             : "";
 
 
-        if (submitButton) {
+        if (button) {
 
-          submitButton.disabled =
+          button.disabled =
             true;
 
-
-          submitButton.dataset
-            .originalText =
-              submitButton.textContent;
-
-
-          submitButton.textContent =
+          button.textContent =
             "Signing in...";
 
         }
 
 
-        if (messageElement) {
+        if (message) {
 
-          messageElement.textContent =
+          message.textContent =
             "Signing in...";
 
-          messageElement.className =
-            "login-message";
+          message.className =
+            "message";
 
         }
 
@@ -760,25 +736,20 @@
 
 
           if (
-            result &&
-            result.success === true
+            result.success ===
+            true
           ) {
 
-            if (messageElement) {
+            if (message) {
 
-              messageElement.textContent =
+              message.textContent =
                 "Login successful.";
 
-              messageElement.className =
-                "login-message success";
+              message.className =
+                "message success";
 
             }
 
-
-            /*
-             * app.js can handle
-             * dashboard navigation.
-             */
 
             if (
               typeof Auth.onLoginSuccess ===
@@ -791,20 +762,20 @@
 
             }
 
-          } else {
 
-            if (messageElement) {
+            return;
 
-              messageElement.textContent =
-                result &&
-                result.message
-                  ? result.message
-                  : "Login failed.";
+          }
 
-              messageElement.className =
-                "login-message error";
 
-            }
+          if (message) {
+
+            message.textContent =
+              result.message ||
+              "Login failed.";
+
+            message.className =
+              "message error";
 
           }
 
@@ -817,28 +788,26 @@
           );
 
 
-          if (messageElement) {
+          if (message) {
 
-            messageElement.textContent =
-              "Unable to login. Please try again.";
+            message.textContent =
+              error.message ||
+              "Login failed.";
 
-            messageElement.className =
-              "login-message error";
+            message.className =
+              "message error";
 
           }
 
         } finally {
 
-          if (submitButton) {
+          if (button) {
 
-            submitButton.disabled =
+            button.disabled =
               false;
 
-
-            submitButton.textContent =
-              submitButton.dataset
-                .originalText ||
-              "Login";
+            button.textContent =
+              "Sign In";
 
           }
 
@@ -850,29 +819,15 @@
   }
 
 
-  /* =======================================================
-     BIND ALL LOGIN FORMS
-  ======================================================= */
-
   function bindLoginForms() {
 
-    const forms =
-      document.querySelectorAll(
-        'form[data-login-form],' +
-        '#loginForm,' +
-        '.login-form'
+    document
+      .querySelectorAll(
+        "#loginForm, [data-login-form]"
+      )
+      .forEach(
+        bindLoginForm
       );
-
-
-    forms.forEach(
-      function (form) {
-
-        bindLoginForm(
-          form
-        );
-
-      }
-    );
 
   }
 
@@ -897,20 +852,16 @@
     getUser;
 
   Auth.isLoggedIn =
-    function () {
-
-      return !!getToken();
-
-    };
+    isLoggedIn;
 
   Auth.verifySession =
     verifySession;
 
-  Auth.clearSession =
-    clearSession;
-
   Auth.saveSession =
     saveSession;
+
+  Auth.clearSession =
+    clearSession;
 
   Auth.bindLoginForm =
     bindLoginForm;
@@ -919,33 +870,12 @@
     bindLoginForms;
 
 
-  /*
-   * app.js can assign this callback.
-   */
-
-  Auth.onLoginSuccess =
-    null;
-
-
-  /* =======================================================
-     GLOBAL EXPORT
-  ======================================================= */
-
   window.UBnuxManagerAuth =
     Auth;
 
   window.UBnuxAuth =
     Auth;
 
-
-  console.log(
-    "UBnux Manager Auth v2.0.0 initialized."
-  );
-
-
-  /* =======================================================
-     DOM READY
-  ======================================================= */
 
   if (
     document.readyState ===
@@ -962,6 +892,11 @@
     bindLoginForms();
 
   }
+
+
+  console.log(
+    "UBnux Manager Auth v2.1.0 initialized."
+  );
 
 
 })(window, document);
