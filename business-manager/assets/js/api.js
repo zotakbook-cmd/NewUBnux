@@ -1,15 +1,20 @@
 /* =========================================================
    UBnux Business Manager API
    File: assets/js/api.js
-   Version: 1.0.0
+   Version: 2.0.0
+
+   Architecture:
 
    Browser
       ↓
-   Cloudflare Pages Function /api/
+   Cloudflare Pages Function
       ↓
-   Google Apps Script /exec
+   Google Apps Script doGet()
+      ↓
+   Google Sheets
 
-   Browser NEVER calls Apps Script directly.
+   NOTE:
+   Current Apps Script backend uses GET / doGet().
    ========================================================= */
 
 (function (window) {
@@ -18,8 +23,8 @@
 
 
   /* =======================================================
-     CONFIG CHECK
-     ======================================================= */
+     CONFIG
+  ======================================================= */
 
   const Config =
     window.UBnuxManagerConfig;
@@ -38,16 +43,19 @@
 
   /* =======================================================
      API OBJECT
-     ======================================================= */
+  ======================================================= */
 
   const API = {};
 
 
   /* =======================================================
-     API URL
-     ======================================================= */
+     BUILD API URL
+  ======================================================= */
 
-  function getAPIURL(action, params) {
+  function getAPIURL(
+    action,
+    params
+  ) {
 
     let baseURL =
       String(
@@ -62,11 +70,9 @@
     }
 
 
-    /*
-     * Ensure trailing slash
-     */
-
-    if (!baseURL.endsWith("/")) {
+    if (
+      !baseURL.endsWith("/")
+    ) {
 
       baseURL += "/";
 
@@ -90,10 +96,6 @@
     }
 
 
-    /*
-     * Additional GET parameters
-     */
-
     if (
       params &&
       typeof params === "object"
@@ -104,6 +106,7 @@
 
           const value =
             params[key];
+
 
           if (
             value !== undefined &&
@@ -131,7 +134,7 @@
 
   /* =======================================================
      TIMEOUT
-     ======================================================= */
+  ======================================================= */
 
   function createTimeoutSignal(
     timeout
@@ -143,8 +146,13 @@
     ) {
 
       return {
-        signal: undefined,
-        cancel: function () {}
+
+        signal:
+          undefined,
+
+        cancel:
+          function () {}
+
       };
 
     }
@@ -174,7 +182,9 @@
       cancel:
         function () {
 
-          clearTimeout(timer);
+          clearTimeout(
+            timer
+          );
 
         }
 
@@ -184,8 +194,8 @@
 
 
   /* =======================================================
-     PARSE RESPONSE
-     ======================================================= */
+     RESPONSE PARSER
+  ======================================================= */
 
   async function parseResponse(
     response
@@ -194,10 +204,6 @@
     const text =
       await response.text();
 
-
-    /*
-     * Empty response
-     */
 
     if (!text) {
 
@@ -219,34 +225,27 @@
     }
 
 
-    /*
-     * JSON response
-     */
-
     try {
 
-      const data =
-        JSON.parse(text);
-
-
-      return data;
+      return JSON.parse(
+        text
+      );
 
     } catch (error) {
 
-      /*
-       * Server returned HTML/text instead
-       * of JSON.
-       */
-
       console.error(
         "UBnux API returned non-JSON response:",
-        text.substring(0, 500)
+        text.substring(
+          0,
+          1000
+        )
       );
 
 
       return {
 
-        success: false,
+        success:
+          false,
 
         status:
           response.status,
@@ -255,148 +254,12 @@
           "Server returned an invalid response.",
 
         raw:
-          text.substring(0, 1000)
+          text.substring(
+            0,
+            1000
+          )
 
       };
-
-    }
-
-  }
-
-
-  /* =======================================================
-     POST REQUEST
-     ======================================================= */
-
-  async function post(
-    action,
-    payload
-  ) {
-
-    const url =
-      getAPIURL(action);
-
-
-    const timeout =
-      createTimeoutSignal(
-        Config.REQUEST_TIMEOUT
-      );
-
-
-    try {
-
-      const response =
-        await fetch(
-          url,
-          {
-
-            method:
-              "POST",
-
-            headers: {
-
-              "Content-Type":
-                "application/json",
-
-              "Accept":
-                "application/json"
-
-            },
-
-            body:
-              JSON.stringify(
-                payload || {}
-              ),
-
-            signal:
-              timeout.signal,
-
-            credentials:
-              "same-origin"
-
-          }
-        );
-
-
-      const data =
-        await parseResponse(
-          response
-        );
-
-
-      if (!response.ok) {
-
-        return {
-
-          success: false,
-
-          status:
-            response.status,
-
-          message:
-            data.message ||
-            data.error ||
-            "API request failed.",
-
-          data:
-            data
-
-        };
-
-      }
-
-
-      return data;
-
-
-    } catch (error) {
-
-      console.error(
-        "UBnux API POST error:",
-        error
-      );
-
-
-      if (
-        error &&
-        error.name ===
-        "AbortError"
-      ) {
-
-        return {
-
-          success: false,
-
-          message:
-            "Request timed out. Please try again.",
-
-          code:
-            "TIMEOUT"
-
-        };
-
-      }
-
-
-      return {
-
-        success: false,
-
-        message:
-          error &&
-          error.message
-            ? error.message
-            : "Network request failed.",
-
-        code:
-          "NETWORK_ERROR"
-
-      };
-
-
-    } finally {
-
-      timeout.cancel();
 
     }
 
@@ -405,7 +268,7 @@
 
   /* =======================================================
      GET REQUEST
-     ======================================================= */
+  ======================================================= */
 
   async function get(
     action,
@@ -417,6 +280,12 @@
         action,
         params
       );
+
+
+    console.log(
+      "UBnux API GET:",
+      url
+    );
 
 
     const timeout =
@@ -462,7 +331,8 @@
 
         return {
 
-          success: false,
+          success:
+            false,
 
           status:
             response.status,
@@ -499,10 +369,11 @@
 
         return {
 
-          success: false,
+          success:
+            false,
 
           message:
-            "Request timed out.",
+            "Request timed out. Please try again.",
 
           code:
             "TIMEOUT"
@@ -514,7 +385,8 @@
 
       return {
 
-        success: false,
+        success:
+          false,
 
         message:
           error &&
@@ -539,7 +411,7 @@
 
   /* =======================================================
      LOGIN
-     ======================================================= */
+  ======================================================= */
 
   API.login =
     function (
@@ -547,7 +419,7 @@
       password
     ) {
 
-      return post(
+      return get(
         "manager-login",
         {
 
@@ -569,14 +441,14 @@
 
   /* =======================================================
      LOGOUT
-     ======================================================= */
+  ======================================================= */
 
   API.logout =
     function (
       sessionToken
     ) {
 
-      return post(
+      return get(
         "manager-logout",
         {
 
@@ -592,15 +464,15 @@
 
 
   /* =======================================================
-     BOOTSTRAP
-     ======================================================= */
+     SESSION / BOOTSTRAP
+  ======================================================= */
 
   API.bootstrap =
     function (
       sessionToken
     ) {
 
-      return post(
+      return get(
         "manager-bootstrap",
         {
 
@@ -616,8 +488,8 @@
 
 
   /* =======================================================
-     BUSINESSES
-     ======================================================= */
+     GET BUSINESSES
+  ======================================================= */
 
   API.getBusinesses =
     function (
@@ -625,7 +497,7 @@
       params
     ) {
 
-      return post(
+      return get(
         "manager-businesses",
         {
 
@@ -634,8 +506,7 @@
               sessionToken || ""
             ).trim(),
 
-          params:
-            params || {}
+          ...(params || {})
 
         }
       );
@@ -644,8 +515,8 @@
 
 
   /* =======================================================
-     SINGLE BUSINESS
-     ======================================================= */
+     GET SINGLE BUSINESS
+  ======================================================= */
 
   API.getBusiness =
     function (
@@ -653,7 +524,7 @@
       businessId
     ) {
 
-      return post(
+      return get(
         "manager-business",
         {
 
@@ -675,7 +546,7 @@
 
   /* =======================================================
      SAVE BUSINESS
-     ======================================================= */
+  ======================================================= */
 
   API.saveBusiness =
     function (
@@ -683,7 +554,14 @@
       business
     ) {
 
-      return post(
+      /*
+       * Current backend is GET based.
+       *
+       * Business object is therefore encoded
+       * as JSON inside one query parameter.
+       */
+
+      return get(
         "manager-save-business",
         {
 
@@ -693,7 +571,9 @@
             ).trim(),
 
           business:
-            business || {}
+            JSON.stringify(
+              business || {}
+            )
 
         }
       );
@@ -703,7 +583,7 @@
 
   /* =======================================================
      DELETE BUSINESS
-     ======================================================= */
+  ======================================================= */
 
   API.deleteBusiness =
     function (
@@ -711,7 +591,7 @@
       businessId
     ) {
 
-      return post(
+      return get(
         "manager-delete-business",
         {
 
@@ -733,7 +613,7 @@
 
   /* =======================================================
      CHECK SLUG
-     ======================================================= */
+  ======================================================= */
 
   API.checkSlug =
     function (
@@ -742,7 +622,7 @@
       businessId
     ) {
 
-      return post(
+      return get(
         "manager-check-slug",
         {
 
@@ -768,8 +648,8 @@
 
 
   /* =======================================================
-     CUSTOM SLUG PUBLIC LOOKUP
-     ======================================================= */
+     CUSTOM SLUG LOOKUP
+  ======================================================= */
 
   API.getBusinessBySlug =
     function (
@@ -792,19 +672,16 @@
 
 
   /* =======================================================
-     RAW METHODS
-     ======================================================= */
+     RAW GET
+  ======================================================= */
 
   API.get =
     get;
 
-  API.post =
-    post;
-
 
   /* =======================================================
-     DEBUG
-     ======================================================= */
+     URL HELPER
+  ======================================================= */
 
   API.getURL =
     getAPIURL;
@@ -812,22 +689,18 @@
 
   /* =======================================================
      EXPORT
-     ======================================================= */
+  ======================================================= */
 
   window.UBnuxManagerAPI =
     API;
 
-
-  /*
-   * Backward-compatible alias
-   */
 
   window.UBnuxManagerApi =
     API;
 
 
   console.log(
-    "UBnux Manager API initialized."
+    "UBnux Manager API v2.0.0 initialized."
   );
 
 
