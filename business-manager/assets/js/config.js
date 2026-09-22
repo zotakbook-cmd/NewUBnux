@@ -1,36 +1,24 @@
-window.UBnuxManagerConfig={
-  (function (window) {
+(function (window) {
 
   "use strict";
-
 
   window.UBnuxManagerConfig = {
 
     /*
-     * Browser NEVER calls Apps Script directly.
+     * Browser -> Cloudflare Pages Function
+     * Cloudflare Function -> Google Apps Script
      *
-     * Browser -> Cloudflare Function
+     * Browser NEVER calls Apps Script directly.
      */
 
-    API_URL:
-      "/api/",
+    API_URL: "/api/",
 
+    PUBLIC_ORIGIN: "https://ubnux.com",
 
-    PUBLIC_ORIGIN:
-      "https://ubnux.com",
+    SESSION_KEY: "ubnuxBusinessManagerSession",
 
-
-    SESSION_KEY:
-      "ubnuxBusinessManagerSession",
-
-
-    REQUEST_TIMEOUT:
-      25000
+    REQUEST_TIMEOUT: 25000
 
   };
 
-})(window);,
-  PUBLIC_ORIGIN:"https://ubnux.com",
-  SESSION_KEY:"ubnuxBusinessManagerSession",
-  REQUEST_TIMEOUT:25000
-};
+})(window);
