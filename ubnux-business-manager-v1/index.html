@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>UBnux Business Manager</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+<div id="toastHost" class="toast-host"></div>
+
+<section id="loginView" class="auth-shell">
+  <div class="auth-card">
+    <div class="brand"><div class="brand-mark">U</div><div><b>UBnux</b><small>Business Manager</small></div></div>
+    <h1>Admin Sign In</h1>
+    <p class="muted">Manage businesses and custom UBnux URLs.</p>
+    <form id="loginForm" class="stack">
+      <label><span>User ID</span><input id="loginUserId" required autocomplete="username"></label>
+      <label><span>Password</span><input id="loginPassword" type="password" required autocomplete="current-password"></label>
+      <button id="loginBtn" class="btn primary" type="submit">Sign In</button>
+      <div id="loginMessage" class="message"></div>
+    </form>
+  </div>
+</section>
+
+<div id="appView" class="app" hidden>
+  <aside class="sidebar">
+    <div class="brand side-brand"><div class="brand-mark">U</div><div><b>UBnux</b><small>Business Manager</small></div></div>
+    <nav>
+      <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+      <button class="nav-btn" data-view="businesses">Businesses</button>
+      <button class="nav-btn" data-view="editor">Add Business</button>
+    </nav>
+    <div class="side-bottom">
+      <div><strong id="adminName">Admin</strong><small id="adminRole">Administrator</small></div>
+      <button id="logoutBtn" class="btn ghost">Logout</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><h2 id="pageTitle">Dashboard</h2><p id="pageSub">UBnux marketplace overview</p></div>
+      <button class="btn primary" data-view="editor">+ Add Business</button>
+    </header>
+
+    <section id="view-dashboard" class="view">
+      <div class="stats">
+        <article><span>Total Businesses</span><strong id="statTotal">0</strong></article>
+        <article><span>Active</span><strong id="statActive">0</strong></article>
+        <article><span>Verified</span><strong id="statVerified">0</strong></article>
+        <article><span>Custom URLs</span><strong id="statUrls">0</strong></article>
+      </div>
+      <div class="panel"><div class="panel-head"><div><h3>Recent Businesses</h3><p>Latest UBnux listings.</p></div></div><div id="recentTable"></div></div>
+    </section>
+
+    <section id="view-businesses" class="view" hidden>
+      <div class="panel">
+        <div class="panel-head wrap"><div><h3>Businesses</h3><p>Search, edit and manage listings.</p></div>
+          <div class="filters"><input id="searchBox" placeholder="Search business, ID, mobile..."><select id="filterDistrict"><option value="">All districts</option></select><select id="filterCategory"><option value="">All categories</option></select></div>
+        </div>
+        <div id="businessTable"></div>
+      </div>
+    </section>
+
+    <section id="view-editor" class="view" hidden>
+      <form id="businessForm">
+        <input id="businessId" type="hidden">
+        <div class="editor-grid">
+          <div>
+            <div class="panel"><div class="panel-head"><div><h3 id="formTitle">Add Business</h3><p>Core listing information.</p></div></div>
+              <div class="form-grid">
+                <label class="wide"><span>Business Name *</span><input id="businessName" required></label>
+                <label><span>District *</span><select id="districtId" required></select></label>
+                <label><span>Category *</span><select id="categoryId" required></select></label>
+                <label><span>Owner Name</span><input id="ownerName"></label>
+                <label><span>Mobile</span><input id="mobile"></label>
+                <label><span>WhatsApp</span><input id="whatsapp"></label>
+                <label><span>Email</span><input id="email" type="email"></label>
+                <label class="wide"><span>Address</span><input id="address"></label>
+                <label><span>Area</span><input id="area"></label>
+                <label><span>Pincode</span><input id="pincode"></label>
+                <label class="wide"><span>Short Description</span><textarea id="shortDescription" rows="3"></textarea></label>
+                <label class="wide"><span>Long Description</span><textarea id="longDescription" rows="6"></textarea></label>
+              </div>
+            </div>
+
+            <div class="panel"><div class="panel-head"><div><h3>Media & Business Info</h3><p>Optional listing details.</p></div></div>
+              <div class="form-grid">
+                <label class="wide"><span>Logo URL</span><input id="logoUrl"></label>
+                <label class="wide"><span>Cover URL</span><input id="coverUrl"></label>
+                <label><span>Opening Time</span><input id="openingTime" type="time"></label>
+                <label><span>Closing Time</span><input id="closingTime" type="time"></label>
+                <label class="wide"><span>Working Days</span><input id="workingDays" placeholder="Mon,Tue,Wed,Thu,Fri,Sat"></label>
+                <label><span>Status</span><select id="businessStatus"><option>Active</option><option>Inactive</option><option>Pending</option></select></label>
+                <label><span>Established Year</span><input id="establishedYear"></label>
+                <label class="check"><input id="verified" type="checkbox"> Verified</label>
+                <label class="check"><input id="featured" type="checkbox"> Featured</label>
+                <label class="wide"><span>Website URL</span><input id="websiteUrl"></label>
+                <label><span>Instagram URL</span><input id="instagramUrl"></label>
+                <label><span>Facebook URL</span><input id="facebookUrl"></label>
+                <label class="wide"><span>SEO Title</span><input id="seoTitle"></label>
+                <label class="wide"><span>SEO Description</span><textarea id="seoDescription" rows="3"></textarea></label>
+              </div>
+            </div>
+          </div>
+
+          <aside>
+            <div class="panel sticky">
+              <div class="panel-head"><div><h3>Custom Business URL</h3><p>Generate a globally unique URL.</p></div></div>
+              <div class="url-box">
+                <small id="urlPrefix">https://ubnux.com/</small>
+                <input id="customSlug" class="slug" placeholder="business-name" autocomplete="off">
+              </div>
+              <div id="slugStatus" class="slug-status neutral">Generate or enter a slug.</div>
+              <div class="row-actions"><button id="generateSlugBtn" type="button" class="btn light">Generate</button><button id="checkSlugBtn" type="button" class="btn light">Check Availability</button></div>
+              <div id="currentUrlBox" class="current-url" hidden><small>Public URL</small><a id="currentUrl" target="_blank" rel="noopener"></a><div class="row-actions zero"><button id="copyUrlBtn" class="btn light" type="button">Copy</button><button id="openUrlBtn" class="btn light" type="button">Open</button></div></div>
+              <hr>
+              <button id="saveBtn" class="btn primary full" type="submit">Save Business</button>
+              <button id="cancelBtn" class="btn ghost full" type="button">Cancel</button>
+            </div>
+          </aside>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>
+
+<script src="./assets/js/config.js"></script>
+<script src="./assets/js/app.js"></script>
+</body>
+</html>
