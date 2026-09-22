@@ -1,29 +1,9 @@
 /* =========================================================
-   UBnux Clothing Business Website
-   File:
-   assets/business-sites/clothing/script.js
-
-   Version:
-   1.0.0
-
-   Responsibilities:
-   - Business data binding
-   - Logo fallback
-   - Cover fallback
-   - Mobile menu
-   - Sticky header
-   - Smooth navigation
-   - Collection interactions
-   - Gallery handling
-   - Contact actions
-   - Rating display
-   - Current year
-   - Missing data handling
-   - Category-specific initialization
-
-   Loaded by:
-   assets/js/seo/business-page.js
-   ========================================================= */
+   UBNUX CLOTHING BUSINESS SITE
+   PREMIUM BUSINESS WEBSITE SCRIPT
+   File: assets/business-sites/clothing/script.js
+   Version: 2.0.0
+========================================================= */
 
 (function (window, document) {
 
@@ -31,140 +11,192 @@
 
 
   /* =======================================================
-     NAMESPACE
-  ======================================================= */
+     CONFIG
+  ======================================================== */
 
-  window.UBnux =
-    window.UBnux ||
-    window.ZilaBiz ||
-    {};
+  const CONFIG = {
 
-  window.ZilaBiz =
-    window.UBnux;
+    NAME: "clothing",
+
+    VERSION: "2.0.0",
+
+    SLIDE_INTERVAL: 5000,
+
+    SWIPE_THRESHOLD: 45,
+
+    MAX_GALLERY_IMAGES: 12
+
+  };
 
 
   /* =======================================================
      STATE
-  ======================================================= */
+  ======================================================== */
 
-  var state = {
+  let business = null;
 
-    initialized: false,
+  let slides = [];
 
-    business: null,
+  let currentSlide = 0;
 
-    route: null,
+  let sliderTimer = null;
 
-    seo: null,
+  let touchStartX = 0;
 
-    root: null,
+  let touchEndX = 0;
 
-    menuOpen: false
+  let isInitialized = false;
+
+
+  /* =======================================================
+     FALLBACK IMAGES
+  ======================================================== */
+
+  const FALLBACKS = {
+
+    hero:
+      "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1800&q=85",
+
+    men:
+      "https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=1000&q=85",
+
+    women:
+      "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1000&q=85",
+
+    kids:
+      "https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=1000&q=85",
+
+    accessories:
+      "https://images.unsplash.com/photo-1523779917675-b6ed3a42a561?auto=format&fit=crop&w=1000&q=85"
 
   };
 
 
   /* =======================================================
      HELPERS
-     ======================================================= */
+  ======================================================== */
 
-  function qs(
-    selector,
-    parent
-  ) {
+  function value() {
 
-    return (
-      parent ||
-      document
-    ).querySelector(
-      selector
-    );
+    const args = Array.from(arguments);
 
-  }
+    for (let i = 0; i < args.length; i++) {
 
+      const item = args[i];
 
-  function qsa(
-    selector,
-    parent
-  ) {
+      if (
+        item !== undefined &&
+        item !== null &&
+        String(item).trim() !== ""
+      ) {
 
-    return Array.prototype.slice.call(
-      (
-        parent ||
-        document
-      ).querySelectorAll(
-        selector
-      )
-    );
+        return item;
 
-  }
-
-
-  function safe(
-    value,
-    fallback
-  ) {
-
-    if (
-      value === undefined ||
-      value === null ||
-      String(value).trim() === ""
-    ) {
-
-      return (
-        fallback !== undefined
-          ? fallback
-          : ""
-      );
+      }
 
     }
 
-    return String(value).trim();
+    return "";
 
   }
 
 
-  function normalizePhone(
-    value
-  ) {
+  function text(value, fallback) {
+
+    const result = String(
+      value ?? ""
+    ).trim();
+
+    return result || fallback || "";
+
+  }
+
+
+  function normalizeURL(url) {
+
+    const value = String(
+      url || ""
+    ).trim();
+
+    if (!value) {
+      return "";
+    }
+
+    if (
+      value.startsWith("http://") ||
+      value.startsWith("https://") ||
+      value.startsWith("tel:") ||
+      value.startsWith("mailto:") ||
+      value.startsWith("javascript:")
+    ) {
+
+      return value;
+
+    }
+
+    return "https://" + value;
+
+  }
+
+
+  function escapeHTML(value) {
 
     return String(
-      value || ""
-    ).replace(
-      /[^\d+]/g,
-      ""
-    );
+      value ?? ""
+    )
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
 
   }
 
 
-  function normalizeWhatsApp(
-    value
-  ) {
+  function firstLetter(name) {
 
-    var number =
-      String(
-        value || ""
-      ).replace(
-        /\D/g,
-        ""
-      );
+    const clean = String(
+      name || "B"
+    ).trim();
 
+    return clean
+      ? clean.charAt(0).toUpperCase()
+      : "B";
+
+  }
+
+
+  function cleanPhone(phone) {
+
+    return String(
+      phone || ""
+    ).replace(/[^\d+]/g, "");
+
+  }
+
+
+  function whatsappNumber(phone) {
+
+    let number = cleanPhone(phone);
+
+    if (!number) {
+      return "";
+    }
 
     /*
-      Indian 10 digit number
+      Indian numbers commonly come without +91.
     */
 
     if (
-      number.length === 10
+      number.length === 10 &&
+      /^[6-9]\d{9}$/.test(number)
     ) {
 
-      number =
-        "91" +
-        number;
+      number = "91" + number;
 
     }
 
+    number = number.replace(/^\+/, "");
 
     return number;
 
@@ -172,659 +204,1249 @@
 
 
   /* =======================================================
-     FIND BUSINESS ROOT
-     ======================================================= */
+     GET BUSINESS DATA
+  ======================================================== */
 
-  function getRoot() {
+  function getBusinessData() {
+
+    if (business) {
+      return business;
+    }
+
+
+    /*
+      Preferred source:
+      business-page.js exposes current business data.
+    */
+
+    const pageState =
+      window.UBnuxBusinessPage;
+
 
     if (
-      state.root
+      pageState &&
+      typeof pageState.getBusiness === "function"
     ) {
 
-      return state.root;
+      try {
+
+        const result =
+          pageState.getBusiness();
+
+        if (result) {
+
+          business = result;
+
+          return business;
+
+        }
+
+      } catch (error) {
+
+        console.warn(
+          "[UBnux Clothing] Could not read business:",
+          error
+        );
+
+      }
 
     }
 
 
-    state.root =
-      qs(
-        ".clothing-site"
-      );
+    /*
+      Alternative state locations.
+    */
 
+    const candidates = [
 
-    return state.root;
+      window.UBNUX_BUSINESS,
 
-  }
+      window.UBnuxBusiness,
 
+      window.businessData,
 
-  /* =======================================================
-     DATA VALUE
-     ======================================================= */
+      window.currentBusiness,
 
-  function getBusinessValue(
-    business,
-    keys
-  ) {
+      window.business
 
-    if (!business) {
-      return "";
-    }
+    ];
 
 
     for (
-      var i = 0;
-      i < keys.length;
+      let i = 0;
+      i < candidates.length;
       i++
     ) {
 
-      var key =
-        keys[i];
-
-
       if (
-        business[key] !== undefined &&
-        business[key] !== null &&
-        String(
-          business[key]
-        ).trim() !== ""
+        candidates[i] &&
+        typeof candidates[i] === "object"
       ) {
 
-        return business[key];
+        business = candidates[i];
+
+        return business;
 
       }
 
     }
 
 
-    return "";
+    return {};
 
   }
 
 
   /* =======================================================
-     BUSINESS NORMALIZATION
-     ======================================================= */
+     NORMALIZE BUSINESS
+  ======================================================== */
 
-  function normalizeBusiness(
-    business
-  ) {
+  function normalizeBusiness() {
 
-    business =
-      business ||
-      {};
+    const raw =
+      getBusinessData() || {};
 
 
-    return {
+    business = {
 
-      name:
-        getBusinessValue(
-          business,
-          [
-            "BusinessName",
-            "businessName",
-            "Name",
-            "name"
-          ]
+      ...raw,
+
+      BusinessID: value(
+        raw.BusinessID,
+        raw.businessID,
+        raw.id
+      ),
+
+      BusinessName: text(
+        value(
+          raw.BusinessName,
+          raw.businessName,
+          raw.Name,
+          raw.name
         ),
+        "Business"
+      ),
 
-      logo:
-        getBusinessValue(
-          business,
-          [
-            "LogoURL",
-            "logoURL",
-            "logoUrl",
-            "logo"
-          ]
-        ),
-
-      cover:
-        getBusinessValue(
-          business,
-          [
-            "CoverURL",
-            "coverURL",
-            "coverUrl",
-            "cover"
-          ]
-        ),
-
-      description:
-        getBusinessValue(
-          business,
-          [
-            "Description",
-            "description"
-          ]
-        ),
-
-      shortDescription:
-        getBusinessValue(
-          business,
-          [
-            "ShortDescription",
-            "shortDescription",
-            "Description",
-            "description"
-          ]
-        ),
-
-      longDescription:
-        getBusinessValue(
-          business,
-          [
-            "LongDescription",
-            "longDescription",
-            "Description",
-            "description"
-          ]
-        ),
-
-      mobile:
-        getBusinessValue(
-          business,
-          [
-            "Mobile",
-            "mobile",
-            "Phone",
-            "phone"
-          ]
-        ),
-
-      whatsapp:
-        getBusinessValue(
-          business,
-          [
-            "WhatsApp",
-            "whatsapp",
-            "Whatsapp",
-            "Mobile",
-            "mobile"
-          ]
-        ),
-
-      email:
-        getBusinessValue(
-          business,
-          [
-            "Email",
-            "email"
-          ]
-        ),
-
-      website:
-        getBusinessValue(
-          business,
-          [
-            "WebsiteURL",
-            "websiteURL",
-            "websiteUrl",
-            "Website",
-            "website"
-          ]
-        ),
-
-      address:
-        getBusinessValue(
-          business,
-          [
-            "Address",
-            "address"
-          ]
-        ),
-
-      area:
-        getBusinessValue(
-          business,
-          [
-            "Area",
-            "area"
-          ]
-        ),
-
-      pincode:
-        getBusinessValue(
-          business,
-          [
-            "Pincode",
-            "pincode"
-          ]
-        ),
-
-      openingTime:
-        getBusinessValue(
-          business,
-          [
-            "OpeningTime",
-            "openingTime"
-          ]
-        ),
-
-      closingTime:
-        getBusinessValue(
-          business,
-          [
-            "ClosingTime",
-            "closingTime"
-          ]
-        ),
-
-      workingDays:
-        getBusinessValue(
-          business,
-          [
-            "WorkingDays",
-            "workingDays"
-          ]
-        ),
-
-      rating:
-        getBusinessValue(
-          business,
-          [
-            "Rating",
-            "rating"
-          ]
-        ),
-
-      reviewCount:
-        getBusinessValue(
-          business,
-          [
-            "ReviewCount",
-            "reviewCount"
-          ]
-        ),
-
-      owner:
-        getBusinessValue(
-          business,
-          [
-            "OwnerName",
-            "ownerName",
-            "Owner",
-            "owner"
-          ]
-        ),
-
-      establishedYear:
-        getBusinessValue(
-          business,
-          [
-            "EstablishedYear",
-            "establishedYear"
-          ]
-        ),
-
-      googlePlace:
-        getBusinessValue(
-          business,
-          [
-            "GooglePlaceURL",
-            "googlePlaceURL",
-            "googlePlaceUrl",
-            "GooglePlace",
-            "googlePlace"
-          ]
-        ),
-
-      gallery:
-        getBusinessValue(
-          business,
-          [
-            "Gallery",
-            "gallery",
-            "GalleryURLs",
-            "galleryURLs",
-            "Images",
-            "images"
-          ]
+      Slug: text(
+        value(
+          raw.Slug,
+          raw.slug
         )
+      ),
+
+      CategoryName: text(
+        value(
+          raw.CategoryName,
+          raw.categoryName,
+          raw.Category
+        ),
+        "Clothing & Fashion"
+      ),
+
+      LogoURL: text(
+        value(
+          raw.LogoURL,
+          raw.logoURL,
+          raw.logo
+        )
+      ),
+
+      CoverURL: text(
+        value(
+          raw.CoverURL,
+          raw.coverURL,
+          raw.cover,
+          raw.image,
+          raw.ImageURL
+        )
+      ),
+
+      Address: text(
+        value(
+          raw.Address,
+          raw.address
+        ),
+        "Visit our store"
+      ),
+
+      Area: text(
+        value(
+          raw.Area,
+          raw.area
+        )
+      ),
+
+      Pincode: text(
+        value(
+          raw.Pincode,
+          raw.pincode
+        )
+      ),
+
+      Mobile: text(
+        value(
+          raw.Mobile,
+          raw.mobile,
+          raw.Phone,
+          raw.phone
+        )
+      ),
+
+      WhatsApp: text(
+        value(
+          raw.WhatsApp,
+          raw.Whatsapp,
+          raw.whatsapp
+        )
+      ),
+
+      Email: text(
+        value(
+          raw.Email,
+          raw.email
+        )
+      ),
+
+      OwnerName: text(
+        value(
+          raw.OwnerName,
+          raw.ownerName,
+          raw.owner
+        )
+      ),
+
+      OpeningTime: text(
+        value(
+          raw.OpeningTime,
+          raw.openingTime
+        )
+      ),
+
+      ClosingTime: text(
+        value(
+          raw.ClosingTime,
+          raw.closingTime
+        )
+      ),
+
+      WorkingDays: text(
+        value(
+          raw.WorkingDays,
+          raw.workingDays
+        )
+      ),
+
+      Rating: text(
+        value(
+          raw.Rating,
+          raw.rating
+        ),
+        "5.0"
+      ),
+
+      ReviewCount: text(
+        value(
+          raw.ReviewCount,
+          raw.reviewCount,
+          raw.Reviews
+        ),
+        "0"
+      ),
+
+      EstablishedYear: text(
+        value(
+          raw.EstablishedYear,
+          raw.establishedYear
+        )
+      ),
+
+      Description: text(
+        value(
+          raw.Description,
+          raw.description
+        )
+      ),
+
+      ShortDescription: text(
+        value(
+          raw.ShortDescription,
+          raw.shortDescription,
+          raw.Description,
+          raw.description
+        ),
+        "Discover premium fashion, timeless style and carefully selected collections."
+      ),
+
+      LongDescription: text(
+        value(
+          raw.LongDescription,
+          raw.longDescription,
+          raw.Description,
+          raw.description
+        ),
+        "We believe great style begins with quality, confidence and attention to detail."
+      ),
+
+      WebsiteURL: text(
+        value(
+          raw.WebsiteURL,
+          raw.websiteURL,
+          raw.Website
+        )
+      ),
+
+      FacebookURL: text(
+        value(
+          raw.FacebookURL,
+          raw.facebookURL,
+          raw.Facebook
+        )
+      ),
+
+      InstagramURL: text(
+        value(
+          raw.InstagramURL,
+          raw.instagramURL,
+          raw.Instagram
+        )
+      ),
+
+      YoutubeURL: text(
+        value(
+          raw.YoutubeURL,
+          raw.youtubeURL,
+          raw.YouTube
+        )
+      ),
+
+      GooglePlaceURL: text(
+        value(
+          raw.GooglePlaceURL,
+          raw.googlePlaceURL,
+          raw.GoogleMapsURL,
+          raw.GoogleURL
+        )
+      )
 
     };
 
+
+    return business;
+
   }
 
 
   /* =======================================================
-     BIND TEXT
-     ======================================================= */
+     GENERIC DATA BINDING
+  ======================================================== */
 
-  function bindText(
-    selector,
-    value
-  ) {
+  function bind(selector, value, options) {
 
-    var root =
-      getRoot();
+    const elements =
+      document.querySelectorAll(selector);
 
-
-    if (!root) {
+    if (!elements.length) {
       return;
     }
 
 
-    qsa(
-      selector,
-      root
-    ).forEach(
-      function (element) {
+    const config =
+      options || {};
 
-        if (
-          value !== undefined &&
-          value !== null &&
-          String(value).trim() !== ""
-        ) {
 
-          element.textContent =
-            String(value);
+    elements.forEach(function (element) {
+
+      if (
+        config.attribute
+      ) {
+
+        if (value) {
+
+          element.setAttribute(
+            config.attribute,
+            value
+          );
 
         }
 
+        return;
+
       }
-    );
+
+
+      if (
+        config.html
+      ) {
+
+        element.innerHTML =
+          value || "";
+
+      } else {
+
+        element.textContent =
+          value || "";
+
+      }
+
+    });
 
   }
 
 
   /* =======================================================
-     BIND BUSINESS INFORMATION
-     ======================================================= */
+     IMAGE BINDING
+  ======================================================== */
+
+  function bindImage(selector, url, alt) {
+
+    const elements =
+      document.querySelectorAll(selector);
+
+    if (!elements.length) {
+      return;
+    }
+
+
+    elements.forEach(function (img) {
+
+      if (url) {
+
+        img.src = url;
+
+      }
+
+      if (alt) {
+
+        img.alt = alt;
+
+      }
+
+      img.loading =
+        img.loading || "lazy";
+
+
+      img.addEventListener(
+        "error",
+        function () {
+
+          img.style.display = "none";
+
+        },
+        {
+          once: true
+        }
+      );
+
+    });
+
+  }
+
+
+  /* =======================================================
+     INITIAL DATA BINDING
+  ======================================================== */
 
   function bindBusinessData() {
 
-    var root =
-      getRoot();
+    normalizeBusiness();
 
 
-    if (!root) {
+    const b = business;
+
+
+    /* -----------------------------------------------
+       TEXT
+    ------------------------------------------------ */
+
+    bind(
+      "[data-business-name]",
+      b.BusinessName
+    );
+
+
+    bind(
+      "[data-business-category]",
+      b.CategoryName
+    );
+
+
+    bind(
+      "[data-business-short-description]",
+      b.ShortDescription
+    );
+
+
+    bind(
+      "[data-business-long-description]",
+      b.LongDescription
+    );
+
+
+    bind(
+      "[data-business-address]",
+      b.Address
+    );
+
+
+    bind(
+      "[data-business-area]",
+      b.Area
+    );
+
+
+    bind(
+      "[data-business-mobile]",
+      b.Mobile
+    );
+
+
+    bind(
+      "[data-business-owner]",
+      b.OwnerName
+    );
+
+
+    bind(
+      "[data-business-opening-time]",
+      b.OpeningTime
+    );
+
+
+    bind(
+      "[data-business-closing-time]",
+      b.ClosingTime
+    );
+
+
+    bind(
+      "[data-business-working-days]",
+      b.WorkingDays
+    );
+
+
+    bind(
+      "[data-business-rating]",
+      b.Rating
+    );
+
+
+    bind(
+      "[data-business-review-count]",
+      b.ReviewCount
+    );
+
+
+    bind(
+      "[data-business-established-year]",
+      b.EstablishedYear || "—"
+    );
+
+
+    /* -----------------------------------------------
+       INITIAL
+    ------------------------------------------------ */
+
+    bind(
+      "[data-business-initial]",
+      firstLetter(b.BusinessName)
+    );
+
+
+    /* -----------------------------------------------
+       LOGO
+    ------------------------------------------------ */
+
+    bindImage(
+      "[data-business-logo]",
+      b.LogoURL,
+      b.BusinessName
+    );
+
+
+    /* -----------------------------------------------
+       ABOUT IMAGE
+    ------------------------------------------------ */
+
+    bindImage(
+      "[data-about-image]",
+      b.CoverURL || FALLBACKS.hero,
+      b.BusinessName
+    );
+
+
+    /* -----------------------------------------------
+       CONTACT IMAGE
+    ------------------------------------------------ */
+
+    bindImage(
+      "[data-contact-image]",
+      b.CoverURL || FALLBACKS.hero,
+      b.BusinessName
+    );
+
+
+    /* -----------------------------------------------
+       HERO
+    ------------------------------------------------ */
+
+    setupHeroImages();
+
+
+    /* -----------------------------------------------
+       COLLECTIONS
+    ------------------------------------------------ */
+
+    setupCollectionImages();
+
+
+    /* -----------------------------------------------
+       CONTACT LINKS
+    ------------------------------------------------ */
+
+    setupContactLinks();
+
+
+    /* -----------------------------------------------
+       SOCIAL LINKS
+    ------------------------------------------------ */
+
+    setupSocialLinks();
+
+
+    /* -----------------------------------------------
+       MISSING DATA
+    ------------------------------------------------ */
+
+    cleanMissingData();
+
+  }
+
+
+  /* =======================================================
+     HERO IMAGE SOURCE COLLECTION
+  ======================================================== */
+
+  function getImageList() {
+
+    const result = [];
+
+
+    function push(url) {
+
+      const clean =
+        String(url || "").trim();
+
+      if (!clean) {
+        return;
+      }
+
+      if (
+        result.indexOf(clean) === -1
+      ) {
+
+        result.push(clean);
+
+      }
+
+    }
+
+
+    push(business.CoverURL);
+
+
+    /*
+      Try common gallery fields.
+    */
+
+    const possibleGalleryFields = [
+
+      business.Gallery,
+
+      business.gallery,
+
+      business.GalleryURL,
+
+      business.GalleryURLs,
+
+      business.Images,
+
+      business.images,
+
+      business.ImageURLs,
+
+      business.imageURLs,
+
+      business.Photos,
+
+      business.photos
+
+    ];
+
+
+    possibleGalleryFields.forEach(
+      function (field) {
+
+        parseImageSource(field)
+          .forEach(push);
+
+      }
+    );
+
+
+    /*
+      Also inspect arbitrary image-like fields.
+    */
+
+    Object.keys(business || {})
+      .forEach(function (key) {
+
+        if (
+          /gallery|images|photos/i.test(key)
+        ) {
+
+          parseImageSource(
+            business[key]
+          ).forEach(push);
+
+        }
+
+      });
+
+
+    return result;
+
+  }
+
+
+  /* =======================================================
+     PARSE IMAGE SOURCE
+  ======================================================== */
+
+  function parseImageSource(source) {
+
+    if (!source) {
+      return [];
+    }
+
+
+    if (Array.isArray(source)) {
+
+      return source
+        .map(function (item) {
+
+          if (
+            typeof item === "string"
+          ) {
+
+            return item.trim();
+
+          }
+
+          if (
+            item &&
+            typeof item === "object"
+          ) {
+
+            return value(
+              item.url,
+              item.URL,
+              item.image,
+              item.ImageURL,
+              item.src
+            );
+
+          }
+
+          return "";
+
+        })
+        .filter(Boolean);
+
+    }
+
+
+    const raw =
+      String(source).trim();
+
+
+    if (!raw) {
+      return [];
+    }
+
+
+    /*
+      JSON array
+    */
+
+    if (
+      raw.charAt(0) === "[" &&
+      raw.charAt(raw.length - 1) === "]"
+    ) {
+
+      try {
+
+        const parsed =
+          JSON.parse(raw);
+
+        return parseImageSource(parsed);
+
+      } catch (error) {
+
+        /* ignore */
+
+      }
+
+    }
+
+
+    /*
+      Comma / newline / pipe separated.
+    */
+
+    return raw
+      .split(/[\n,|]+/)
+      .map(function (item) {
+
+        return item.trim();
+
+      })
+      .filter(Boolean);
+
+  }
+
+
+  /* =======================================================
+     HERO SETUP
+  ======================================================== */
+
+  function setupHeroImages() {
+
+    slides =
+      Array.from(
+        document.querySelectorAll(
+          ".lux-hero-slide"
+        )
+      );
+
+
+    if (!slides.length) {
       return;
     }
 
 
-    var business =
-      normalizeBusiness(
-        state.business
+    const images =
+      getImageList();
+
+
+    /*
+      Always have at least one image.
+    */
+
+    if (!images.length) {
+
+      images.push(
+        FALLBACKS.hero
+      );
+
+    }
+
+
+    slides.forEach(
+      function (slide, index) {
+
+        const image =
+          slide.querySelector(
+            "[data-hero-image]"
+          );
+
+        if (!image) {
+          return;
+        }
+
+
+        let src =
+          images[index];
+
+
+        /*
+          If fewer than 3 images,
+          reuse available images.
+        */
+
+        if (!src) {
+
+          src =
+            images[
+              index % images.length
+            ];
+
+        }
+
+
+        if (!src) {
+
+          src =
+            FALLBACKS.hero;
+
+        }
+
+
+        image.src = src;
+
+        image.alt =
+          business.BusinessName +
+          " fashion collection";
+
+
+        image.loading =
+          index === 0
+            ? "eager"
+            : "lazy";
+
+
+        image.addEventListener(
+          "error",
+          function () {
+
+            if (
+              image.src !==
+              FALLBACKS.hero
+            ) {
+
+              image.src =
+                FALLBACKS.hero;
+
+            }
+
+          },
+          {
+            once:true
+          }
+        );
+
+      }
+    );
+
+
+    /*
+      Start from first slide.
+    */
+
+    showSlide(0);
+
+
+    /*
+      Auto slider only when
+      there is more than one image.
+    */
+
+    if (
+      slides.length > 1
+    ) {
+
+      startSlider();
+
+    }
+
+
+    setupSliderControls();
+
+    setupSliderTouch();
+
+  }
+
+
+  /* =======================================================
+     SHOW SLIDE
+  ======================================================== */
+
+  function showSlide(index) {
+
+    if (!slides.length) {
+      return;
+    }
+
+
+    if (index < 0) {
+
+      index =
+        slides.length - 1;
+
+    }
+
+
+    if (
+      index >= slides.length
+    ) {
+
+      index = 0;
+
+    }
+
+
+    currentSlide = index;
+
+
+    slides.forEach(
+      function (slide, slideIndex) {
+
+        slide.classList.toggle(
+          "active",
+          slideIndex === currentSlide
+        );
+
+      }
+    );
+
+
+    const counter =
+      document.getElementById(
+        "luxCurrentSlide"
       );
 
 
-    /*
-      Name
-    */
+    if (counter) {
 
-    bindText(
-      "[data-business-name]",
-      business.name ||
-      "Your Fashion Store"
-    );
+      counter.textContent =
+        String(
+          currentSlide + 1
+        ).padStart(2, "0");
 
+    }
 
-    /*
-      Description
-    */
-
-    bindText(
-      "[data-business-description]",
-      business.description
-    );
+  }
 
 
-    bindText(
-      "[data-business-short-description]",
-      business.shortDescription
-    );
+  /* =======================================================
+     NEXT SLIDE
+  ======================================================== */
 
+  function nextSlide() {
 
-    bindText(
-      "[data-business-long-description]",
-      business.longDescription
-    );
-
-
-    /*
-      Category
-
-      The category is clothing,
-      but API category name can override it.
-    */
-
-    var categoryName =
-      getBusinessValue(
-        state.business,
-        [
-          "CategoryName",
-          "categoryName",
-          "Category",
-          "category"
-        ]
-      );
-
-
-    bindText(
-      "[data-business-category]",
-      categoryName ||
-      "Clothing & Fashion"
-    );
-
-
-    /*
-      Contact
-    */
-
-    bindText(
-      "[data-business-mobile]",
-      business.mobile
-    );
-
-
-    bindText(
-      "[data-business-whatsapp]",
-      business.whatsapp
-    );
-
-
-    bindText(
-      "[data-business-email]",
-      business.email
-    );
-
-
-    /*
-      Location
-    */
-
-    bindText(
-      "[data-business-address]",
-      business.address ||
-      "Address not available"
-    );
-
-
-    bindText(
-      "[data-business-area]",
-      business.area
-    );
-
-
-    bindText(
-      "[data-business-pincode]",
-      business.pincode
-    );
-
-
-    /*
-      Hours
-    */
-
-    bindText(
-      "[data-business-opening-time]",
-      business.openingTime ||
-      "Opening time"
-    );
-
-
-    bindText(
-      "[data-business-closing-time]",
-      business.closingTime ||
-      "Closing time"
-    );
-
-
-    bindText(
-      "[data-business-working-days]",
-      business.workingDays ||
-      "Working days"
-    );
-
-
-    /*
-      Rating
-    */
-
-    bindText(
-      "[data-business-rating]",
-      business.rating ||
-      "—"
-    );
-
-
-    bindText(
-      "[data-business-review-count]",
-      business.reviewCount ||
-      "0"
-    );
-
-
-    /*
-      Owner
-    */
-
-    bindText(
-      "[data-business-owner]",
-      business.owner ||
-      "Business Owner"
-    );
-
-
-    /*
-      Established
-    */
-
-    bindText(
-      "[data-business-established-year]",
-      business.establishedYear ||
-      "—"
+    showSlide(
+      currentSlide + 1
     );
 
   }
 
 
   /* =======================================================
-     LOGO HANDLING
-     ======================================================= */
+     PREVIOUS SLIDE
+  ======================================================== */
 
-  function initializeLogos() {
+  function previousSlide() {
 
-    var root =
-      getRoot();
+    showSlide(
+      currentSlide - 1
+    );
+
+  }
 
 
-    if (!root) {
+  /* =======================================================
+     START SLIDER
+  ======================================================== */
+
+  function startSlider() {
+
+    stopSlider();
+
+
+    sliderTimer =
+      window.setInterval(
+        function () {
+
+          nextSlide();
+
+        },
+        CONFIG.SLIDE_INTERVAL
+      );
+
+  }
+
+
+  /* =======================================================
+     STOP SLIDER
+  ======================================================== */
+
+  function stopSlider() {
+
+    if (sliderTimer) {
+
+      clearInterval(
+        sliderTimer
+      );
+
+      sliderTimer = null;
+
+    }
+
+  }
+
+
+  /* =======================================================
+     SLIDER CONTROLS
+  ======================================================== */
+
+  function setupSliderControls() {
+
+    const next =
+      document.getElementById(
+        "luxNext"
+      );
+
+    const prev =
+      document.getElementById(
+        "luxPrev"
+      );
+
+
+    if (next) {
+
+      next.addEventListener(
+        "click",
+        function () {
+
+          nextSlide();
+
+          startSlider();
+
+        }
+      );
+
+    }
+
+
+    if (prev) {
+
+      prev.addEventListener(
+        "click",
+        function () {
+
+          previousSlide();
+
+          startSlider();
+
+        }
+      );
+
+    }
+
+
+    const slider =
+      document.getElementById(
+        "luxHeroSlider"
+      );
+
+
+    if (!slider) {
       return;
     }
 
 
-    var business =
-      normalizeBusiness(
-        state.business
+    slider.addEventListener(
+      "mouseenter",
+      stopSlider
+    );
+
+
+    slider.addEventListener(
+      "mouseleave",
+      startSlider
+    );
+
+  }
+
+
+  /* =======================================================
+     TOUCH / SWIPE
+  ======================================================== */
+
+  function setupSliderTouch() {
+
+    const slider =
+      document.getElementById(
+        "luxHeroSlider"
       );
 
 
-    var logos =
-      qsa(
-        "[data-business-logo]",
-        root
-      );
+    if (!slider) {
+      return;
+    }
 
 
-    logos.forEach(
-      function (img) {
-
-        var placeholder =
-          img.parentElement
-            ? qs(
-                ".clothing-brand-logo-placeholder",
-                img.parentElement
-              )
-            : null;
-
-
-        /*
-          No logo
-        */
+    slider.addEventListener(
+      "touchstart",
+      function (event) {
 
         if (
-          !business.logo
+          !event.touches ||
+          !event.touches.length
         ) {
 
-          img.style.display =
-            "none";
+          return;
+
+        }
+
+        touchStartX =
+          event.touches[0].clientX;
+
+      },
+      {
+        passive:true
+      }
+    );
 
 
-          if (placeholder) {
+    slider.addEventListener(
+      "touchend",
+      function (event) {
 
-            placeholder.style.display =
-              "flex";
-
-          }
+        if (
+          !event.changedTouches ||
+          !event.changedTouches.length
+        ) {
 
           return;
 
         }
 
 
-        img.alt =
-          business.name ||
-          "Business Logo";
+        touchEndX =
+          event.changedTouches[0].clientX;
 
 
-        img.src =
-          business.logo;
+        const distance =
+          touchStartX -
+          touchEndX;
 
 
-        img.onload =
-          function () {
+        if (
+          Math.abs(distance) <
+          CONFIG.SWIPE_THRESHOLD
+        ) {
 
-            img.style.display =
-              "block";
+          return;
 
-
-            if (placeholder) {
-
-              placeholder.style.display =
-                "none";
-
-            }
-
-          };
+        }
 
 
-        img.onerror =
-          function () {
+        if (distance > 0) {
 
-            img.style.display =
-              "none";
+          nextSlide();
+
+        } else {
+
+          previousSlide();
+
+        }
 
 
-            if (placeholder) {
+        startSlider();
 
-              placeholder.style.display =
-                "flex";
-
-            }
-
-          };
-
+      },
+      {
+        passive:true
       }
     );
 
@@ -832,94 +1454,87 @@
 
 
   /* =======================================================
-     COVER IMAGE HANDLING
-     ======================================================= */
+     COLLECTION IMAGES
+  ======================================================== */
 
-  function initializeCovers() {
+  function setupCollectionImages() {
 
-    var root =
-      getRoot();
+    const collectionMap = {
+
+      men:
+        FALLBACKS.men,
+
+      women:
+        FALLBACKS.women,
+
+      kids:
+        FALLBACKS.kids,
+
+      accessories:
+        FALLBACKS.accessories
+
+    };
 
 
-    if (!root) {
-      return;
-    }
+    /*
+      Use gallery images where available.
+    */
+
+    const gallery =
+      getImageList();
 
 
-    var business =
-      normalizeBusiness(
-        state.business
+    const available =
+      gallery.length
+        ? gallery
+        : [];
+
+
+    const elements =
+      document.querySelectorAll(
+        "[data-collection-image]"
       );
 
 
-    var covers =
-      qsa(
-        "[data-business-cover]",
-        root
-      );
+    elements.forEach(
+      function (img, index) {
+
+        const key =
+          String(
+            img.dataset.collectionImage ||
+            ""
+          ).toLowerCase();
 
 
-    covers.forEach(
-      function (image) {
-
-        if (
-          !business.cover
-        ) {
-
-          image.style.display =
-            "none";
-
-
-          if (
-            image.classList.contains(
-              "clothing-hero-image"
+        let src =
+          available[
+            (index + 1) %
+            Math.max(
+              available.length,
+              1
             )
-          ) {
-
-            var parent =
-              image.parentElement;
+          ];
 
 
-            if (parent) {
+        if (!src) {
 
-              parent.classList.add(
-                "clothing-cover-fallback"
-              );
-
-            }
-
-          }
-
-          return;
+          src =
+            collectionMap[key];
 
         }
 
 
-        image.alt =
-          business.name ||
-          "Business";
+        img.src =
+          src || FALLBACKS.hero;
 
 
-        image.src =
-          business.cover;
+        img.alt =
+          key +
+          " clothing collection";
 
 
-        image.onload =
-          function () {
-
-            image.style.display =
-              "block";
-
-          };
-
-
-        image.onerror =
-          function () {
-
-            image.style.display =
-              "none";
-
-          };
+        img.loading =
+          "lazy";
 
       }
     );
@@ -929,22 +1544,20 @@
 
   /* =======================================================
      CONTACT LINKS
-     ======================================================= */
+  ======================================================== */
 
-  function initializeContactLinks() {
+  function setupContactLinks() {
 
-    var root =
-      getRoot();
-
-
-    if (!root) {
-      return;
-    }
+    const phone =
+      cleanPhone(
+        business.Mobile
+      );
 
 
-    var business =
-      normalizeBusiness(
-        state.business
+    const whatsapp =
+      whatsappNumber(
+        business.WhatsApp ||
+        business.Mobile
       );
 
 
@@ -952,295 +1565,440 @@
       CALL
     */
 
-    var phone =
-      normalizePhone(
-        business.mobile
-      );
+    document
+      .querySelectorAll(
+        "[data-call]"
+      )
+      .forEach(
+        function (element) {
 
+          if (phone) {
 
-    qsa(
-      "[data-call]",
-      root
-    ).forEach(
-      function (element) {
+            element.href =
+              "tel:" + phone;
 
-        if (!phone) {
+          } else {
 
-          element.removeAttribute(
-            "href"
-          );
+            element.removeAttribute(
+              "href"
+            );
 
-          element.classList.add(
-            "is-disabled"
-          );
+            element.classList.add(
+              "is-disabled"
+            );
 
-          return;
+          }
 
         }
-
-
-        element.href =
-          "tel:" +
-          phone;
-
-
-        element.classList.remove(
-          "is-disabled"
-        );
-
-      }
-    );
+      );
 
 
     /*
       WHATSAPP
     */
 
-    var whatsapp =
-      normalizeWhatsApp(
-        business.whatsapp
-      );
+    document
+      .querySelectorAll(
+        "[data-whatsapp]"
+      )
+      .forEach(
+        function (element) {
+
+          if (whatsapp) {
+
+            const message =
+              encodeURIComponent(
+                "Hello, I would like to know more about " +
+                business.BusinessName +
+                " and your clothing collection."
+              );
 
 
-    qsa(
-      "[data-whatsapp]",
-      root
-    ).forEach(
-      function (element) {
+            element.href =
+              "https://wa.me/" +
+              whatsapp +
+              "?text=" +
+              message;
 
-        if (!whatsapp) {
+          } else {
 
-          element.removeAttribute(
-            "href"
-          );
+            element.removeAttribute(
+              "href"
+            );
 
-          element.classList.add(
-            "is-disabled"
-          );
+            element.classList.add(
+              "is-disabled"
+            );
 
-          return;
+          }
 
         }
-
-
-        element.href =
-          "https://wa.me/" +
-          whatsapp;
-
-
-        element.target =
-          "_blank";
-
-
-        element.rel =
-          "noopener noreferrer";
-
-
-        element.classList.remove(
-          "is-disabled"
-        );
-
-      }
-    );
+      );
 
 
     /*
       WEBSITE
     */
 
-    qsa(
-      "[data-website]",
-      root
-    ).forEach(
-      function (element) {
+    document
+      .querySelectorAll(
+        "[data-website]"
+      )
+      .forEach(
+        function (element) {
 
-        if (!business.website) {
-
-          element.removeAttribute(
-            "href"
-          );
-
-          element.classList.add(
-            "is-disabled"
-          );
-
-          return;
-
-        }
+          const url =
+            normalizeURL(
+              business.WebsiteURL
+            );
 
 
-        var website =
-          String(
-            business.website
-          ).trim();
+          if (url) {
 
+            element.href =
+              url;
 
-        /*
-          Add protocol when missing
-        */
+          } else {
 
-        if (
-          !/^https?:\/\//i.test(
-            website
-          )
-        ) {
+            element.removeAttribute(
+              "href"
+            );
 
-          website =
-            "https://" +
-            website;
+            element.classList.add(
+              "is-disabled"
+            );
+
+          }
 
         }
-
-
-        element.href =
-          website;
-
-
-        element.target =
-          "_blank";
-
-
-        element.rel =
-          "noopener noreferrer";
-
-
-        element.classList.remove(
-          "is-disabled"
-        );
-
-      }
-    );
+      );
 
 
     /*
-      GOOGLE PLACE
+      GOOGLE PLACE / MAP
     */
 
-    qsa(
-      "[data-google-place]",
-      root
-    ).forEach(
-      function (element) {
+    document
+      .querySelectorAll(
+        "[data-google-place]"
+      )
+      .forEach(
+        function (element) {
 
-        if (!business.googlePlace) {
+          let url =
+            normalizeURL(
+              business.GooglePlaceURL
+            );
 
-          element.removeAttribute(
-            "href"
-          );
 
-          element.classList.add(
-            "is-disabled"
-          );
+          if (!url) {
 
-          return;
+            const query =
+              [
+                business.BusinessName,
+                business.Address,
+                business.Area
+              ]
+                .filter(Boolean)
+                .join(", ");
+
+
+            if (query) {
+
+              url =
+                "https://www.google.com/maps/search/?api=1&query=" +
+                encodeURIComponent(query);
+
+            }
+
+          }
+
+
+          if (url) {
+
+            element.href =
+              url;
+
+          } else {
+
+            element.removeAttribute(
+              "href"
+            );
+
+            element.classList.add(
+              "is-disabled"
+            );
+
+          }
 
         }
+      );
+
+  }
 
 
-        element.href =
-          business.googlePlace;
+  /* =======================================================
+     SOCIAL LINKS
+  ======================================================== */
+
+  function setupSocialLinks() {
+
+    const socialMap = {
+
+      "[data-instagram]":
+        business.InstagramURL,
+
+      "[data-facebook]":
+        business.FacebookURL,
+
+      "[data-youtube]":
+        business.YoutubeURL
+
+    };
 
 
-        element.target =
-          "_blank";
+    Object.keys(socialMap)
+      .forEach(
+        function (selector) {
+
+          const url =
+            normalizeURL(
+              socialMap[selector]
+            );
 
 
-        element.rel =
-          "noopener noreferrer";
+          document
+            .querySelectorAll(selector)
+            .forEach(
+              function (element) {
+
+                if (url) {
+
+                  element.href =
+                    url;
+
+                } else {
+
+                  element.removeAttribute(
+                    "href"
+                  );
+
+                  element.classList.add(
+                    "is-disabled"
+                  );
+
+                }
+
+              }
+            );
+
+        }
+      );
+
+  }
 
 
-        element.classList.remove(
-          "is-disabled"
-        );
+  /* =======================================================
+     GALLERY
+  ======================================================== */
 
-      }
-    );
+  function setupGallery() {
+
+    const container =
+      document.getElementById(
+        "luxGallery"
+      );
+
+
+    if (!container) {
+      return;
+    }
+
+
+    const images =
+      getImageList();
+
+
+    /*
+      Remove duplicate cover
+      from gallery when possible.
+    */
+
+    const unique =
+      images.filter(
+        function (url, index) {
+
+          return (
+            images.indexOf(url) ===
+            index
+          );
+
+        }
+      )
+      .slice(
+        0,
+        CONFIG.MAX_GALLERY_IMAGES
+      );
+
+
+    if (!unique.length) {
+
+      return;
+
+    }
+
+
+    container.innerHTML =
+      unique
+        .map(
+          function (url, index) {
+
+            return `
+              <div class="lux-gallery-item">
+
+                <img
+                  src="${escapeHTML(url)}"
+                  alt="${escapeHTML(
+                    business.BusinessName
+                  )} fashion image ${index + 1}"
+                  loading="lazy"
+                >
+
+              </div>
+            `;
+
+          }
+        )
+        .join("");
+
+
+    /*
+      Image error handling.
+    */
+
+    container
+      .querySelectorAll("img")
+      .forEach(
+        function (img) {
+
+          img.addEventListener(
+            "error",
+            function () {
+
+              const parent =
+                img.parentElement;
+
+              if (parent) {
+
+                parent.remove();
+
+              }
+
+            },
+            {
+              once:true
+            }
+          );
+
+        }
+      );
+
+  }
+
+
+  /* =======================================================
+     COLLECTION BUTTONS
+  ======================================================== */
+
+  function setupCollectionButtons() {
+
+    document
+      .querySelectorAll(
+        "[data-collection-button]"
+      )
+      .forEach(
+        function (button) {
+
+          button.addEventListener(
+            "click",
+            function (event) {
+
+              event.preventDefault();
+
+              const collection =
+                button.dataset.collectionButton ||
+                "collection";
+
+
+              const number =
+                whatsappNumber(
+                  business.WhatsApp ||
+                  business.Mobile
+                );
+
+
+              if (!number) {
+
+                document
+                  .getElementById(
+                    "contact"
+                  )
+                  ?.scrollIntoView({
+                    behavior:"smooth"
+                  });
+
+                return;
+
+              }
+
+
+              const message =
+                encodeURIComponent(
+                  "Hello, I am interested in the " +
+                  collection +
+                  " collection at " +
+                  business.BusinessName +
+                  ". Please share more details."
+                );
+
+
+              window.open(
+                "https://wa.me/" +
+                number +
+                "?text=" +
+                message,
+                "_blank",
+                "noopener"
+              );
+
+            }
+          );
+
+        }
+      );
 
   }
 
 
   /* =======================================================
      MOBILE MENU
-     ======================================================= */
+  ======================================================== */
 
-  function initializeMobileMenu() {
+  function setupMobileMenu() {
 
-    var root =
-      getRoot();
+    const button =
+      document.getElementById(
+        "luxMenuBtn"
+      );
+
+    const menu =
+      document.getElementById(
+        "luxMobileMenu"
+      );
 
 
-    if (!root) {
+    if (!button || !menu) {
       return;
-    }
-
-
-    var button =
-      qs(
-        "#clothingMenuButton",
-        root
-      );
-
-
-    var menu =
-      qs(
-        "#clothingMobileMenu",
-        root
-      );
-
-
-    if (
-      !button ||
-      !menu
-    ) {
-
-      return;
-
-    }
-
-
-    function closeMenu() {
-
-      state.menuOpen =
-        false;
-
-
-      button.classList.remove(
-        "active"
-      );
-
-
-      button.setAttribute(
-        "aria-expanded",
-        "false"
-      );
-
-
-      menu.hidden =
-        true;
-
-    }
-
-
-    function openMenu() {
-
-      state.menuOpen =
-        true;
-
-
-      button.classList.add(
-        "active"
-      );
-
-
-      button.setAttribute(
-        "aria-expanded",
-        "true"
-      );
-
-
-      menu.hidden =
-        false;
-
     }
 
 
@@ -1248,145 +2006,67 @@
       "click",
       function () {
 
-        if (
-          state.menuOpen
-        ) {
-
-          closeMenu();
-
-        } else {
-
-          openMenu();
-
-        }
-
-      }
-    );
+        const open =
+          menu.classList.toggle(
+            "open"
+          );
 
 
-    /*
-      Close after clicking a link
-    */
+        button.classList.toggle(
+          "open",
+          open
+        );
 
-    qsa(
-      "a",
-      menu
-    ).forEach(
-      function (link) {
 
-        link.addEventListener(
-          "click",
-          function () {
-
-            closeMenu();
-
-          }
+        button.setAttribute(
+          "aria-expanded",
+          String(open)
         );
 
       }
     );
 
 
-    /*
-      Close on outside click
-    */
+    menu
+      .querySelectorAll("a")
+      .forEach(
+        function (link) {
 
-    document.addEventListener(
-      "click",
-      function (event) {
+          link.addEventListener(
+            "click",
+            function () {
 
-        if (
-          !state.menuOpen
-        ) {
+              menu.classList.remove(
+                "open"
+              );
 
-          return;
+              button.classList.remove(
+                "open"
+              );
 
-        }
+              button.setAttribute(
+                "aria-expanded",
+                "false"
+              );
 
-
-        if (
-          button.contains(
-            event.target
-          ) ||
-          menu.contains(
-            event.target
-          )
-        ) {
-
-          return;
+            }
+          );
 
         }
-
-
-        closeMenu();
-
-      }
-    );
-
-
-    /*
-      Close on Escape
-    */
-
-    document.addEventListener(
-      "keydown",
-      function (event) {
-
-        if (
-          event.key ===
-          "Escape"
-        ) {
-
-          closeMenu();
-
-        }
-
-      }
-    );
-
-
-    /*
-      Reset when resizing to desktop
-    */
-
-    window.addEventListener(
-      "resize",
-      function () {
-
-        if (
-          window.innerWidth >
-          900
-        ) {
-
-          closeMenu();
-
-        }
-
-      }
-    );
+      );
 
   }
 
 
   /* =======================================================
      STICKY HEADER
-     ======================================================= */
+  ======================================================== */
 
-  function initializeHeader() {
+  function setupHeader() {
 
-    var root =
-      getRoot();
-
-
-    if (!root) {
-      return;
-    }
-
-
-    var header =
-      qs(
-        "#clothingHeader",
-        root
+    const header =
+      document.getElementById(
+        "luxHeader"
       );
 
 
@@ -1395,932 +2075,24 @@
     }
 
 
-    function updateHeader() {
+    function update() {
 
-      if (
-        window.scrollY >
-        20
-      ) {
-
-        header.classList.add(
-          "scrolled"
-        );
-
-      } else {
-
-        header.classList.remove(
-          "scrolled"
-        );
-
-      }
+      header.classList.toggle(
+        "scrolled",
+        window.scrollY > 45
+      );
 
     }
 
 
-    updateHeader();
+    update();
 
 
     window.addEventListener(
       "scroll",
-      updateHeader,
+      update,
       {
-        passive:
-          true
-      }
-    );
-
-  }
-
-
-  /* =======================================================
-     SMOOTH NAVIGATION
-     ======================================================= */
-
-  function initializeSmoothNavigation() {
-
-    var root =
-      getRoot();
-
-
-    if (!root) {
-      return;
-    }
-
-
-    qsa(
-      'a[href^="#"]',
-      root
-    ).forEach(
-      function (link) {
-
-        link.addEventListener(
-          "click",
-          function (event) {
-
-            var href =
-              link.getAttribute(
-                "href"
-              );
-
-
-            if (
-              !href ||
-              href === "#"
-            ) {
-
-              return;
-
-            }
-
-
-            var target;
-
-
-            try {
-
-              target =
-                document.querySelector(
-                  href
-                );
-
-            } catch (err) {
-
-              return;
-
-            }
-
-
-            if (!target) {
-              return;
-            }
-
-
-            event.preventDefault();
-
-
-            var header =
-              qs(
-                "#clothingHeader",
-                root
-              );
-
-
-            var offset =
-              header
-                ? header.offsetHeight
-                : 0;
-
-
-            var position =
-              target.getBoundingClientRect()
-                .top +
-              window.pageYOffset -
-              offset;
-
-
-            window.scrollTo({
-
-              top:
-                Math.max(
-                  position,
-                  0
-                ),
-
-              behavior:
-                "smooth"
-
-            });
-
-
-          }
-        );
-
-      }
-    );
-
-  }
-
-
-  /* =======================================================
-     COLLECTION INTERACTIONS
-     ======================================================= */
-
-  function initializeCollections() {
-
-    var root =
-      getRoot();
-
-
-    if (!root) {
-      return;
-    }
-
-
-    qsa(
-      "[data-collection]",
-      root
-    ).forEach(
-      function (button) {
-
-        button.addEventListener(
-          "click",
-          function () {
-
-            var collection =
-              button.getAttribute(
-                "data-collection"
-              );
-
-
-            /*
-              At present there is no
-              product API attached.
-
-              So we provide a useful
-              WhatsApp enquiry instead.
-            */
-
-            var business =
-              normalizeBusiness(
-                state.business
-              );
-
-
-            var whatsapp =
-              normalizeWhatsApp(
-                business.whatsapp
-              );
-
-
-            if (!whatsapp) {
-
-              return;
-
-            }
-
-
-            var label =
-              collection
-                ? collection
-                    .charAt(0)
-                    .toUpperCase() +
-                  collection.slice(1)
-                : "collection";
-
-
-            var message =
-              "Hello, I would like to know more about your " +
-              label +
-              " collection at " +
-              business.name +
-              ".";
-
-
-            var url =
-              "https://wa.me/" +
-              whatsapp +
-              "?text=" +
-              encodeURIComponent(
-                message
-              );
-
-
-            window.open(
-              url,
-              "_blank",
-              "noopener,noreferrer"
-            );
-
-          }
-        );
-
-      }
-    );
-
-  }
-
-
-  /* =======================================================
-     GALLERY
-     ======================================================= */
-
-  function parseGallery(
-    gallery
-  ) {
-
-    if (!gallery) {
-
-      return [];
-
-    }
-
-
-    /*
-      Already array
-    */
-
-    if (
-      Array.isArray(
-        gallery
-      )
-    ) {
-
-      return gallery
-        .filter(
-          function (item) {
-
-            return (
-              item &&
-              String(item).trim()
-            );
-
-          }
-        )
-        .map(
-          function (item) {
-
-            return String(
-              item
-            ).trim();
-
-          }
-        );
-
-    }
-
-
-    var value =
-      String(
-        gallery
-      ).trim();
-
-
-    if (!value) {
-
-      return [];
-
-    }
-
-
-    /*
-      JSON array
-    */
-
-    if (
-      value.charAt(0) === "[" &&
-      value.charAt(
-        value.length - 1
-      ) === "]"
-    ) {
-
-      try {
-
-        var parsed =
-          JSON.parse(
-            value
-          );
-
-
-        if (
-          Array.isArray(
-            parsed
-          )
-        ) {
-
-          return parsed
-            .map(
-              function (item) {
-
-                if (
-                  typeof item ===
-                  "string"
-                ) {
-
-                  return item;
-
-                }
-
-
-                if (
-                  item &&
-                  item.url
-                ) {
-
-                  return item.url;
-
-                }
-
-
-                if (
-                  item &&
-                  item.image
-                ) {
-
-                  return item.image;
-
-                }
-
-
-                return "";
-
-              }
-            )
-            .filter(
-              function (item) {
-
-                return !!item;
-
-              }
-            );
-
-        }
-
-      } catch (err) {}
-
-    }
-
-
-    /*
-      Comma separated
-    */
-
-    return value
-      .split(
-        /[\n,|]+/
-      )
-      .map(
-        function (item) {
-
-          return item.trim();
-
-        }
-      )
-      .filter(
-        function (item) {
-
-          return !!item;
-
-        }
-      );
-
-  }
-
-
-  function initializeGallery() {
-
-    var root =
-      getRoot();
-
-
-    if (!root) {
-      return;
-    }
-
-
-    var business =
-      normalizeBusiness(
-        state.business
-      );
-
-
-    var gallery =
-      parseGallery(
-        business.gallery
-      );
-
-
-    /*
-      If gallery data exists,
-      replace placeholders.
-    */
-
-    if (
-      gallery.length === 0
-    ) {
-
-      return;
-
-    }
-
-
-    var galleryContainer =
-      qs(
-        "[data-gallery]",
-        root
-      );
-
-
-    if (!galleryContainer) {
-
-      return;
-
-    }
-
-
-    galleryContainer.innerHTML =
-      "";
-
-
-    gallery.forEach(
-      function (
-        imageURL,
-        index
-      ) {
-
-        var item =
-          document.createElement(
-            "div"
-          );
-
-
-        item.className =
-          "gallery-item";
-
-
-        /*
-          Keep large first image
-        */
-
-        if (
-          index === 0
-        ) {
-
-          item.classList.add(
-            "gallery-item-large"
-          );
-
-        }
-
-
-        var image =
-          document.createElement(
-            "img"
-          );
-
-
-        image.src =
-          imageURL;
-
-
-        image.alt =
-          (
-            business.name ||
-            "Business"
-          ) +
-          " - Gallery " +
-          (
-            index + 1
-          );
-
-
-        image.loading =
-          index < 2
-            ? "eager"
-            : "lazy";
-
-
-        image.style.width =
-          "100%";
-
-
-        image.style.height =
-          "100%";
-
-
-        image.style.objectFit =
-          "cover";
-
-
-        image.onerror =
-          function () {
-
-            item.remove();
-
-          };
-
-
-        item.appendChild(
-          image
-        );
-
-
-        galleryContainer.appendChild(
-          item
-        );
-
-      }
-    );
-
-  }
-
-
-  /* =======================================================
-     RATING
-     ======================================================= */
-
-  function initializeRating() {
-
-    var root =
-      getRoot();
-
-
-    if (!root) {
-      return;
-    }
-
-
-    var business =
-      normalizeBusiness(
-        state.business
-      );
-
-
-    var rating =
-      parseFloat(
-        business.rating
-      );
-
-
-    if (
-      !Number.isFinite(
-        rating
-      )
-    ) {
-
-      rating =
-        0;
-
-    }
-
-
-    rating =
-      Math.max(
-        0,
-        Math.min(
-          5,
-          rating
-        )
-      );
-
-
-    /*
-      Hero stars
-    */
-
-    qsa(
-      ".clothing-stars",
-      root
-    ).forEach(
-      function (stars) {
-
-        var rounded =
-          Math.round(
-            rating
-          );
-
-
-        var result =
-          "";
-
-
-        for (
-          var i = 1;
-          i <= 5;
-          i++
-        ) {
-
-          result +=
-            i <= rounded
-              ? "★"
-              : "☆";
-
-        }
-
-
-        stars.textContent =
-          result;
-
-      }
-    );
-
-
-    /*
-      Info rating stars
-    */
-
-    qsa(
-      ".info-rating span",
-      root
-    ).forEach(
-      function (stars) {
-
-        var rounded =
-          Math.round(
-            rating
-          );
-
-
-        var result =
-          "";
-
-
-        for (
-          var i = 1;
-          i <= 5;
-          i++
-        ) {
-
-          result +=
-            i <= rounded
-              ? "★"
-              : "☆";
-
-        }
-
-
-        stars.textContent =
-          result;
-
-      }
-    );
-
-  }
-
-
-  /* =======================================================
-     HIDE EMPTY DATA SECTIONS
-     ======================================================= */
-
-  function handleMissingData() {
-
-    var root =
-      getRoot();
-
-
-    if (!root) {
-      return;
-    }
-
-
-    var business =
-      normalizeBusiness(
-        state.business
-      );
-
-
-    /*
-      Established year badge
-    */
-
-    if (
-      !business.establishedYear
-    ) {
-
-      qsa(
-        ".about-badge",
-        root
-      ).forEach(
-        function (element) {
-
-          element.style.display =
-            "none";
-
-        }
-      );
-
-    }
-
-
-    /*
-      Owner block
-    */
-
-    if (
-      !business.owner
-    ) {
-
-      qsa(
-        ".about-owner",
-        root
-      ).forEach(
-        function (element) {
-
-          element.style.display =
-            "none";
-
-        }
-      );
-
-    }
-
-
-    /*
-      Website links
-    */
-
-    if (
-      !business.website
-    ) {
-
-      qsa(
-        "[data-website]",
-        root
-      ).forEach(
-        function (element) {
-
-          element.style.display =
-            "none";
-
-        }
-      );
-
-    }
-
-
-    /*
-      Google place
-    */
-
-    if (
-      !business.googlePlace
-    ) {
-
-      qsa(
-        "[data-google-place]",
-        root
-      ).forEach(
-        function (element) {
-
-          element.style.display =
-            "none";
-
-        }
-      );
-
-    }
-
-
-    /*
-      WhatsApp
-    */
-
-    if (
-      !business.whatsapp
-    ) {
-
-      qsa(
-        "[data-whatsapp]",
-        root
-      ).forEach(
-        function (element) {
-
-          element.style.display =
-            "none";
-
-        }
-      );
-
-    }
-
-
-    /*
-      Phone
-    */
-
-    if (
-      !business.mobile
-    ) {
-
-      qsa(
-        "[data-call]",
-        root
-      ).forEach(
-        function (element) {
-
-          element.style.display =
-            "none";
-
-        }
-      );
-
-    }
-
-  }
-
-
-  /* =======================================================
-     CURRENT YEAR
-     ======================================================= */
-
-  function initializeYear() {
-
-    var root =
-      getRoot();
-
-
-    if (!root) {
-      return;
-    }
-
-
-    var year =
-      new Date()
-        .getFullYear();
-
-
-    qsa(
-      "#clothingCurrentYear",
-      root
-    ).forEach(
-      function (element) {
-
-        element.textContent =
-          String(
-            year
-          );
-
-      }
-    );
-
-  }
-
-
-  /* =======================================================
-     IMAGE LAZY LOADING
-     ======================================================= */
-
-  function initializeImages() {
-
-    var root =
-      getRoot();
-
-
-    if (!root) {
-      return;
-    }
-
-
-    qsa(
-      "img",
-      root
-    ).forEach(
-      function (image) {
-
-        /*
-          Do not override eager images.
-        */
-
-        if (
-          !image.hasAttribute(
-            "loading"
-          )
-        ) {
-
-          image.loading =
-            "lazy";
-
-        }
-
+        passive:true
       }
     );
 
@@ -2329,59 +2101,46 @@
 
   /* =======================================================
      ACTIVE NAVIGATION
-     ======================================================= */
+  ======================================================== */
 
-  function initializeActiveNavigation() {
+  function setupActiveNavigation() {
 
-    var root =
-      getRoot();
+    const links =
+      Array.from(
+        document.querySelectorAll(
+          ".lux-nav-link"
+        )
+      );
 
 
-    if (!root) {
+    const sections =
+      Array.from(
+        document.querySelectorAll(
+          "main section[id]"
+        )
+      );
+
+
+    if (!links.length) {
       return;
     }
 
 
-    var links =
-      qsa(
-        '.clothing-navigation a[href^="#"]',
-        root
-      );
+    function update() {
+
+      const position =
+        window.scrollY + 180;
 
 
-    var sections =
-      qsa(
-        "main section[id]",
-        root
-      );
-
-
-    if (
-      !links.length ||
-      !sections.length
-    ) {
-
-      return;
-
-    }
-
-
-    function updateActive() {
-
-      var scrollPosition =
-        window.scrollY +
-        180;
-
-
-      var current =
-        "";
+      let current =
+        "home";
 
 
       sections.forEach(
         function (section) {
 
           if (
-            scrollPosition >=
+            position >=
             section.offsetTop
           ) {
 
@@ -2397,29 +2156,16 @@
       links.forEach(
         function (link) {
 
-          var href =
-            link.getAttribute(
-              "href"
-            );
+          const href =
+            link.getAttribute("href") ||
+            "";
 
 
-          if (
+          link.classList.toggle(
+            "active",
             href ===
-            "#" +
-            current
-          ) {
-
-            link.classList.add(
-              "active"
-            );
-
-          } else {
-
-            link.classList.remove(
-              "active"
-            );
-
-          }
+              "#" + current
+          );
 
         }
       );
@@ -2427,15 +2173,14 @@
     }
 
 
-    updateActive();
+    update();
 
 
     window.addEventListener(
       "scroll",
-      updateActive,
+      update,
       {
-        passive:
-          true
+        passive:true
       }
     );
 
@@ -2443,36 +2188,158 @@
 
 
   /* =======================================================
-     PREVENT DISABLED LINKS
-     ======================================================= */
+     SMOOTH NAVIGATION
+  ======================================================== */
 
-  function initializeDisabledLinks() {
+  function setupSmoothNavigation() {
 
-    var root =
-      getRoot();
+    document
+      .querySelectorAll(
+        'a[href^="#"]'
+      )
+      .forEach(
+        function (link) {
+
+          link.addEventListener(
+            "click",
+            function (event) {
+
+              const href =
+                link.getAttribute(
+                  "href"
+                );
 
 
-    if (!root) {
+              if (
+                !href ||
+                href === "#"
+              ) {
+
+                return;
+
+              }
+
+
+              const target =
+                document.querySelector(
+                  href
+                );
+
+
+              if (!target) {
+                return;
+              }
+
+
+              event.preventDefault();
+
+
+              target.scrollIntoView({
+                behavior:"smooth",
+                block:"start"
+              });
+
+            }
+          );
+
+        }
+      );
+
+  }
+
+
+  /* =======================================================
+     SCROLL REVEAL
+  ======================================================== */
+
+  function setupScrollReveal() {
+
+    const elements =
+      document.querySelectorAll(
+        [
+          ".lux-section-heading",
+          ".lux-collection-card",
+          ".lux-about-visual",
+          ".lux-about-content",
+          ".lux-experience-item",
+          ".lux-gallery-item",
+          ".lux-review-quote",
+          ".lux-info-card",
+          ".lux-contact-content"
+        ].join(",")
+      );
+
+
+    if (!elements.length) {
       return;
     }
 
 
-    root.addEventListener(
-      "click",
-      function (event) {
+    /*
+      IntersectionObserver support.
+    */
 
-        var link =
-          event.target.closest(
-            "a.is-disabled"
+    if (
+      !("IntersectionObserver" in window)
+    ) {
+
+      elements.forEach(
+        function (element) {
+
+          element.classList.add(
+            "is-visible"
           );
 
-
-        if (!link) {
-          return;
         }
+      );
+
+      return;
+
+    }
 
 
-        event.preventDefault();
+    const observer =
+      new IntersectionObserver(
+        function (entries, obs) {
+
+          entries.forEach(
+            function (entry) {
+
+              if (
+                !entry.isIntersecting
+              ) {
+
+                return;
+
+              }
+
+
+              entry.target.classList.add(
+                "is-visible"
+              );
+
+
+              obs.unobserve(
+                entry.target
+              );
+
+            }
+          );
+
+        },
+        {
+          threshold:.12,
+          rootMargin:"0px 0px -50px 0px"
+        }
+      );
+
+
+    elements.forEach(
+      function (element) {
+
+        observer.observe(
+          element
+        );
 
       }
     );
@@ -2481,24 +2348,686 @@
 
 
   /* =======================================================
-     MAIN INITIALIZER
-     ======================================================= */
+     ADD REVEAL CSS CLASSES
+  ======================================================== */
 
-  async function init(
-    options
-  ) {
+  function setupRevealStyles() {
+
+    const style =
+      document.createElement(
+        "style"
+      );
+
+
+    style.setAttribute(
+      "data-ubnux-clothing-reveal",
+      "true"
+    );
+
+
+    style.textContent = `
+
+      .lux-section-heading,
+      .lux-collection-card,
+      .lux-about-visual,
+      .lux-about-content,
+      .lux-experience-item,
+      .lux-gallery-item,
+      .lux-review-quote,
+      .lux-info-card,
+      .lux-contact-content{
+
+        opacity:0;
+
+        transform:translateY(30px);
+
+        transition:
+          opacity .85s cubic-bezier(.22,1,.36,1),
+          transform .85s cubic-bezier(.22,1,.36,1);
+
+      }
+
+
+      .lux-collection-card:nth-child(2),
+      .lux-experience-item:nth-child(2),
+      .lux-gallery-item:nth-child(2),
+      .lux-info-card:nth-child(2){
+
+        transition-delay:.08s;
+
+      }
+
+
+      .lux-collection-card:nth-child(3),
+      .lux-experience-item:nth-child(3),
+      .lux-gallery-item:nth-child(3),
+      .lux-info-card:nth-child(3){
+
+        transition-delay:.16s;
+
+      }
+
+
+      .lux-collection-card:nth-child(4),
+      .lux-experience-item:nth-child(4),
+      .lux-gallery-item:nth-child(4),
+      .lux-info-card:nth-child(4){
+
+        transition-delay:.24s;
+
+      }
+
+
+      .lux-section-heading.is-visible,
+      .lux-collection-card.is-visible,
+      .lux-about-visual.is-visible,
+      .lux-about-content.is-visible,
+      .lux-experience-item.is-visible,
+      .lux-gallery-item.is-visible,
+      .lux-review-quote.is-visible,
+      .lux-info-card.is-visible,
+      .lux-contact-content.is-visible{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+      }
+
+
+      .is-disabled{
+
+        opacity:.4 !important;
+
+        cursor:not-allowed !important;
+
+      }
+
+    `;
+
+
+    document.head.appendChild(
+      style
+    );
+
+  }
+
+
+  /* =======================================================
+     BACK TO TOP
+  ======================================================== */
+
+  function setupBackToTop() {
+
+    const button =
+      document.getElementById(
+        "luxBackTop"
+      );
+
+
+    if (!button) {
+      return;
+    }
+
+
+    function update() {
+
+      button.classList.toggle(
+        "visible",
+        window.scrollY > 500
+      );
+
+    }
+
+
+    update();
+
+
+    window.addEventListener(
+      "scroll",
+      update,
+      {
+        passive:true
+      }
+    );
+
+
+    button.addEventListener(
+      "click",
+      function () {
+
+        window.scrollTo({
+
+          top:0,
+
+          behavior:"smooth"
+
+        });
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     HOME LINKS
+  ======================================================== */
+
+  function setupHomeLinks() {
+
+    document
+      .querySelectorAll(
+        "[data-home-link]"
+      )
+      .forEach(
+        function (link) {
+
+          link.href = "#home";
+
+        }
+      );
+
+  }
+
+
+  /* =======================================================
+     CURRENT YEAR
+  ======================================================== */
+
+  function setupYear() {
+
+    const element =
+      document.getElementById(
+        "luxYear"
+      );
+
+
+    if (element) {
+
+      element.textContent =
+        String(
+          new Date().getFullYear()
+        );
+
+    }
+
+  }
+
+
+  /* =======================================================
+     RATING STARS
+  ======================================================== */
+
+  function setupRating() {
+
+    const rating =
+      parseFloat(
+        business.Rating
+      );
+
+
+    if (
+      Number.isNaN(rating)
+    ) {
+
+      return;
+
+    }
+
+
+    const rounded =
+      Math.max(
+        0,
+        Math.min(
+          5,
+          Math.round(rating)
+        )
+      );
+
+
+    document
+      .querySelectorAll(
+        ".lux-stars"
+      )
+      .forEach(
+        function (element) {
+
+          let output = "";
+
+          for (
+            let i = 1;
+            i <= 5;
+            i++
+          ) {
+
+            output +=
+              i <= rounded
+                ? "★"
+                : "☆";
+
+          }
+
+          element.textContent =
+            output;
+
+        }
+      );
+
+  }
+
+
+  /* =======================================================
+     CLEAN MISSING DATA
+  ======================================================== */
+
+  function cleanMissingData() {
+
+    const rules = [
+
+      {
+        selector:
+          "[data-business-owner]",
+        value:
+          business.OwnerName
+      },
+
+      {
+        selector:
+          "[data-business-established-year]",
+        value:
+          business.EstablishedYear
+      },
+
+      {
+        selector:
+          "[data-instagram]",
+        value:
+          business.InstagramURL
+      },
+
+      {
+        selector:
+          "[data-facebook]",
+        value:
+          business.FacebookURL
+      },
+
+      {
+        selector:
+          "[data-youtube]",
+        value:
+          business.YoutubeURL
+      }
+
+    ];
+
+
+    rules.forEach(
+      function (rule) {
+
+        if (
+          rule.value
+        ) {
+
+          return;
+
+        }
+
+
+        document
+          .querySelectorAll(
+            rule.selector
+          )
+          .forEach(
+            function (element) {
+
+              /*
+                Do not remove complete cards.
+                Only visually soften unavailable
+                data where appropriate.
+              */
+
+              element.classList.add(
+                "is-empty"
+              );
+
+            }
+          );
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     LAZY IMAGE FALLBACK
+  ======================================================== */
+
+  function setupLazyImages() {
+
+    document
+      .querySelectorAll(
+        "img"
+      )
+      .forEach(
+        function (img) {
+
+          if (
+            !img.loading
+          ) {
+
+            img.loading =
+              "lazy";
+
+          }
+
+
+          img.addEventListener(
+            "error",
+            function () {
+
+              img.classList.add(
+                "image-error"
+              );
+
+            },
+            {
+              once:true
+            }
+          );
+
+        }
+      );
+
+  }
+
+
+  /* =======================================================
+     HERO PARALLAX
+  ======================================================== */
+
+  function setupHeroParallax() {
+
+    const hero =
+      document.querySelector(
+        ".lux-hero"
+      );
+
+
+    if (!hero) {
+      return;
+    }
+
 
     /*
-      Prevent duplicate initialization
+      Disable for touch / reduced motion.
     */
 
     if (
-      state.initialized
+      window.matchMedia &&
+      (
+        window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches ||
+        window.matchMedia(
+          "(pointer: coarse)"
+        ).matches
+      )
     ) {
 
+      return;
+
+    }
+
+
+    let ticking = false;
+
+
+    function update() {
+
+      const rect =
+        hero.getBoundingClientRect();
+
+
+      const viewport =
+        window.innerHeight;
+
+
+      if (
+        rect.bottom < 0 ||
+        rect.top > viewport
+      ) {
+
+        ticking = false;
+
+        return;
+
+      }
+
+
+      const progress =
+        Math.max(
+          -1,
+          Math.min(
+            1,
+            -rect.top / hero.offsetHeight
+          )
+        );
+
+
+      const images =
+        hero.querySelectorAll(
+          ".lux-hero-image img"
+        );
+
+
+      images.forEach(
+        function (img) {
+
+          img.style.transform =
+            "scale(1.02) translateY(" +
+            (progress * 18) +
+            "px)";
+
+        }
+      );
+
+
+      ticking = false;
+
+    }
+
+
+    window.addEventListener(
+      "scroll",
+      function () {
+
+        if (ticking) {
+          return;
+        }
+
+
+        ticking = true;
+
+
+        window.requestAnimationFrame(
+          update
+        );
+
+      },
+      {
+        passive:true
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     HOVER PAUSE FOR DESKTOP
+  ======================================================== */
+
+  function setupHeroHover() {
+
+    const hero =
+      document.querySelector(
+        ".lux-hero"
+      );
+
+
+    if (!hero) {
+      return;
+    }
+
+
+    hero.addEventListener(
+      "mouseenter",
+      function () {
+
+        if (
+          window.matchMedia &&
+          window.matchMedia(
+            "(pointer: fine)"
+          ).matches
+        ) {
+
+          stopSlider();
+
+        }
+
+      }
+    );
+
+
+    hero.addEventListener(
+      "mouseleave",
+      function () {
+
+        if (
+          slides.length > 1
+        ) {
+
+          startSlider();
+
+        }
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     PAGE VISIBILITY
+  ======================================================== */
+
+  function setupVisibilityHandling() {
+
+    document.addEventListener(
+      "visibilitychange",
+      function () {
+
+        if (
+          document.hidden
+        ) {
+
+          stopSlider();
+
+        } else if (
+          slides.length > 1
+        ) {
+
+          startSlider();
+
+        }
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     LOADER
+  ======================================================== */
+
+  function hideLoader() {
+
+    const loader =
+      document.getElementById(
+        "luxLoader"
+      );
+
+
+    if (!loader) {
+      return;
+    }
+
+
+    window.setTimeout(
+      function () {
+
+        loader.classList.add(
+          "is-hidden"
+        );
+
+      },
+      350
+    );
+
+  }
+
+
+  /* =======================================================
+     TEMPLATE STATE
+  ======================================================== */
+
+  function getState() {
+
+    return {
+
+      name:
+        CONFIG.NAME,
+
+      version:
+        CONFIG.VERSION,
+
+      initialized:
+        isInitialized,
+
+      business:
+        business,
+
+      currentSlide:
+        currentSlide,
+
+      slideCount:
+        slides.length
+
+    };
+
+  }
+
+
+  /* =======================================================
+     INITIALIZE
+  ======================================================== */
+
+  function init(options) {
+
+    if (isInitialized) {
+
+      return getState();
+
+    }
+
+
+    try {
+
       /*
-        If new business data is
-        supplied, refresh bindings.
+        Optional business object from loader.
       */
 
       if (
@@ -2506,225 +3035,131 @@
         options.business
       ) {
 
-        state.business =
+        business =
           options.business;
-
-
-        state.route =
-          options.route ||
-          state.route;
-
-
-        state.seo =
-          options.seo ||
-          state.seo;
-
-
-        bindBusinessData();
-
-        initializeLogos();
-
-        initializeCovers();
-
-        initializeContactLinks();
-
-        initializeRating();
-
-        handleMissingData();
-
-        initializeGallery();
 
       }
 
 
-      return;
+      normalizeBusiness();
+
+
+      /*
+        Inject reveal styles
+        before observers.
+      */
+
+      setupRevealStyles();
+
+
+      /*
+        Bind all business information.
+      */
+
+      bindBusinessData();
+
+
+      /*
+        Gallery.
+      */
+
+      setupGallery();
+
+
+      /*
+        Rating.
+      */
+
+      setupRating();
+
+
+      /*
+        Collection actions.
+      */
+
+      setupCollectionButtons();
+
+
+      /*
+        Navigation.
+      */
+
+      setupMobileMenu();
+
+      setupHeader();
+
+      setupActiveNavigation();
+
+      setupSmoothNavigation();
+
+      setupHomeLinks();
+
+
+      /*
+        Visual effects.
+      */
+
+      setupScrollReveal();
+
+      setupBackToTop();
+
+      setupLazyImages();
+
+      setupHeroParallax();
+
+      setupHeroHover();
+
+      setupVisibilityHandling();
+
+
+      /*
+        Footer.
+      */
+
+      setupYear();
+
+
+      /*
+        Complete.
+      */
+
+      isInitialized = true;
+
+
+      hideLoader();
+
+
+      return getState();
+
+    } catch (error) {
+
+      console.error(
+        "[UBnux Clothing] Initialization error:",
+        error
+      );
+
+
+      hideLoader();
+
+
+      return getState();
 
     }
-
-
-    state.initialized =
-      true;
-
-
-    state.business =
-      (
-        options &&
-        options.business
-      ) ||
-      {};
-
-
-    state.route =
-      (
-        options &&
-        options.route
-      ) ||
-      null;
-
-
-    state.seo =
-      (
-        options &&
-        options.seo
-      ) ||
-      null;
-
-
-    state.root =
-      (
-        options &&
-        options.root
-      ) ||
-      qs(
-        ".clothing-site"
-      );
-
-
-    if (!state.root) {
-
-      console.warn(
-        "[UBnux Clothing] Root element not found."
-      );
-
-      return;
-
-    }
-
-
-    /*
-      Bind data
-    */
-
-    bindBusinessData();
-
-
-    /*
-      Images
-    */
-
-    initializeLogos();
-
-    initializeCovers();
-
-
-    /*
-      Contact
-    */
-
-    initializeContactLinks();
-
-
-    /*
-      Navigation
-    */
-
-    initializeMobileMenu();
-
-    initializeHeader();
-
-    initializeSmoothNavigation();
-
-    initializeActiveNavigation();
-
-
-    /*
-      Clothing interactions
-    */
-
-    initializeCollections();
-
-
-    /*
-      Gallery
-    */
-
-    initializeGallery();
-
-
-    /*
-      Rating
-    */
-
-    initializeRating();
-
-
-    /*
-      Missing data
-    */
-
-    handleMissingData();
-
-
-    /*
-      Footer
-    */
-
-    initializeYear();
-
-
-    /*
-      Images
-    */
-
-    initializeImages();
-
-
-    /*
-      Disabled links
-    */
-
-    initializeDisabledLinks();
-
-
-    /*
-      Ready event
-    */
-
-    try {
-
-      window.dispatchEvent(
-        new CustomEvent(
-          "ubnux:clothing-ready",
-          {
-            detail: {
-
-              business:
-                state.business,
-
-              route:
-                state.route,
-
-              seo:
-                state.seo
-
-            }
-
-          }
-        )
-      );
-
-    } catch (err) {}
-
-
-    console.log(
-      "[UBnux Clothing] Business website initialized.",
-      state.business
-    );
 
   }
 
 
   /* =======================================================
      PUBLIC API
-     ======================================================= */
+  ======================================================== */
 
   window.UBnuxBusinessSite = {
 
     name:
-      "clothing",
+      CONFIG.NAME,
 
     version:
-      "1.0.0",
+      CONFIG.VERSION,
 
     init:
       init,
@@ -2733,23 +3168,87 @@
       init,
 
     getState:
-      function () {
-
-        return Object.assign(
-          {},
-          state
-        );
-
-      },
+      getState,
 
     getBusiness:
       function () {
 
-        return state.business;
+        return business;
 
-      }
+      },
+
+    nextSlide:
+      nextSlide,
+
+    previousSlide:
+      previousSlide,
+
+    showSlide:
+      showSlide
 
   };
+
+
+  /* =======================================================
+     AUTO INIT
+  ======================================================== */
+
+  /*
+    business-page.js normally calls init().
+    This fallback allows the template to work
+    even when loaded independently.
+  */
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      function () {
+
+        /*
+          Give business-page.js a chance
+          to initialize first.
+        */
+
+        window.setTimeout(
+          function () {
+
+            if (
+              !isInitialized
+            ) {
+
+              init();
+
+            }
+
+          },
+          100
+        );
+
+      }
+    );
+
+  } else {
+
+    window.setTimeout(
+      function () {
+
+        if (
+          !isInitialized
+        ) {
+
+          init();
+
+        }
+
+      },
+      100
+    );
+
+  }
 
 
 })(window, document);
