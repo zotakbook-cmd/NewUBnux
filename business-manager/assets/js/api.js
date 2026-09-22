@@ -1,30 +1,13 @@
 /* =========================================================
    UBnux Business Manager API
    File: assets/js/api.js
-   Version: 2.0.0
-
-   Architecture:
-
-   Browser
-      ↓
-   Cloudflare Pages Function
-      ↓
-   Google Apps Script doGet()
-      ↓
-   Google Sheets
-
-   NOTE:
-   Current Apps Script backend uses GET / doGet().
+   Version: 2.1.0
    ========================================================= */
 
 (function (window) {
 
   "use strict";
 
-
-  /* =======================================================
-     CONFIG
-  ======================================================= */
 
   const Config =
     window.UBnuxManagerConfig;
@@ -41,15 +24,11 @@
   }
 
 
-  /* =======================================================
-     API OBJECT
-  ======================================================= */
-
   const API = {};
 
 
   /* =======================================================
-     BUILD API URL
+     BUILD URL
   ======================================================= */
 
   function getAPIURL(
@@ -194,16 +173,40 @@
 
 
   /* =======================================================
-     RESPONSE PARSER
+     PARSE RESPONSE
   ======================================================= */
 
   async function parseResponse(
     response
   ) {
 
+    const contentType =
+      String(
+        response.headers.get(
+          "content-type"
+        ) || ""
+      ).toLowerCase();
+
+
     const text =
       await response.text();
 
+
+    console.log(
+      "UBnux API status:",
+      response.status
+    );
+
+
+    console.log(
+      "UBnux API content-type:",
+      contentType
+    );
+
+
+    /*
+     * Empty response
+     */
 
     if (!text) {
 
@@ -225,16 +228,28 @@
     }
 
 
-    try {
+    /*
+     * HTML response
+     *
+     * This is the important diagnostic.
+     */
 
-      return JSON.parse(
-        text
-      );
-
-    } catch (error) {
+    if (
+      text.trim()
+        .startsWith(
+          "<!"
+        ) ||
+      text.trim()
+        .startsWith(
+          "<html"
+        ) ||
+      contentType.includes(
+        "text/html"
+      )
+    ) {
 
       console.error(
-        "UBnux API returned non-JSON response:",
+        "UBnux API returned HTML instead of JSON:",
         text.substring(
           0,
           1000
@@ -250,8 +265,57 @@
         status:
           response.status,
 
+        code:
+          "HTML_RESPONSE",
+
         message:
-          "Server returned an invalid response.",
+          "API returned an HTML page instead of JSON.",
+
+        raw:
+          text.substring(
+            0,
+            1000
+          )
+
+      };
+
+    }
+
+
+    /*
+     * JSON
+     */
+
+    try {
+
+      return JSON.parse(
+        text
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Invalid JSON response:",
+        text.substring(
+          0,
+          1000
+        )
+      );
+
+
+      return {
+
+        success:
+          false,
+
+        status:
+          response.status,
+
+        code:
+          "INVALID_JSON",
+
+        message:
+          "API returned invalid JSON.",
 
         raw:
           text.substring(
@@ -267,7 +331,7 @@
 
 
   /* =======================================================
-     GET REQUEST
+     GET
   ======================================================= */
 
   async function get(
@@ -311,11 +375,11 @@
 
             },
 
-            signal:
-              timeout.signal,
-
             credentials:
-              "same-origin"
+              "same-origin",
+
+            signal:
+              timeout.signal
 
           }
         );
@@ -327,7 +391,9 @@
         );
 
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
 
         return {
 
@@ -336,6 +402,10 @@
 
           status:
             response.status,
+
+          code:
+            data.code ||
+            "HTTP_ERROR",
 
           message:
             data.message ||
@@ -372,11 +442,11 @@
           success:
             false,
 
-          message:
-            "Request timed out. Please try again.",
-
           code:
-            "TIMEOUT"
+            "TIMEOUT",
+
+          message:
+            "Request timed out."
 
         };
 
@@ -388,14 +458,14 @@
         success:
           false,
 
+        code:
+          "NETWORK_ERROR",
+
         message:
           error &&
           error.message
             ? error.message
-            : "Network request failed.",
-
-        code:
-          "NETWORK_ERROR"
+            : "Network request failed."
 
       };
 
@@ -464,7 +534,7 @@
 
 
   /* =======================================================
-     SESSION / BOOTSTRAP
+     BOOTSTRAP
   ======================================================= */
 
   API.bootstrap =
@@ -488,7 +558,7 @@
 
 
   /* =======================================================
-     GET BUSINESSES
+     BUSINESSES
   ======================================================= */
 
   API.getBusinesses =
@@ -499,23 +569,25 @@
 
       return get(
         "manager-businesses",
-        {
+        Object.assign(
+          {},
+          params || {},
+          {
 
-          sessionToken:
-            String(
-              sessionToken || ""
-            ).trim(),
+            sessionToken:
+              String(
+                sessionToken || ""
+              ).trim()
 
-          ...(params || {})
-
-        }
+          }
+        )
       );
 
     };
 
 
   /* =======================================================
-     GET SINGLE BUSINESS
+     SINGLE BUSINESS
   ======================================================= */
 
   API.getBusiness =
@@ -545,7 +617,7 @@
 
 
   /* =======================================================
-     SAVE BUSINESS
+     SAVE
   ======================================================= */
 
   API.saveBusiness =
@@ -553,13 +625,6 @@
       sessionToken,
       business
     ) {
-
-      /*
-       * Current backend is GET based.
-       *
-       * Business object is therefore encoded
-       * as JSON inside one query parameter.
-       */
 
       return get(
         "manager-save-business",
@@ -582,7 +647,7 @@
 
 
   /* =======================================================
-     DELETE BUSINESS
+     DELETE
   ======================================================= */
 
   API.deleteBusiness =
@@ -648,7 +713,7 @@
 
 
   /* =======================================================
-     CUSTOM SLUG LOOKUP
+     CUSTOM URL
   ======================================================= */
 
   API.getBusinessBySlug =
@@ -671,17 +736,8 @@
     };
 
 
-  /* =======================================================
-     RAW GET
-  ======================================================= */
-
   API.get =
     get;
-
-
-  /* =======================================================
-     URL HELPER
-  ======================================================= */
 
   API.getURL =
     getAPIURL;
@@ -694,13 +750,12 @@
   window.UBnuxManagerAPI =
     API;
 
-
   window.UBnuxManagerApi =
     API;
 
 
   console.log(
-    "UBnux Manager API v2.0.0 initialized."
+    "UBnux Manager API v2.1.0 initialized."
   );
 
 
