@@ -1,14 +1,7 @@
 <!DOCTYPE html>
-<html lang="en-IN">
+<html lang="en">
 
 <head>
-
-  <!-- =====================================================
-       CLOTHING BUSINESS WEBSITE TEMPLATE
-       UBnux
-       File:
-       assets/business-sites/clothing/index.html
-  ====================================================== -->
 
   <meta charset="UTF-8">
 
@@ -17,40 +10,364 @@
     content="width=device-width, initial-scale=1.0"
   >
 
+  <meta
+    name="theme-color"
+    content="#0b0b0a"
+  >
+
+  <title data-business-name>
+    Business
+  </title>
+
+  <!-- =====================================================
+       PREMIUM FONTS
+  ====================================================== -->
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  >
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
 </head>
 
 
-<body>
+<body class="clothing-site">
+
+
+<!-- =====================================================
+     PAGE LOADER
+====================================================== -->
 
 <div
-  class="clothing-site"
-  data-business-template="clothing"
+  class="lux-loader"
+  id="luxLoader"
+  aria-hidden="true"
+>
+
+  <div class="lux-loader-inner">
+
+    <span class="lux-loader-line"></span>
+
+    <span class="lux-loader-brand">
+      <span data-business-name>Business</span>
+    </span>
+
+    <span class="lux-loader-line"></span>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================================
+     ANNOUNCEMENT BAR
+====================================================== -->
+
+<div class="lux-announcement">
+
+  <div class="lux-announcement-track">
+
+    <span>
+      PREMIUM FASHION
+    </span>
+
+    <i></i>
+
+    <span>
+      NEW COLLECTION
+    </span>
+
+    <i></i>
+
+    <span>
+      PERSONAL SHOPPING
+    </span>
+
+    <i></i>
+
+    <span>
+      STYLE • QUALITY • ELEGANCE
+    </span>
+
+    <i></i>
+
+    <span>
+      PREMIUM FASHION
+    </span>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================================
+     HEADER
+====================================================== -->
+
+<header
+  class="lux-header"
+  id="luxHeader"
+>
+
+  <div class="lux-header-inner">
+
+
+    <!-- LOGO -->
+
+    <a
+      href="#"
+      class="lux-logo"
+      data-home-link
+      aria-label="Business home"
+    >
+
+      <span class="lux-logo-mark">
+
+        <img
+          data-business-logo
+          src=""
+          alt=""
+        >
+
+        <span class="lux-logo-fallback">
+          <span data-business-initial>
+            B
+          </span>
+        </span>
+
+      </span>
+
+      <span class="lux-logo-text">
+
+        <strong data-business-name>
+          Business
+        </strong>
+
+        <small>
+          FASHION & STYLE
+        </small>
+
+      </span>
+
+    </a>
+
+
+    <!-- DESKTOP NAV -->
+
+    <nav
+      class="lux-nav"
+      id="luxNav"
+      aria-label="Main navigation"
+    >
+
+      <a
+        href="#home"
+        class="lux-nav-link active"
+      >
+        Home
+      </a>
+
+      <a
+        href="#collections"
+        class="lux-nav-link"
+      >
+        Collections
+      </a>
+
+      <a
+        href="#about"
+        class="lux-nav-link"
+      >
+        About
+      </a>
+
+      <a
+        href="#gallery"
+        class="lux-nav-link"
+      >
+        Gallery
+      </a>
+
+      <a
+        href="#contact"
+        class="lux-nav-link"
+      >
+        Contact
+      </a>
+
+    </nav>
+
+
+    <!-- HEADER ACTIONS -->
+
+    <div class="lux-header-actions">
+
+      <a
+        href="#contact"
+        class="lux-header-visit"
+      >
+        <span>
+          Visit Store
+        </span>
+
+        <span class="lux-arrow">
+          ↗
+        </span>
+
+      </a>
+
+
+      <button
+        type="button"
+        class="lux-menu-btn"
+        id="luxMenuBtn"
+        aria-label="Open menu"
+        aria-expanded="false"
+      >
+
+        <span></span>
+        <span></span>
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- MOBILE NAV -->
+
+  <div
+    class="lux-mobile-menu"
+    id="luxMobileMenu"
+  >
+
+    <div class="lux-mobile-menu-inner">
+
+      <a href="#home">
+        Home
+      </a>
+
+      <a href="#collections">
+        Collections
+      </a>
+
+      <a href="#about">
+        About
+      </a>
+
+      <a href="#gallery">
+        Gallery
+      </a>
+
+      <a href="#contact">
+        Contact
+      </a>
+
+    </div>
+
+  </div>
+
+</header>
+
+
+
+<!-- =====================================================
+     HERO
+====================================================== -->
+
+<main>
+
+<section
+  class="lux-hero"
+  id="home"
 >
 
 
-  <!-- ===================================================
-       ANNOUNCEMENT BAR
-  ==================================================== -->
+  <!-- HERO SLIDES -->
 
-  <div class="clothing-announcement">
+  <div
+    class="lux-hero-slider"
+    id="luxHeroSlider"
+  >
 
-    <div class="clothing-container">
 
-      <span>
-        <span data-business-name>
-          Your Fashion Store
-        </span>
-      </span>
+    <!-- SLIDE 01 -->
 
-      <span class="announcement-separator">
-        •
-      </span>
+    <div
+      class="lux-hero-slide active"
+      data-slide="0"
+    >
 
-      <span>
-        <span data-business-category>
-          Clothing & Fashion
-        </span>
-      </span>
+      <div class="lux-hero-image">
+
+        <img
+          data-hero-image="0"
+          src=""
+          alt=""
+          loading="eager"
+        >
+
+      </div>
+
+      <div class="lux-hero-overlay"></div>
+
+    </div>
+
+
+    <!-- SLIDE 02 -->
+
+    <div
+      class="lux-hero-slide"
+      data-slide="1"
+    >
+
+      <div class="lux-hero-image">
+
+        <img
+          data-hero-image="1"
+          src=""
+          alt=""
+          loading="lazy"
+        >
+
+      </div>
+
+      <div class="lux-hero-overlay"></div>
+
+    </div>
+
+
+    <!-- SLIDE 03 -->
+
+    <div
+      class="lux-hero-slide"
+      data-slide="2"
+    >
+
+      <div class="lux-hero-image">
+
+        <img
+          data-hero-image="2"
+          src=""
+          alt=""
+          loading="lazy"
+        >
+
+      </div>
+
+      <div class="lux-hero-overlay"></div>
 
     </div>
 
@@ -58,1384 +375,1394 @@
 
 
 
-  <!-- ===================================================
-       HEADER
-  ==================================================== -->
+  <!-- HERO CONTENT -->
 
-  <header
-    class="clothing-header"
-    id="clothingHeader"
-  >
+  <div class="lux-container lux-hero-container">
 
-    <div class="clothing-container clothing-header-inner">
+    <div class="lux-hero-content">
 
 
-      <!-- BRAND -->
+      <div class="lux-eyebrow reveal">
 
-      <a
-        href="#top"
-        class="clothing-brand"
-        aria-label="Business Home"
-      >
+        <span class="lux-eyebrow-line"></span>
 
-        <span class="clothing-brand-logo">
-
-          <img
-            data-business-logo
-            src=""
-            alt=""
-            loading="eager"
-          >
-
-          <span
-            class="clothing-brand-logo-placeholder"
-            aria-hidden="true"
-          >
-            F
+        <span>
+          ESTABLISHED
+          <span data-business-established-year>
+            —
           </span>
-
         </span>
 
+      </div>
 
-        <span class="clothing-brand-text">
 
-          <strong
-            data-business-name
-          >
-            Your Fashion Store
-          </strong>
+      <h1 class="lux-hero-title reveal">
 
-          <small
-            data-business-category
-          >
-            Clothing & Fashion
-          </small>
-
+        <span class="lux-hero-small">
+          Discover
         </span>
 
-      </a>
+        <span data-business-name>
+          Your Style
+        </span>
+
+        <span class="lux-hero-accent">
+          Your Story.
+        </span>
+
+      </h1>
 
 
-
-      <!-- DESKTOP NAVIGATION -->
-
-      <nav
-        class="clothing-navigation"
-        aria-label="Main Navigation"
+      <p
+        class="lux-hero-description reveal"
+        data-business-short-description
       >
-
-        <a href="#collection">
-          Collection
-        </a>
-
-        <a href="#about">
-          About
-        </a>
-
-        <a href="#gallery">
-          Gallery
-        </a>
-
-        <a href="#visit">
-          Visit Us
-        </a>
-
-      </nav>
+        Discover premium fashion, timeless style and carefully selected
+        collections designed to make every moment feel special.
+      </p>
 
 
-
-      <!-- HEADER ACTIONS -->
-
-      <div class="clothing-header-actions">
+      <div class="lux-hero-actions reveal">
 
         <a
-          class="clothing-header-call"
-          data-call
-          href="#"
-          aria-label="Call business"
+          href="#collections"
+          class="lux-btn lux-btn-light"
         >
 
-          <span class="clothing-phone-icon">
-            ☎
+          <span>
+            Explore Collection
+          </span>
+
+          <span class="lux-btn-icon">
+            ↗
+          </span>
+
+        </a>
+
+
+        <a
+          href="#contact"
+          class="lux-btn lux-btn-outline"
+        >
+
+          <span>
+            Visit Store
+          </span>
+
+        </a>
+
+      </div>
+
+    </div>
+
+
+    <!-- HERO SIDE INFO -->
+
+    <div class="lux-hero-side">
+
+      <div class="lux-hero-rating">
+
+        <div class="lux-stars">
+          ★★★★★
+        </div>
+
+        <strong data-business-rating>
+          5.0
+        </strong>
+
+        <span>
+          /
+        </span>
+
+        <span>
+          5
+        </span>
+
+        <small>
+
+          <span data-business-review-count>
+            0
+          </span>
+
+          Reviews
+
+        </small>
+
+      </div>
+
+
+      <div class="lux-hero-scroll">
+
+        <span>
+          SCROLL TO EXPLORE
+        </span>
+
+        <i></i>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- SLIDER CONTROLS -->
+
+  <div class="lux-slider-controls">
+
+    <button
+      type="button"
+      class="lux-slider-arrow"
+      id="luxPrev"
+      aria-label="Previous image"
+    >
+      ←
+    </button>
+
+
+    <div class="lux-slider-counter">
+
+      <span id="luxCurrentSlide">
+        01
+      </span>
+
+      <span class="lux-counter-line"></span>
+
+      <span>
+        03
+      </span>
+
+    </div>
+
+
+    <button
+      type="button"
+      class="lux-slider-arrow"
+      id="luxNext"
+      aria-label="Next image"
+    >
+      →
+    </button>
+
+  </div>
+
+
+  <!-- HERO SOCIAL -->
+
+  <div class="lux-hero-social">
+
+    <span>
+      FOLLOW
+    </span>
+
+    <a
+      href="#"
+      data-instagram
+      target="_blank"
+      rel="noopener"
+      aria-label="Instagram"
+    >
+      IG
+    </a>
+
+    <a
+      href="#"
+      data-facebook
+      target="_blank"
+      rel="noopener"
+      aria-label="Facebook"
+    >
+      FB
+    </a>
+
+  </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     INTRO / MARQUEE
+====================================================== -->
+
+<section class="lux-intro">
+
+  <div class="lux-intro-marquee">
+
+    <div class="lux-marquee-track">
+
+      <span>
+        STYLE
+      </span>
+
+      <i>✦</i>
+
+      <span>
+        QUALITY
+      </span>
+
+      <i>✦</i>
+
+      <span>
+        CRAFT
+      </span>
+
+      <i>✦</i>
+
+      <span>
+        ELEGANCE
+      </span>
+
+      <i>✦</i>
+
+      <span>
+        STYLE
+      </span>
+
+      <i>✦</i>
+
+      <span>
+        QUALITY
+      </span>
+
+      <i>✦</i>
+
+      <span>
+        CRAFT
+      </span>
+
+      <i>✦</i>
+
+      <span>
+        ELEGANCE
+      </span>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     COLLECTIONS
+====================================================== -->
+
+<section
+  class="lux-section lux-collections"
+  id="collections"
+>
+
+  <div class="lux-container">
+
+
+    <div class="lux-section-heading">
+
+      <div>
+
+        <span class="lux-section-kicker">
+          COLLECTIONS
+        </span>
+
+        <h2>
+          Curated for
+          <em>your style.</em>
+        </h2>
+
+      </div>
+
+      <p>
+        Explore carefully selected fashion collections created
+        for different moments, moods and personalities.
+      </p>
+
+    </div>
+
+
+    <div class="lux-collection-grid">
+
+
+      <!-- MEN -->
+
+      <article
+        class="lux-collection-card lux-collection-large"
+        data-collection="Men"
+      >
+
+        <div class="lux-collection-image">
+
+          <img
+            data-collection-image="men"
+            src=""
+            alt="Men's Collection"
+            loading="lazy"
+          >
+
+        </div>
+
+        <div class="lux-collection-overlay"></div>
+
+
+        <div class="lux-collection-content">
+
+          <span>
+            01
+          </span>
+
+          <h3>
+            Men
+          </h3>
+
+          <p>
+            Contemporary essentials
+            and timeless silhouettes.
+          </p>
+
+          <button
+            type="button"
+            class="lux-collection-link"
+            data-collection-button="Men"
+          >
+            Explore
+            <span>↗</span>
+          </button>
+
+        </div>
+
+      </article>
+
+
+
+      <!-- WOMEN -->
+
+      <article
+        class="lux-collection-card"
+        data-collection="Women"
+      >
+
+        <div class="lux-collection-image">
+
+          <img
+            data-collection-image="women"
+            src=""
+            alt="Women's Collection"
+            loading="lazy"
+          >
+
+        </div>
+
+        <div class="lux-collection-overlay"></div>
+
+
+        <div class="lux-collection-content">
+
+          <span>
+            02
+          </span>
+
+          <h3>
+            Women
+          </h3>
+
+          <p>
+            Elegant pieces
+            made for modern living.
+          </p>
+
+          <button
+            type="button"
+            class="lux-collection-link"
+            data-collection-button="Women"
+          >
+            Explore
+            <span>↗</span>
+          </button>
+
+        </div>
+
+      </article>
+
+
+
+      <!-- KIDS -->
+
+      <article
+        class="lux-collection-card"
+        data-collection="Kids"
+      >
+
+        <div class="lux-collection-image">
+
+          <img
+            data-collection-image="kids"
+            src=""
+            alt="Kids Collection"
+            loading="lazy"
+          >
+
+        </div>
+
+        <div class="lux-collection-overlay"></div>
+
+
+        <div class="lux-collection-content">
+
+          <span>
+            03
+          </span>
+
+          <h3>
+            Kids
+          </h3>
+
+          <p>
+            Comfortable styles
+            for little personalities.
+          </p>
+
+          <button
+            type="button"
+            class="lux-collection-link"
+            data-collection-button="Kids"
+          >
+            Explore
+            <span>↗</span>
+          </button>
+
+        </div>
+
+      </article>
+
+
+
+      <!-- ACCESSORIES -->
+
+      <article
+        class="lux-collection-card"
+        data-collection="Accessories"
+      >
+
+        <div class="lux-collection-image">
+
+          <img
+            data-collection-image="accessories"
+            src=""
+            alt="Accessories Collection"
+            loading="lazy"
+          >
+
+        </div>
+
+        <div class="lux-collection-overlay"></div>
+
+
+        <div class="lux-collection-content">
+
+          <span>
+            04
+          </span>
+
+          <h3>
+            Accessories
+          </h3>
+
+          <p>
+            The finishing touch
+            to every look.
+          </p>
+
+          <button
+            type="button"
+            class="lux-collection-link"
+            data-collection-button="Accessories"
+          >
+            Explore
+            <span>↗</span>
+          </button>
+
+        </div>
+
+      </article>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     BRAND STATEMENT
+====================================================== -->
+
+<section class="lux-statement">
+
+  <div class="lux-container">
+
+    <div class="lux-statement-inner">
+
+      <span class="lux-section-kicker">
+        THE BRAND
+      </span>
+
+      <h2>
+
+        Fashion is not
+        <span>what you wear.</span>
+
+        <br>
+
+        It's how you
+        <em>feel.</em>
+
+      </h2>
+
+      <div class="lux-statement-mark">
+        ✦
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     ABOUT
+====================================================== -->
+
+<section
+  class="lux-section lux-about"
+  id="about"
+>
+
+  <div class="lux-container">
+
+    <div class="lux-about-grid">
+
+
+      <!-- IMAGE -->
+
+      <div class="lux-about-visual">
+
+        <div class="lux-about-image">
+
+          <img
+            data-about-image
+            src=""
+            alt="About business"
+            loading="lazy"
+          >
+
+        </div>
+
+        <div class="lux-about-frame"></div>
+
+        <div class="lux-about-badge">
+
+          <span>
+            STYLE
+          </span>
+
+          <strong>
+            EST.
+          </strong>
+
+          <b data-business-established-year>
+            —
+          </b>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- CONTENT -->
+
+      <div class="lux-about-content">
+
+        <span class="lux-section-kicker">
+          ABOUT US
+        </span>
+
+        <h2>
+          A destination for
+          <em>individual style.</em>
+        </h2>
+
+        <div
+          class="lux-about-copy"
+          data-business-long-description
+        >
+
+          We believe great style begins with
+          quality, confidence and attention to detail.
+
+          Our collection is carefully selected to bring
+          together modern fashion, timeless design and
+          effortless elegance.
+
+        </div>
+
+
+        <div class="lux-about-signature">
+
+          <span>
+            Crafted with intention
+          </span>
+
+          <strong data-business-owner>
+            —
+          </strong>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     EXPERIENCE / FEATURES
+====================================================== -->
+
+<section class="lux-experience">
+
+  <div class="lux-container">
+
+    <div class="lux-experience-grid">
+
+
+      <div class="lux-experience-item">
+
+        <span class="lux-experience-number">
+          01
+        </span>
+
+        <div>
+
+          <h3>
+            Curated Selection
+          </h3>
+
+          <p>
+            Thoughtfully selected styles
+            for modern wardrobes.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="lux-experience-item">
+
+        <span class="lux-experience-number">
+          02
+        </span>
+
+        <div>
+
+          <h3>
+            Personal Attention
+          </h3>
+
+          <p>
+            A shopping experience
+            built around you.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="lux-experience-item">
+
+        <span class="lux-experience-number">
+          03
+        </span>
+
+        <div>
+
+          <h3>
+            Quality First
+          </h3>
+
+          <p>
+            Quality, comfort and style
+            in every selection.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="lux-experience-item">
+
+        <span class="lux-experience-number">
+          04
+        </span>
+
+        <div>
+
+          <h3>
+            Local & Personal
+          </h3>
+
+          <p>
+            Visit us and experience
+            fashion in person.
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     GALLERY
+====================================================== -->
+
+<section
+  class="lux-section lux-gallery"
+  id="gallery"
+>
+
+  <div class="lux-container">
+
+
+    <div class="lux-section-heading">
+
+      <div>
+
+        <span class="lux-section-kicker">
+          OUR WORLD
+        </span>
+
+        <h2>
+          Inside the
+          <em>collection.</em>
+        </h2>
+
+      </div>
+
+      <p>
+        A glimpse into our style, collection
+        and shopping experience.
+      </p>
+
+    </div>
+
+
+    <div
+      class="lux-gallery-grid"
+      id="luxGallery"
+    >
+
+      <!--
+        JavaScript will populate gallery
+        images from business data.
+      -->
+
+      <div class="lux-gallery-placeholder">
+
+        <span>
+          ✦
+        </span>
+
+        <p>
+          Discover our collection
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     REVIEWS / SOCIAL PROOF
+====================================================== -->
+
+<section class="lux-reviews">
+
+  <div class="lux-container">
+
+    <div class="lux-review-heading">
+
+      <span class="lux-section-kicker">
+        CLIENT LOVE
+      </span>
+
+      <div class="lux-big-rating">
+
+        <strong data-business-rating>
+          5.0
+        </strong>
+
+        <div>
+
+          <div class="lux-stars">
+            ★★★★★
+          </div>
+
+          <span>
+
+            Based on
+            <b data-business-review-count>
+              0
+            </b>
+            reviews
+
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="lux-review-quote">
+
+      <span class="lux-quote-mark">
+        “
+      </span>
+
+      <blockquote>
+        Style should feel personal,
+        effortless and completely your own.
+      </blockquote>
+
+      <span class="lux-quote-line"></span>
+
+      <small data-business-name>
+        Business
+      </small>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     STORE INFORMATION
+====================================================== -->
+
+<section class="lux-section lux-info">
+
+  <div class="lux-container">
+
+    <div class="lux-info-grid">
+
+
+      <!-- LOCATION -->
+
+      <div class="lux-info-card">
+
+        <span class="lux-info-number">
+          01
+        </span>
+
+        <span class="lux-info-icon">
+          ◎
+        </span>
+
+        <h3>
+          Visit Us
+        </h3>
+
+        <p data-business-address>
+          —
+        </p>
+
+        <span data-business-area>
+          —
+        </span>
+
+        <a
+          href="#"
+          data-google-place
+          target="_blank"
+          rel="noopener"
+        >
+          Get Directions ↗
+        </a>
+
+      </div>
+
+
+
+      <!-- HOURS -->
+
+      <div class="lux-info-card">
+
+        <span class="lux-info-number">
+          02
+        </span>
+
+        <span class="lux-info-icon">
+          ◷
+        </span>
+
+        <h3>
+          Store Hours
+        </h3>
+
+        <p>
+
+          <span data-business-opening-time>
+            —
           </span>
 
           <span>
-            Call
+            —
           </span>
 
-        </a>
-
-
-        <a
-          class="clothing-header-whatsapp"
-          data-whatsapp
-          href="#"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-
-          WhatsApp
-
-        </a>
-
-
-        <button
-          type="button"
-          class="clothing-menu-button"
-          id="clothingMenuButton"
-          aria-label="Open menu"
-          aria-expanded="false"
-        >
-
-          <span></span>
-          <span></span>
-          <span></span>
-
-        </button>
-
-      </div>
-
-    </div>
-
-
-
-    <!-- MOBILE NAVIGATION -->
-
-    <div
-      class="clothing-mobile-menu"
-      id="clothingMobileMenu"
-      hidden
-    >
-
-      <nav>
-
-        <a href="#collection">
-          Collection
-        </a>
-
-        <a href="#about">
-          About
-        </a>
-
-        <a href="#gallery">
-          Gallery
-        </a>
-
-        <a href="#visit">
-          Visit Us
-        </a>
-
-        <a
-          data-whatsapp
-          href="#"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          WhatsApp
-        </a>
-
-      </nav>
-
-    </div>
-
-  </header>
-
-
-
-  <!-- ===================================================
-       HERO
-  ==================================================== -->
-
-  <main id="top">
-
-
-    <section
-      class="clothing-hero"
-      id="hero"
-    >
-
-      <!-- HERO IMAGE -->
-
-      <div class="clothing-hero-background">
-
-        <img
-          data-business-cover
-          src=""
-          alt=""
-          class="clothing-hero-image"
-          loading="eager"
-        >
-
-        <div class="clothing-hero-overlay"></div>
-
-      </div>
-
-
-
-      <!-- HERO CONTENT -->
-
-      <div class="clothing-container clothing-hero-inner">
-
-        <div class="clothing-hero-content">
-
-
-          <div class="clothing-hero-eyebrow">
-
-            <span class="clothing-eyebrow-line"></span>
-
-            <span data-business-category>
-              Clothing & Fashion
-            </span>
-
-          </div>
-
-
-
-          <h1
-            data-business-name
-          >
-            Your Fashion Store
-          </h1>
-
-
-
-          <p
-            class="clothing-hero-description"
-            data-business-short-description
-          >
-            Discover fashion, style and collections
-            designed for you.
-          </p>
-
-
-
-          <div class="clothing-hero-rating">
-
-            <span class="clothing-stars">
-              ★★★★★
-            </span>
-
-            <span
-              data-business-rating
-            >
-              5.0
-            </span>
-
-            <span class="rating-divider">
-              •
-            </span>
-
-            <span>
-              <span data-business-review-count>
-                0
-              </span>
-              Reviews
-            </span>
-
-          </div>
-
-
-
-          <div class="clothing-hero-actions">
-
-            <a
-              href="#collection"
-              class="clothing-button clothing-button-primary"
-            >
-              Explore Collection
-            </a>
-
-
-            <a
-              data-whatsapp
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="clothing-button clothing-button-light"
-            >
-              Chat on WhatsApp
-            </a>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- SCROLL INDICATOR -->
-
-      <a
-        href="#collection"
-        class="clothing-scroll-indicator"
-        aria-label="Scroll to collection"
-      >
-
-        <span>
-          Scroll
-        </span>
-
-        <span class="scroll-arrow">
-          ↓
-        </span>
-
-      </a>
-
-    </section>
-
-
-
-    <!-- =================================================
-         QUICK BUSINESS INFO
-    ================================================== -->
-
-    <section
-      class="clothing-quick-info"
-    >
-
-      <div class="clothing-container">
-
-        <div class="clothing-quick-grid">
-
-
-          <!-- LOCATION -->
-
-          <div class="clothing-quick-item">
-
-            <div class="quick-icon">
-              ⌖
-            </div>
-
-            <div>
-
-              <span class="quick-label">
-                LOCATION
-              </span>
-
-              <strong
-                data-business-address
-              >
-                Business Address
-              </strong>
-
-              <small
-                data-business-area
-              >
-                Local Area
-              </small>
-
-            </div>
-
-          </div>
-
-
-
-          <!-- HOURS -->
-
-          <div class="clothing-quick-item">
-
-            <div class="quick-icon">
-              ◷
-            </div>
-
-            <div>
-
-              <span class="quick-label">
-                OPENING HOURS
-              </span>
-
-              <strong>
-
-                <span
-                  data-business-opening-time
-                >
-                  10:00 AM
-                </span>
-
-                –
-
-                <span
-                  data-business-closing-time
-                >
-                  8:00 PM
-                </span>
-
-              </strong>
-
-              <small
-                data-business-working-days
-              >
-                Monday – Sunday
-              </small>
-
-            </div>
-
-          </div>
-
-
-
-          <!-- PHONE -->
-
-          <div class="clothing-quick-item">
-
-            <div class="quick-icon">
-              ☎
-            </div>
-
-            <div>
-
-              <span class="quick-label">
-                CONTACT
-              </span>
-
-              <a
-                data-call
-                href="#"
-              >
-                <strong
-                  data-business-mobile
-                >
-                  Contact Us
-                </strong>
-              </a>
-
-              <small>
-                Call for enquiries
-              </small>
-
-            </div>
-
-          </div>
-
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =================================================
-         COLLECTION
-    ================================================== -->
-
-    <section
-      class="clothing-section clothing-collection"
-      id="collection"
-    >
-
-      <div class="clothing-container">
-
-
-        <div class="clothing-section-heading">
-
-          <span class="section-kicker">
-            OUR COLLECTION
+          <span data-business-closing-time>
+            —
           </span>
 
-          <h2>
-            Style for Every You
-          </h2>
+        </p>
 
-          <p>
-            Explore fashion collections available
-            at
-            <strong data-business-name>
-              our store
-            </strong>.
-          </p>
-
-        </div>
-
-
-
-        <!-- CATEGORY CARDS -->
-
-        <div class="clothing-category-grid">
-
-
-          <article
-            class="clothing-category-card"
-            data-category-card="men"
-          >
-
-            <div class="category-card-image">
-
-              <div class="category-placeholder">
-                MEN
-              </div>
-
-            </div>
-
-            <div class="category-card-content">
-
-              <span>
-                COLLECTION
-              </span>
-
-              <h3>
-                Men
-              </h3>
-
-              <p>
-                Shirts, trousers, ethnic wear
-                and more.
-              </p>
-
-              <button
-                type="button"
-                data-collection="men"
-              >
-                Explore
-                <span>→</span>
-              </button>
-
-            </div>
-
-          </article>
-
-
-
-          <article
-            class="clothing-category-card"
-            data-category-card="women"
-          >
-
-            <div class="category-card-image">
-
-              <div class="category-placeholder">
-                WOMEN
-              </div>
-
-            </div>
-
-            <div class="category-card-content">
-
-              <span>
-                COLLECTION
-              </span>
-
-              <h3>
-                Women
-              </h3>
-
-              <p>
-                Fashion, ethnic wear,
-                dresses and more.
-              </p>
-
-              <button
-                type="button"
-                data-collection="women"
-              >
-                Explore
-                <span>→</span>
-              </button>
-
-            </div>
-
-          </article>
-
-
-
-          <article
-            class="clothing-category-card"
-            data-category-card="kids"
-          >
-
-            <div class="category-card-image">
-
-              <div class="category-placeholder">
-                KIDS
-              </div>
-
-            </div>
-
-            <div class="category-card-content">
-
-              <span>
-                COLLECTION
-              </span>
-
-              <h3>
-                Kids
-              </h3>
-
-              <p>
-                Comfortable and stylish
-                kids fashion.
-              </p>
-
-              <button
-                type="button"
-                data-collection="kids"
-              >
-                Explore
-                <span>→</span>
-              </button>
-
-            </div>
-
-          </article>
-
-
-
-          <article
-            class="clothing-category-card"
-            data-category-card="accessories"
-          >
-
-            <div class="category-card-image">
-
-              <div class="category-placeholder">
-                STYLE
-              </div>
-
-            </div>
-
-            <div class="category-card-content">
-
-              <span>
-                COLLECTION
-              </span>
-
-              <h3>
-                Accessories
-              </h3>
-
-              <p>
-                Complete your look with
-                stylish accessories.
-              </p>
-
-              <button
-                type="button"
-                data-collection="accessories"
-              >
-                Explore
-                <span>→</span>
-              </button>
-
-            </div>
-
-          </article>
-
-
-        </div>
+        <span data-business-working-days>
+          —
+        </span>
 
       </div>
 
-    </section>
+
+
+      <!-- CONTACT -->
+
+      <div class="lux-info-card">
+
+        <span class="lux-info-number">
+          03
+        </span>
+
+        <span class="lux-info-icon">
+          ◌
+        </span>
+
+        <h3>
+          Contact
+        </h3>
+
+        <p data-business-mobile>
+          —
+        </p>
+
+        <span data-business-owner>
+          —
+        </span>
+
+        <a
+          href="#"
+          data-call
+        >
+          Call Now ↗
+        </a>
+
+      </div>
 
 
 
-    <!-- =================================================
-         FEATURE / BRAND STRIP
-    ================================================== -->
+      <!-- ONLINE -->
 
-    <section
-      class="clothing-brand-strip"
-    >
+      <div class="lux-info-card">
 
-      <div class="clothing-container">
+        <span class="lux-info-number">
+          04
+        </span>
 
-        <div class="brand-strip-inner">
+        <span class="lux-info-icon">
+          ↗
+        </span>
 
-          <div>
+        <h3>
+          Connect
+        </h3>
 
-            <span>
-              FIND YOUR STYLE
-            </span>
+        <p>
+          Follow our latest
+          styles and collections.
+        </p>
 
-            <h2>
-              Fashion that feels like you.
-            </h2>
-
-          </div>
-
+        <div class="lux-info-socials">
 
           <a
-            data-whatsapp
             href="#"
+            data-instagram
             target="_blank"
-            rel="noopener noreferrer"
-            class="clothing-button clothing-button-dark"
+            rel="noopener"
           >
-            Ask on WhatsApp
+            Instagram
+          </a>
+
+          <a
+            href="#"
+            data-facebook
+            target="_blank"
+            rel="noopener"
+          >
+            Facebook
           </a>
 
         </div>
 
       </div>
 
-    </section>
+    </div>
+
+  </div>
+
+</section>
 
 
 
-    <!-- =================================================
-         ABOUT
-    ================================================== -->
+<!-- =====================================================
+     CONTACT CTA
+====================================================== -->
 
-    <section
-      class="clothing-section clothing-about"
-      id="about"
+<section
+  class="lux-contact"
+  id="contact"
+>
+
+  <div class="lux-contact-bg">
+
+    <img
+      data-contact-image
+      src=""
+      alt=""
+      loading="lazy"
     >
 
-      <div class="clothing-container">
+  </div>
 
-        <div class="clothing-about-grid">
-
-
-          <div class="clothing-about-visual">
-
-            <div class="about-frame">
-
-              <img
-                data-business-cover
-                src=""
-                alt=""
-                loading="lazy"
-              >
-
-            </div>
-
-            <div class="about-badge">
-
-              <strong>
-                <span
-                  data-business-established-year
-                >
-                  —
-                </span>
-              </strong>
-
-              <span>
-                ESTABLISHED
-              </span>
-
-            </div>
-
-          </div>
+  <div class="lux-contact-overlay"></div>
 
 
+  <div class="lux-container">
 
-          <div class="clothing-about-content">
+    <div class="lux-contact-content">
 
-            <span class="section-kicker">
-              ABOUT US
-            </span>
+      <span class="lux-section-kicker">
+        COME VISIT
+      </span>
 
-            <h2>
-              Your style,
-              <em>our passion.</em>
-            </h2>
+      <h2>
+        Your next
+        <em>favourite look</em>
+        is waiting.
+      </h2>
 
-            <p
-              data-business-long-description
-            >
-              Welcome to our fashion store.
-              Discover quality products,
-              modern styles and a shopping
-              experience designed around you.
-            </p>
+      <p>
+        Visit us, explore the collection
+        and discover something made for you.
+      </p>
 
 
-            <div class="about-owner">
+      <div class="lux-contact-actions">
 
-              <span class="owner-label">
-                OWNER
-              </span>
-
-              <strong
-                data-business-owner
-              >
-                Business Owner
-              </strong>
-
-            </div>
-
-
-            <div class="about-actions">
-
-              <a
-                data-call
-                href="#"
-                class="clothing-text-link"
-              >
-                Call Us
-                <span>→</span>
-              </a>
-
-              <a
-                href="#visit"
-                class="clothing-text-link"
-              >
-                Visit Store
-                <span>→</span>
-              </a>
-
-            </div>
-
-          </div>
-
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =================================================
-         GALLERY
-    ================================================== -->
-
-    <section
-      class="clothing-section clothing-gallery"
-      id="gallery"
-    >
-
-      <div class="clothing-container">
-
-
-        <div class="clothing-section-heading">
-
-          <span class="section-kicker">
-            OUR SPACE
-          </span>
-
-          <h2>
-            Take a Look Around
-          </h2>
-
-          <p>
-            Explore our store and discover
-            our latest styles.
-          </p>
-
-        </div>
-
-
-
-        <div
-          class="clothing-gallery-grid"
-          data-gallery
+        <a
+          href="#"
+          class="lux-btn lux-btn-light"
+          data-whatsapp
+          target="_blank"
+          rel="noopener"
         >
 
-
-          <div class="gallery-item gallery-item-large">
-
-            <div class="gallery-placeholder">
-              STORE
-            </div>
-
-          </div>
-
-
-          <div class="gallery-item">
-
-            <div class="gallery-placeholder">
-              COLLECTION
-            </div>
-
-          </div>
-
-
-          <div class="gallery-item">
-
-            <div class="gallery-placeholder">
-              FASHION
-            </div>
-
-          </div>
-
-
-          <div class="gallery-item">
-
-            <div class="gallery-placeholder">
-              STYLE
-            </div>
-
-          </div>
-
-
-          <div class="gallery-item gallery-item-wide">
-
-            <div class="gallery-placeholder">
-              SHOPPING EXPERIENCE
-            </div>
-
-          </div>
-
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =================================================
-         BUSINESS INFORMATION
-    ================================================== -->
-
-    <section
-      class="clothing-info-section"
-    >
-
-      <div class="clothing-container">
-
-        <div class="clothing-info-grid">
-
-
-          <!-- RATING -->
-
-          <div class="clothing-info-card">
-
-            <span class="info-card-label">
-              CUSTOMER RATING
-            </span>
-
-            <div class="info-rating">
-
-              <strong
-                data-business-rating
-              >
-                5.0
-              </strong>
-
-              <span>
-                ★★★★★
-              </span>
-
-            </div>
-
-            <p>
-
-              Based on
-
-              <strong
-                data-business-review-count
-              >
-                0
-              </strong>
-
-              customer reviews.
-
-            </p>
-
-          </div>
-
-
-
-          <!-- LOCATION -->
-
-          <div class="clothing-info-card">
-
-            <span class="info-card-label">
-              FIND US
-            </span>
-
-            <strong
-              data-business-address
-            >
-              Business Address
-            </strong>
-
-            <p>
-
-              <span
-                data-business-area
-              >
-                Local Area
-              </span>
-
-              <span
-                data-business-pincode
-              >
-                —
-              </span>
-
-            </p>
-
-          </div>
-
-
-
-          <!-- WEBSITE -->
-
-          <div class="clothing-info-card">
-
-            <span class="info-card-label">
-              ONLINE
-            </span>
-
-            <strong>
-              Stay Connected
-            </strong>
-
-            <p>
-              Contact us for products,
-              enquiries and more.
-            </p>
-
-            <a
-              data-website
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="clothing-text-link"
-            >
-              Visit Website
-              <span>→</span>
-            </a>
-
-          </div>
-
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =================================================
-         VISIT / CONTACT
-    ================================================== -->
-
-    <section
-      class="clothing-contact"
-      id="visit"
-    >
-
-      <div class="clothing-contact-background">
-
-        <div class="contact-pattern"></div>
-
-      </div>
-
-
-      <div class="clothing-container">
-
-        <div class="clothing-contact-inner">
-
-
-          <div class="contact-content">
-
-            <span class="section-kicker">
-              VISIT US
-            </span>
-
-            <h2>
-              Come say
-              <em>hello.</em>
-            </h2>
-
-            <p>
-              We'd love to welcome you at
-              <strong data-business-name>
-                our store
-              </strong>.
-            </p>
-
-
-            <div class="contact-address">
-
-              <span class="contact-icon">
-                ⌖
-              </span>
-
-              <div>
-
-                <strong>
-                  Store Address
-                </strong>
-
-                <p
-                  data-business-address
-                >
-                  Business Address
-                </p>
-
-                <p>
-
-                  <span
-                    data-business-area
-                  >
-                    Local Area
-                  </span>
-
-                  ,
-
-                  <span
-                    data-business-pincode
-                  >
-                    Pincode
-                  </span>
-
-                </p>
-
-              </div>
-
-            </div>
-
-
-            <div class="contact-hours">
-
-              <span class="contact-icon">
-                ◷
-              </span>
-
-              <div>
-
-                <strong>
-                  Opening Hours
-                </strong>
-
-                <p>
-
-                  <span
-                    data-business-working-days
-                  >
-                    Monday – Sunday
-                  </span>
-
-                </p>
-
-                <p>
-
-                  <span
-                    data-business-opening-time
-                  >
-                    10:00 AM
-                  </span>
-
-                  –
-
-                  <span
-                    data-business-closing-time
-                  >
-                    8:00 PM
-                  </span>
-
-                </p>
-
-              </div>
-
-            </div>
-
-
-          </div>
-
-
-
-          <div class="contact-actions">
-
-            <a
-              data-call
-              href="#"
-              class="clothing-contact-button"
-            >
-
-              <span>
-                ☎
-              </span>
-
-              Call Now
-
-            </a>
-
-
-            <a
-              data-whatsapp
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="clothing-contact-button clothing-contact-button-whatsapp"
-            >
-
-              <span>
-                WhatsApp
-              </span>
-
-            </a>
-
-
-            <a
-              data-google-place
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="clothing-contact-link"
-            >
-
-              View on Google Maps
-              <span>↗</span>
-
-            </a>
-
-          </div>
-
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =================================================
-         FOOTER
-    ================================================== -->
-
-    <footer
-      class="clothing-footer"
-    >
-
-      <div class="clothing-container">
-
-
-        <div class="clothing-footer-main">
-
-
-          <div class="footer-brand">
-
-            <div class="clothing-brand-logo">
-
-              <img
-                data-business-logo
-                src=""
-                alt=""
-                loading="lazy"
-              >
-
-              <span
-                class="clothing-brand-logo-placeholder"
-              >
-                F
-              </span>
-
-            </div>
-
-
-            <div>
-
-              <strong
-                data-business-name
-              >
-                Your Fashion Store
-              </strong>
-
-              <small
-                data-business-category
-              >
-                Clothing & Fashion
-              </small>
-
-            </div>
-
-          </div>
-
-
-
-          <p class="footer-description">
-
-            Discover fashion,
-            style and collections
-            at
-
-            <strong
-              data-business-name
-            >
-              our store
-            </strong>.
-
-          </p>
-
-
-
-          <div class="footer-actions">
-
-            <a
-              data-call
-              href="#"
-            >
-              Call
-            </a>
-
-            <a
-              data-whatsapp
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              WhatsApp
-            </a>
-
-            <a
-              data-website
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Website
-            </a>
-
-          </div>
-
-        </div>
-
-
-
-        <div class="clothing-footer-bottom">
-
           <span>
+            WhatsApp Us
+          </span>
 
-            ©
-            <span id="clothingCurrentYear">
-              2026
+          <span class="lux-btn-icon">
+            ↗
+          </span>
+
+        </a>
+
+
+        <a
+          href="#"
+          class="lux-btn lux-btn-outline-light"
+          data-call
+        >
+          Call Store
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+</main>
+
+
+
+<!-- =====================================================
+     FOOTER
+====================================================== -->
+
+<footer class="lux-footer">
+
+  <div class="lux-container">
+
+
+    <div class="lux-footer-main">
+
+
+      <!-- BRAND -->
+
+      <div class="lux-footer-brand">
+
+        <a
+          href="#"
+          class="lux-logo lux-footer-logo"
+          data-home-link
+        >
+
+          <span class="lux-logo-mark">
+
+            <img
+              data-business-logo
+              src=""
+              alt=""
+            >
+
+            <span class="lux-logo-fallback">
+              <span data-business-initial>
+                B
+              </span>
             </span>
 
-            <span
-              data-business-name
-            >
+          </span>
+
+          <span class="lux-logo-text">
+
+            <strong data-business-name>
               Business
-            </span>
+            </strong>
+
+            <small>
+              FASHION & STYLE
+            </small>
 
           </span>
 
+        </a>
 
-          <span>
 
-            Powered by
-            <a
-              href="https://ubnux.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              UBnux
-            </a>
-
-          </span>
-
-        </div>
-
+        <p>
+          Fashion with intention.
+          Style with personality.
+        </p>
 
       </div>
 
-    </footer>
 
 
-  </main>
+      <!-- NAV -->
+
+      <div class="lux-footer-column">
+
+        <span class="lux-footer-title">
+          EXPLORE
+        </span>
+
+        <a href="#home">
+          Home
+        </a>
+
+        <a href="#collections">
+          Collections
+        </a>
+
+        <a href="#about">
+          About
+        </a>
+
+        <a href="#gallery">
+          Gallery
+        </a>
+
+      </div>
 
 
-</div>
+
+      <!-- CONTACT -->
+
+      <div class="lux-footer-column">
+
+        <span class="lux-footer-title">
+          CONTACT
+        </span>
+
+        <span data-business-address>
+          —
+        </span>
+
+        <a
+          href="#"
+          data-call
+        >
+          <span data-business-mobile>
+            —
+          </span>
+        </a>
+
+        <a
+          href="#"
+          data-whatsapp
+          target="_blank"
+          rel="noopener"
+        >
+          WhatsApp
+        </a>
+
+      </div>
+
+
+
+      <!-- SOCIAL -->
+
+      <div class="lux-footer-column">
+
+        <span class="lux-footer-title">
+          SOCIAL
+        </span>
+
+        <a
+          href="#"
+          data-instagram
+          target="_blank"
+          rel="noopener"
+        >
+          Instagram ↗
+        </a>
+
+        <a
+          href="#"
+          data-facebook
+          target="_blank"
+          rel="noopener"
+        >
+          Facebook ↗
+        </a>
+
+        <a
+          href="#"
+          data-website
+          target="_blank"
+          rel="noopener"
+        >
+          Website ↗
+        </a>
+
+      </div>
+
+    </div>
+
+
+    <!-- FOOTER BOTTOM -->
+
+    <div class="lux-footer-bottom">
+
+      <span>
+        ©
+        <span id="luxYear">
+          2026
+        </span>
+        <span data-business-name>
+          Business
+        </span>
+      </span>
+
+      <span>
+        Powered by
+        <strong>
+          UBnux
+        </strong>
+      </span>
+
+    </div>
+
+  </div>
+
+</footer>
+
+
+
+<!-- =====================================================
+     FLOATING WHATSAPP
+====================================================== -->
+
+<a
+  href="#"
+  class="lux-floating-whatsapp"
+  data-whatsapp
+  target="_blank"
+  rel="noopener"
+  aria-label="Chat on WhatsApp"
+>
+
+  <span class="lux-whatsapp-icon">
+    WA
+  </span>
+
+  <span class="lux-whatsapp-text">
+    Chat with us
+  </span>
+
+</a>
+
+
+
+<!-- =====================================================
+     BACK TO TOP
+====================================================== -->
+
+<button
+  type="button"
+  class="lux-back-top"
+  id="luxBackTop"
+  aria-label="Back to top"
+>
+  ↑
+</button>
+
 
 </body>
 
