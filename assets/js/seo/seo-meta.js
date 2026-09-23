@@ -282,35 +282,39 @@
   ====================================================== */
 
   function getRobots(
-    seo
+  seo
+) {
+
+  if (
+    seo &&
+    seo.robots
   ) {
 
-    if (
-      seo &&
+    return clean(
       seo.robots
-    ) {
-
-      return clean(
-        seo.robots
-      );
-
-    }
-
-
-    if (
-      seo &&
-      seo.indexable === false
-    ) {
-
-      return CONFIG.DEFAULT_NOINDEX;
-
-    }
-
-
-    return CONFIG.DEFAULT_ROBOTS;
+    );
 
   }
 
+
+  if (
+    seo &&
+    (
+      seo.indexable === false ||
+      String(
+        seo.indexable
+      ).trim().toLowerCase() === "false"
+    )
+  ) {
+
+    return CONFIG.DEFAULT_NOINDEX;
+
+  }
+
+
+  return CONFIG.DEFAULT_ROBOTS;
+
+}
 
   /* =======================================================
      OPEN GRAPH
