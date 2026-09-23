@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux
    File: assets/js/config.js
-   Version: 3.0.0
+   Version: 3.0.1
 ========================================================= */
 
 (function (window) {
@@ -9,27 +9,11 @@
   "use strict";
 
 
-  /* =======================================================
-     UBNux GLOBAL CONFIG
-  ======================================================= */
-
   window.UBNUX_CONFIG = {
 
     /* =====================================================
        API
     ===================================================== */
-
-    /*
-     * Google Apps Script Web App /exec URL
-     *
-     * IMPORTANT:
-     * Keep this as the canonical GAS /exec endpoint.
-     *
-     * Do NOT add:
-     * ?action=...
-     * ?callback=...
-     * trailing parameters
-     */
 
     API_URL:
       "https://script.google.com/macros/s/AKfycbzZ3GtCryDG8WB5YkutJiXk-2YoHEN7KPTAeYWtmqq0mKp6oHRdV2g2WMg-BWyQSB07rg/exec",
@@ -64,14 +48,16 @@
        CACHE
     ===================================================== */
 
-    /*
-     * Frontend cache lifetime.
-     *
-     * 10 minutes
-     */
-
     CACHE_TTL:
       1000 * 60 * 10,
+
+    /*
+     * API cache intentionally disabled
+     * during current testing phase.
+     */
+
+    API_CACHE_TTL:
+      0,
 
 
     /* =====================================================
@@ -136,7 +122,7 @@
 
   /* =======================================================
      BACKWARD COMPATIBILITY
-  ======================================================= */
+  ====================================================== */
 
   window.ZilaBizConfig =
     window.UBNUX_CONFIG;
