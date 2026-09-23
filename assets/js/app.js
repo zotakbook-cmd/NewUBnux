@@ -2,7 +2,7 @@
    UBnux Main Application
    File: assets/js/app.js
 
-   Version: 3.2.0
+   Version: 3.3.0
 
    RESPONSIBILITIES
    ---------------------------------------------------------
@@ -18,6 +18,8 @@
    - URL state
    - Mobile navigation
    - Safe DOM initialization
+   - Business-page isolation
+   - Homepage loader protection
 
    IMPORTANT ROUTES
    ---------------------------------------------------------
@@ -37,11 +39,12 @@
    This file does not redirect business SEO URLs.
 
    Business SEO pages are handled by:
-   business.html
-   business-page.js
+   - business-page.js
+   - business template system
 
-   The listing application must stop on a business SEO URL.
-========================================================= */
+   The listing application must completely stop on
+   a business SEO URL.
+   ========================================================= */
 
 (function (window, document) {
 
@@ -212,16 +215,15 @@
 
 
   /* =========================================================
-     DIRECT SEO BUSINESS ROUTE
+     DIRECT SEO ROUTE DETECTION
      ---------------------------------------------------------
-     This detection intentionally uses the browser URL first.
+     Browser pathname is the primary source of truth.
 
-     Example:
+     BUSINESS:
+     /in/state/district/category/business/
 
-     /in/bihar/siwan/clothing-and-fashion/siwan-fashion-house/
-
-     MUST remain a business route even if another router
-     incorrectly returns "normal" or "business".
+     CATEGORY:
+     /in/state/district/category/
   ========================================================= */
 
   function detectDirectSEORoute() {
@@ -232,16 +234,15 @@
         window.location.pathname
       );
 
+
     if (
       parts.length >= 1 &&
       parts[0] === "in"
     ) {
 
-      /*
-       * BUSINESS SEO URL
-       *
-       * /in/state/district/category/business/
-       */
+      /* =====================================================
+         BUSINESS SEO URL
+      ===================================================== */
 
       if (
         parts.length === 5 &&
@@ -253,13 +254,17 @@
 
         return {
 
-          type: "business",
+          type:
+            "business",
 
-          isSEOPage: true,
+          isSEOPage:
+            true,
 
-          isBusinessPage: true,
+          isBusinessPage:
+            true,
 
-          isCategoryPage: false,
+          isCategoryPage:
+            false,
 
           stateSlug:
             parts[1],
@@ -278,11 +283,9 @@
       }
 
 
-      /*
-       * CATEGORY SEO URL
-       *
-       * /in/state/district/category/
-       */
+      /* =====================================================
+         CATEGORY SEO URL
+      ===================================================== */
 
       if (
         parts.length === 4 &&
@@ -293,13 +296,17 @@
 
         return {
 
-          type: "category",
+          type:
+            "category",
 
-          isSEOPage: true,
+          isSEOPage:
+            true,
 
-          isBusinessPage: false,
+          isBusinessPage:
+            false,
 
-          isCategoryPage: true,
+          isCategoryPage:
+            true,
 
           stateSlug:
             parts[1],
@@ -322,13 +329,17 @@
 
     return {
 
-      type: "normal",
+      type:
+        "normal",
 
-      isSEOPage: false,
+      isSEOPage:
+        false,
 
-      isBusinessPage: false,
+      isBusinessPage:
+        false,
 
-      isCategoryPage: false
+      isCategoryPage:
+        false
 
     };
 
@@ -336,12 +347,11 @@
 
 
   /* =========================================================
-     MAIN ROUTER DETECTION
-     ---------------------------------------------------------
-     Router is optional.
+     MAIN ROUTE DETECTION
 
-     Direct URL detection has priority because the actual
-     browser pathname is the source of truth.
+     Direct browser route has priority.
+
+     Main router is used only for normal routes.
   ========================================================= */
 
   function getCurrentRoute() {
@@ -350,12 +360,9 @@
       detectDirectSEORoute();
 
 
-    /*
-     * IMPORTANT:
-     *
-     * Direct business URL must NEVER be overwritten by
-     * router.js.
-     */
+    /* =====================================================
+       BUSINESS SEO ROUTE
+    ===================================================== */
 
     if (
       directRoute &&
@@ -367,23 +374,23 @@
     }
 
 
+    /* =====================================================
+       CATEGORY SEO ROUTE
+    ===================================================== */
+
     if (
       directRoute &&
       directRoute.isCategoryPage === true
     ) {
-
-      /*
-       * Category SEO route also gets priority.
-       */
 
       return directRoute;
 
     }
 
 
-    /*
-     * Use central router only for normal routes.
-     */
+    /* =====================================================
+       CENTRAL ROUTER
+    ===================================================== */
 
     try {
 
@@ -391,8 +398,9 @@
         window.UBnux &&
         window.UBnux.router &&
         typeof
-          window.UBnux.router.getCurrentRoute ===
-            "function"
+          window.UBnux.router
+            .getCurrentRoute ===
+          "function"
       ) {
 
         const route =
@@ -421,13 +429,17 @@
 
     return {
 
-      type: "unknown",
+      type:
+        "unknown",
 
-      isBusinessPage: false,
+      isBusinessPage:
+        false,
 
-      isCategoryPage: false,
+      isCategoryPage:
+        false,
 
-      isSEOPage: false
+      isSEOPage:
+        false
 
     };
 
@@ -452,7 +464,6 @@
   const CURRENT_ROUTE =
     getCurrentRoute();
 
-
   const FALLBACK_ROUTE =
     getFallbackSEORoute();
 
@@ -460,7 +471,7 @@
   /* =========================================================
      BUSINESS PAGE DETECTION
      ---------------------------------------------------------
-     DIRECT URL DETECTION IS THE FINAL AUTHORITY.
+     Direct browser URL has final authority.
   ========================================================= */
 
   const IS_BUSINESS_PAGE =
@@ -516,7 +527,7 @@
 
 
   /* =========================================================
-     GET INITIAL CATEGORY ROUTE
+     INITIAL CATEGORY ROUTE
   ========================================================= */
 
   function getInitialCategoryRoute() {
@@ -557,79 +568,6 @@
 
 
   /* =========================================================
-     CRITICAL BUSINESS PAGE STOP
-     ---------------------------------------------------------
-     DO NOT RUN LISTING APP ON BUSINESS PAGE.
-     ---------------------------------------------------------
-     Most importantly:
-
-     DO NOT:
-       - redirect
-       - replace URL
-       - change location
-       - load listing
-       - restore saved category
-       - modify history
-  ========================================================= */
-
-  if (
-    IS_BUSINESS_PAGE
-  ) {
-
-    console.debug(
-      "UBnux: Business SEO URL detected. Listing app stopped.",
-      {
-        pathname:
-          window.location.pathname,
-
-        route:
-          CURRENT_ROUTE,
-
-        fallback:
-          FALLBACK_ROUTE
-      }
-    );
-
-
-    /*
-     * DO NOT REDIRECT.
-     *
-     * The browser must stay on:
-     *
-     * /in/bihar/siwan/clothing-and-fashion/siwan-fashion-house/
-     *
-     * business.html / business-page.js should handle
-     * the business page.
-     */
-
-    return;
-
-  }
-
-
-  /* =========================================================
-     STATE SAFETY
-  ========================================================= */
-
-  if (
-    !window.UBnuxState ||
-    !window.UBnuxState.state
-  ) {
-
-    console.error(
-      "UBnuxState is not available."
-    );
-
-    return;
-
-  }
-
-
-  const state =
-    window.UBnuxState.state;
-
-
-  /* =========================================================
      DOM HELPER
   ========================================================= */
 
@@ -644,58 +582,87 @@
      DOM ELEMENTS
   ========================================================= */
 
-  const stateFilter =
-    getElement(
-      "stateFilter"
-    );
-
-
-  const districtFilter =
-    getElement(
-      "districtFilter"
-    );
-
-
-  const sortFilter =
-    getElement(
-      "sortFilter"
-    );
-
-
-  const selectionMessage =
-    getElement(
-      "selectionMessage"
-    );
-
-
   const pageLoader =
     getElement(
       "pageLoader"
     );
-
 
   const loaderText =
     getElement(
       "loaderText"
     );
 
+  const stateFilter =
+    getElement(
+      "stateFilter"
+    );
+
+  const districtFilter =
+    getElement(
+      "districtFilter"
+    );
+
+  const sortFilter =
+    getElement(
+      "sortFilter"
+    );
+
+  const selectionMessage =
+    getElement(
+      "selectionMessage"
+    );
 
   const mobileMenuButton =
     getElement(
       "mobileMenuButton"
     );
 
-
   const mainNav =
     getElement(
       "mainNav"
     );
 
-
   const currentYear =
     getElement(
       "currentYear"
     );
+
+
+  /* =========================================================
+     BUSINESS PAGE LOADER SAFETY
+     ---------------------------------------------------------
+     business-page.js owns business-page loading.
+
+     app.js only makes sure homepage loader does not remain
+     visible when business-page route is active.
+  ========================================================= */
+
+  function releaseHomepageLoaderForBusinessPage() {
+
+    if (
+      !IS_BUSINESS_PAGE
+    ) {
+
+      return;
+
+    }
+
+    if (
+      pageLoader
+    ) {
+
+      pageLoader.classList.add(
+        "hidden"
+      );
+
+      pageLoader.setAttribute(
+        "aria-hidden",
+        "true"
+      );
+
+    }
+
+  }
 
 
   /* =========================================================
@@ -705,19 +672,8 @@
   let startedAt =
     Date.now();
 
-
-  /*
-   * Prevent URL changes while restoring SEO category.
-   */
-
   let suppressURLUpdate =
     false;
-
-
-  /*
-   * Prevent handlers reacting to programmatic
-   * filter assignments.
-   */
 
   let restoringRoute =
     false;
@@ -728,6 +684,14 @@
   ========================================================= */
 
   function showLoader(message) {
+
+    if (
+      IS_BUSINESS_PAGE
+    ) {
+
+      return;
+
+    }
 
     if (
       !pageLoader
@@ -751,22 +715,39 @@
       "hidden"
     );
 
+    pageLoader.removeAttribute(
+      "aria-hidden"
+    );
+
   }
 
 
   async function hideLoader() {
 
+    /*
+     * Business page is NOT owned by listing app.
+     */
+
+    if (
+      IS_BUSINESS_PAGE
+    ) {
+
+      releaseHomepageLoaderForBusinessPage();
+
+      return;
+
+    }
+
+
     const elapsed =
       Date.now() -
       startedAt;
-
 
     const minimumLoaderTime =
       Number(
         config.MINIMUM_LOADER_TIME ||
         0
       );
-
 
     const remaining =
       Math.max(
@@ -800,6 +781,11 @@
 
       pageLoader.classList.add(
         "hidden"
+      );
+
+      pageLoader.setAttribute(
+        "aria-hidden",
+        "true"
       );
 
     }
@@ -836,11 +822,12 @@
 
     const states =
       Array.isArray(
-        state.states
+        window.UBnuxState &&
+        window.UBnuxState.state &&
+        window.UBnuxState.state.states
       )
-        ? state.states
+        ? window.UBnuxState.state.states
         : [];
-
 
     const item =
       states.find(
@@ -850,7 +837,8 @@
             item.StateCode ||
             item.StateID ||
             ""
-          ) === String(
+          ) ===
+          String(
             code ||
             ""
           );
@@ -881,7 +869,7 @@
       typeof
         window.UBnuxCategories
           .getSelectedCategory ===
-          "function"
+        "function"
     ) {
 
       return window
@@ -892,8 +880,10 @@
 
 
     return (
-      state.selected &&
-      state.selected.category
+      window.UBnuxState &&
+      window.UBnuxState.state &&
+      window.UBnuxState.state.selected &&
+      window.UBnuxState.state.selected.category
     ) || "";
 
   }
@@ -961,12 +951,16 @@
         stateSlug
       );
 
+    const appState =
+      window.UBnuxState &&
+      window.UBnuxState.state;
 
     const states =
+      appState &&
       Array.isArray(
-        state.states
+        appState.states
       )
-        ? state.states
+        ? appState.states
         : [];
 
 
@@ -983,7 +977,6 @@
               "StateName"
             ]
           );
-
 
         return (
           itemSlug ===
@@ -1081,9 +1074,7 @@
   /* =========================================================
      UPDATE LISTING URL
      ---------------------------------------------------------
-     IMPORTANT:
-
-     Never run this on a business SEO page.
+     NEVER RUN ON BUSINESS PAGE.
   ========================================================= */
 
   function updateURL() {
@@ -1099,6 +1090,19 @@
 
     if (
       suppressURLUpdate
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      !window.UBnuxState ||
+      typeof
+        window.UBnuxState
+          .getSelection !==
+        "function"
     ) {
 
       return;
@@ -1130,19 +1134,17 @@
         selected.state
       );
 
-
     const districtName =
       selected.districtName ||
       selected.district;
-
 
     const categorySlug =
       selected.category;
 
 
-    /*
-     * CENTRAL ROUTER
-     */
+    /* =====================================================
+       CENTRAL ROUTER
+    ===================================================== */
 
     try {
 
@@ -1152,7 +1154,7 @@
         typeof
           window.UBnux.router
             .buildCategoryURL ===
-            "function"
+          "function"
       ) {
 
         const fullURL =
@@ -1172,13 +1174,6 @@
             window.location.origin
           );
 
-
-        /*
-         * Safety:
-         *
-         * Category URL builder must NEVER
-         * produce a business URL.
-         */
 
         const generatedPath =
           normalizePath(
@@ -1209,7 +1204,7 @@
 
 
         console.warn(
-          "UBnux: Router generated an invalid listing URL. Using fallback.",
+          "UBnux: Router generated invalid listing URL. Using fallback.",
           generatedPath
         );
 
@@ -1234,12 +1229,10 @@
         stateName
       );
 
-
     const districtSlug =
       slugify(
         districtName
       );
-
 
     const categorySlugSafe =
       slugify(
@@ -1310,6 +1303,19 @@
     }
 
 
+    if (
+      !window.UBnuxState ||
+      typeof
+        window.UBnuxState
+          .getSelection !==
+        "function"
+    ) {
+
+      return;
+
+    }
+
+
     const selected =
       window
         .UBnuxState
@@ -1321,7 +1327,7 @@
       typeof
         window.UBnuxStorage
           .saveSelection ===
-          "function"
+        "function"
     ) {
 
       window
@@ -1424,8 +1430,18 @@
         : [];
 
 
-    state.states =
-      statesData;
+    if (
+      window.UBnuxState &&
+      window.UBnuxState.state
+    ) {
+
+      window
+        .UBnuxState
+        .state
+        .states =
+        statesData;
+
+    }
 
 
     window
@@ -1476,7 +1492,6 @@
     restoringRoute =
       true;
 
-
     suppressURLUpdate =
       true;
 
@@ -1513,7 +1528,6 @@
           matchedState.StateID
         );
 
-
       const stateName =
         clean(
           matchedState.State ||
@@ -1531,27 +1545,37 @@
       }
 
 
-      state.selected = {
+      if (
+        window.UBnuxState &&
+        window.UBnuxState.state
+      ) {
 
-        state:
-          stateCode,
+        window
+          .UBnuxState
+          .state
+          .selected = {
 
-        district:
-          "",
+            state:
+              stateCode,
 
-        category:
-          "",
+            district:
+              "",
 
-        stateName:
-          stateName,
+            category:
+              "",
 
-        districtName:
-          "",
+            stateName:
+              stateName,
 
-        categoryName:
-          ""
+            districtName:
+              "",
 
-      };
+            categoryName:
+              ""
+
+          };
+
+      }
 
 
       if (
@@ -1641,7 +1665,7 @@
         typeof
           window.UBnuxDistricts
             .getDistrictName ===
-            "function"
+          "function"
       ) {
 
         districtName =
@@ -1655,13 +1679,28 @@
       }
 
 
-      state.selected.district =
-        districtCode;
+      if (
+        window.UBnuxState &&
+        window.UBnuxState.state &&
+        window.UBnuxState.state.selected
+      ) {
 
+        window
+          .UBnuxState
+          .state
+          .selected
+          .district =
+            districtCode;
 
-      state.selected.districtName =
-        districtName ||
-        route.districtSlug;
+        window
+          .UBnuxState
+          .state
+          .selected
+          .districtName =
+            districtName ||
+            route.districtSlug;
+
+      }
 
 
       /* ===================================================
@@ -1702,29 +1741,50 @@
         route.categorySlug;
 
 
-      state.selected.category =
-        selectedCategory;
+      if (
+        window.UBnuxState &&
+        window.UBnuxState.state &&
+        window.UBnuxState.state.selected
+      ) {
+
+        window
+          .UBnuxState
+          .state
+          .selected
+          .category =
+            selectedCategory;
+
+      }
 
 
       if (
+        window.UBnuxCategories &&
         typeof
           window.UBnuxCategories
             .getCategoryName ===
-            "function"
+          "function"
       ) {
 
-        state.selected.categoryName =
-          window
-            .UBnuxCategories
-            .getCategoryName(
-              selectedCategory
-            ) ||
-          route.categorySlug;
+        window
+          .UBnuxState
+          .state
+          .selected
+          .categoryName =
+            window
+              .UBnuxCategories
+              .getCategoryName(
+                selectedCategory
+              ) ||
+            route.categorySlug;
 
       } else {
 
-        state.selected.categoryName =
-          route.categorySlug;
+        window
+          .UBnuxState
+          .state
+          .selected
+          .categoryName =
+            route.categorySlug;
 
       }
 
@@ -1740,10 +1800,13 @@
         sortFilter.disabled =
           false;
 
-        state.sort =
-          sortFilter.value ||
-          config.DEFAULT_SORT ||
-          "featured";
+        window
+          .UBnuxState
+          .state
+          .sort =
+            sortFilter.value ||
+            config.DEFAULT_SORT ||
+            "featured";
 
       }
 
@@ -1755,21 +1818,33 @@
       setMessage(
 
         (
-          state.selected.stateName ||
+          window
+            .UBnuxState
+            .state
+            .selected
+            .stateName ||
           route.stateSlug
         ) +
 
         " → " +
 
         (
-          state.selected.districtName ||
+          window
+            .UBnuxState
+            .state
+            .selected
+            .districtName ||
           route.districtSlug
         ) +
 
         " → " +
 
         (
-          state.selected.categoryName ||
+          window
+            .UBnuxState
+            .state
+            .selected
+            .categoryName ||
           route.categorySlug
         )
 
@@ -1777,14 +1852,12 @@
 
 
       /* ===================================================
-         SAVE SELECTION
-         ---------------------------------------------------
-         IMPORTANT:
-         URL MUST NOT CHANGE.
+         SAVE WITHOUT URL CHANGE
       =================================================== */
 
       saveSelection({
-        skipURL: true
+        skipURL:
+          true
       });
 
 
@@ -1797,7 +1870,7 @@
         typeof
           window.UBnuxBusinesses
             .loadBusinesses ===
-            "function"
+          "function"
       ) {
 
         await window
@@ -1891,32 +1964,45 @@
     }
 
 
-    state.selected = {
+    if (
+      !window.UBnuxState ||
+      !window.UBnuxState.state
+    ) {
 
-      state:
-        saved.state,
+      return;
 
-      district:
-        saved.district ||
-        "",
+    }
 
-      category:
-        saved.category ||
-        "",
 
-      stateName:
-        saved.stateName ||
-        "",
+    window
+      .UBnuxState
+      .state
+      .selected = {
 
-      districtName:
-        saved.districtName ||
-        "",
+        state:
+          saved.state,
 
-      categoryName:
-        saved.categoryName ||
-        ""
+        district:
+          saved.district ||
+          "",
 
-    };
+        category:
+          saved.category ||
+          "",
+
+        stateName:
+          saved.stateName ||
+          "",
+
+        districtName:
+          saved.districtName ||
+          "",
+
+        categoryName:
+          saved.categoryName ||
+          ""
+
+      };
 
 
     /* =====================================================
@@ -1945,7 +2031,7 @@
       typeof
         window.UBnuxDistricts
           .loadDistricts ===
-          "function"
+        "function"
     ) {
 
       await window
@@ -2017,11 +2103,19 @@
         !categorySet
       ) {
 
-        state.selected.category =
-          "";
+        window
+          .UBnuxState
+          .state
+          .selected
+          .category =
+            "";
 
-        state.selected.categoryName =
-          "";
+        window
+          .UBnuxState
+          .state
+          .selected
+          .categoryName =
+            "";
 
       }
 
@@ -2034,7 +2128,11 @@
 
     if (
       saved.district &&
-      state.selected.category
+      window
+        .UBnuxState
+        .state
+        .selected
+        .category
     ) {
 
       if (
@@ -2044,10 +2142,13 @@
         sortFilter.disabled =
           false;
 
-        state.sort =
-          sortFilter.value ||
-          config.DEFAULT_SORT ||
-          "featured";
+        window
+          .UBnuxState
+          .state
+          .sort =
+            sortFilter.value ||
+            config.DEFAULT_SORT ||
+            "featured";
 
       }
 
@@ -2069,7 +2170,11 @@
         " → " +
 
         (
-          state.selected.categoryName ||
+          window
+            .UBnuxState
+            .state
+            .selected
+            .categoryName ||
           saved.categoryName ||
           saved.category
         )
@@ -2089,10 +2194,6 @@
 
       }
 
-
-      /*
-       * Normal stored selection can update URL.
-       */
 
       updateURL();
 
@@ -2135,27 +2236,40 @@
 
   function setInitialFilterState() {
 
-    state.selected = {
+    if (
+      !window.UBnuxState ||
+      !window.UBnuxState.state
+    ) {
 
-      state:
-        "",
+      return;
 
-      district:
-        "",
+    }
 
-      category:
-        "",
 
-      stateName:
-        "",
+    window
+      .UBnuxState
+      .state
+      .selected = {
 
-      districtName:
-        "",
+        state:
+          "",
 
-      categoryName:
-        ""
+        district:
+          "",
 
-    };
+        category:
+          "",
+
+        stateName:
+          "",
+
+        districtName:
+          "",
+
+        categoryName:
+          ""
+
+      };
 
 
     if (
@@ -2239,7 +2353,7 @@
       typeof
         window.UBnuxState
           .resetBusinesses ===
-          "function"
+        "function"
     ) {
 
       window
@@ -2302,27 +2416,30 @@
       }
 
 
-      state.selected = {
+      window
+        .UBnuxState
+        .state
+        .selected = {
 
-        state:
-          "",
+          state:
+            "",
 
-        district:
-          "",
+          district:
+            "",
 
-        category:
-          "",
+          category:
+            "",
 
-        stateName:
-          "",
+          stateName:
+            "",
 
-        districtName:
-          "",
+          districtName:
+            "",
 
-        categoryName:
-          ""
+          categoryName:
+            ""
 
-      };
+        };
 
 
       setMessage(
@@ -2341,27 +2458,30 @@
       );
 
 
-    state.selected = {
+    window
+      .UBnuxState
+      .state
+      .selected = {
 
-      state:
-        stateCode,
+        state:
+          stateCode,
 
-      district:
-        "",
+        district:
+          "",
 
-      category:
-        "",
+        category:
+          "",
 
-      stateName:
-        stateName,
+        stateName:
+          stateName,
 
-      districtName:
-        "",
+        districtName:
+          "",
 
-      categoryName:
-        ""
+        categoryName:
+          ""
 
-    };
+      };
 
 
     saveSelection();
@@ -2419,7 +2539,7 @@
       typeof
         window.UBnuxState
           .resetBusinesses ===
-          "function"
+        "function"
     ) {
 
       window
@@ -2454,17 +2574,33 @@
       !districtCode
     ) {
 
-      state.selected.district =
-        "";
+      window
+        .UBnuxState
+        .state
+        .selected
+        .district =
+          "";
 
-      state.selected.category =
-        "";
+      window
+        .UBnuxState
+        .state
+        .selected
+        .category =
+          "";
 
-      state.selected.districtName =
-        "";
+      window
+        .UBnuxState
+        .state
+        .selected
+        .districtName =
+          "";
 
-      state.selected.categoryName =
-        "";
+      window
+        .UBnuxState
+        .state
+        .selected
+        .categoryName =
+          "";
 
 
       if (
@@ -2498,7 +2634,7 @@
       typeof
         window.UBnuxDistricts
           .getDistrictName ===
-          "function"
+        "function"
 
         ? window
             .UBnuxDistricts
@@ -2519,20 +2655,35 @@
           );
 
 
-    state.selected.district =
-      districtCode;
+    window
+      .UBnuxState
+      .state
+      .selected
+      .district =
+        districtCode;
 
 
-    state.selected.districtName =
-      districtName;
+    window
+      .UBnuxState
+      .state
+      .selected
+      .districtName =
+        districtName;
 
 
-    state.selected.category =
-      "";
+    window
+      .UBnuxState
+      .state
+      .selected
+      .category =
+        "";
 
-
-    state.selected.categoryName =
-      "";
+    window
+      .UBnuxState
+      .state
+      .selected
+      .categoryName =
+        "";
 
 
     if (
@@ -2589,11 +2740,19 @@
       !category
     ) {
 
-      state.selected.category =
-        "";
+      window
+        .UBnuxState
+        .state
+        .selected
+        .category =
+          "";
 
-      state.selected.categoryName =
-        "";
+      window
+        .UBnuxState
+        .state
+        .selected
+        .categoryName =
+          "";
 
 
       if (
@@ -2630,7 +2789,7 @@
             typeof
               window.UBnuxCategories
                 .getCategoryName ===
-                "function"
+              "function"
 
               ? window
                   .UBnuxCategories
@@ -2642,12 +2801,20 @@
           );
 
 
-    state.selected.category =
-      category;
+    window
+      .UBnuxState
+      .state
+      .selected
+      .category =
+        category;
 
 
-    state.selected.categoryName =
-      categoryName;
+    window
+      .UBnuxState
+      .state
+      .selected
+      .categoryName =
+        categoryName;
 
 
     if (
@@ -2657,19 +2824,16 @@
       sortFilter.disabled =
         false;
 
-      state.sort =
-        sortFilter.value ||
-        config.DEFAULT_SORT ||
-        "featured";
+      window
+        .UBnuxState
+        .state
+        .sort =
+          sortFilter.value ||
+          config.DEFAULT_SORT ||
+          "featured";
 
     }
 
-
-    /*
-     * User explicitly changed category.
-     *
-     * URL may update now.
-     */
 
     saveSelection();
 
@@ -2677,15 +2841,31 @@
     setMessage(
 
       (
-        state.selected.stateName ||
-        state.selected.state
+        window
+          .UBnuxState
+          .state
+          .selected
+          .stateName ||
+        window
+          .UBnuxState
+          .state
+          .selected
+          .state
       ) +
 
       " → " +
 
       (
-        state.selected.districtName ||
-        state.selected.district
+        window
+          .UBnuxState
+          .state
+          .selected
+          .districtName ||
+        window
+          .UBnuxState
+          .state
+          .selected
+          .district
       ) +
 
       " → " +
@@ -2749,7 +2929,20 @@
     }
 
 
-    state.sort =
+    if (
+      !window.UBnuxState ||
+      !window.UBnuxState.state
+    ) {
+
+      return;
+
+    }
+
+
+    window
+      .UBnuxState
+      .state
+      .sort =
       (
         sortFilter &&
         sortFilter.value
@@ -2759,9 +2952,21 @@
 
 
     if (
-      state.selected.state &&
-      state.selected.district &&
-      state.selected.category
+      window
+        .UBnuxState
+        .state
+        .selected
+        .state &&
+      window
+        .UBnuxState
+        .state
+        .selected
+        .district &&
+      window
+        .UBnuxState
+        .state
+        .selected
+        .category
     ) {
 
       if (
@@ -2786,7 +2991,6 @@
   ========================================================= */
 
   function setupEvents() {
-
 
     /* =======================================================
        STATE
@@ -2962,6 +3166,10 @@
       Date.now();
 
 
+    /* =====================================================
+       YEAR
+    ===================================================== */
+
     if (
       currentYear
     ) {
@@ -2973,26 +3181,60 @@
     }
 
 
-    /*
-     * CRITICAL:
-     *
-     * Check business route again before doing ANY listing
-     * initialization.
-     */
+    /* =====================================================
+       CRITICAL BUSINESS PAGE GUARD
+       -----------------------------------------------------
+       This must happen BEFORE:
+       - event setup
+       - API calls
+       - state restore
+       - category restore
+       - business listing
+       - history changes
+    ===================================================== */
 
     if (
       IS_BUSINESS_PAGE
     ) {
 
+      releaseHomepageLoaderForBusinessPage();
+
       console.debug(
-        "UBnux: Business SEO page. App initialization skipped.",
-        window.location.pathname
+        "UBnux: Business SEO page detected.",
+        {
+          pathname:
+            window.location.pathname,
+
+          route:
+            CURRENT_ROUTE,
+
+          fallback:
+            FALLBACK_ROUTE
+        }
       );
+
+      /*
+       * Do NOT:
+       *
+       * - initialize listing app
+       * - call API
+       * - restore saved selection
+       * - modify URL
+       * - modify history
+       * - load businesses
+       * - redirect
+       *
+       * business-page.js owns this page.
+       */
 
       return;
 
     }
 
+
+    /* =====================================================
+       NORMAL LISTING APP
+    ===================================================== */
 
     setupEvents();
 
@@ -3095,7 +3337,8 @@
       "DOMContentLoaded",
       initializeApp,
       {
-        once: true
+        once:
+          true
       }
     );
 
@@ -3107,13 +3350,13 @@
 
 
   /* =========================================================
-     OPTIONAL PUBLIC DEBUG API
+     PUBLIC DEBUG API
   ========================================================= */
 
   window.UBnuxApp = {
 
     version:
-      "3.2.0",
+      "3.3.0",
 
 
     getRoute:
