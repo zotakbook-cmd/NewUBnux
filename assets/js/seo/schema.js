@@ -261,35 +261,48 @@
   ====================================================== */
 
   function renderFromSEO(
-    seoResponse
+  seoResponse
+) {
+
+  if (!seoResponse) {
+    return false;
+  }
+
+
+  let schema = null;
+
+
+  if (
+    seoResponse.schema
   ) {
 
-    if (!seoResponse) {
+    schema =
+      seoResponse.schema;
 
-      return false;
+  }
+  else if (
+    seoResponse.seo &&
+    seoResponse.seo.schema
+  ) {
 
-    }
-
-
-    const schema =
-      seoResponse.schema ||
-      seoResponse.seo &&
+    schema =
       seoResponse.seo.schema;
-
-
-    if (!schema) {
-
-      return false;
-
-    }
-
-
-    return render(
-      schema
-    );
 
   }
 
+
+  if (!schema) {
+
+    return false;
+
+  }
+
+
+  return render(
+    schema
+  );
+
+}
 
   /* =======================================================
      GET CURRENT SCHEMA
