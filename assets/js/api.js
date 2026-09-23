@@ -3,9 +3,10 @@
    File: assets/js/api.js
 
    Version:
-   2.3.0
+   3.0.0
 
    Responsibilities:
+   ---------------------------------------------------------
    - Centralized Google Apps Script API client
    - States
    - Districts
@@ -15,7 +16,12 @@
    - Business by SEO path
    - Centralized request handling
    - Safe API URL handling
+   - Request timeout
    - Consistent error handling
+   - SEO business lookup
+   - Backward compatibility
+   - Optional response cache
+   - Safe debug logging
 ========================================================= */
 
 (function (window) {
@@ -28,7 +34,40 @@
   ====================================================== */
 
   const config =
-    window.UBNUX_CONFIG || {};
+    window.UBNUX_CONFIG ||
+    {};
+
+
+  const VERSION =
+    "3.0.0";
+
+
+  /* =======================================================
+     DEFAULTS
+  ====================================================== */
+
+  const DEFAULTS = {
+
+    REQUEST_TIMEOUT:
+      25000,
+
+    CACHE_TTL:
+      Number(
+        config.API_CACHE_TTL ||
+        0
+      ),
+
+    BUSINESS_PAGE_SIZE:
+      Number(
+        config.BUSINESS_PAGE_SIZE ||
+        18
+      ),
+
+    DEFAULT_SORT:
+      config.DEFAULT_SORT ||
+      "featured"
+
+  };
 
 
   /* =======================================================
@@ -48,15 +87,68 @@
 
 
   /* =======================================================
-     NORMALIZE API URL
+     INTERNAL CACHE
+  ====================================================== */
+
+  const responseCache =
+    new Map();
+
+
+  /* =======================================================
+     SAFE STRING
+  ====================================================== */
+
+  function clean(
+    value
+  ) {
+
+    if (
+      value === null ||
+      value === undefined
+    ) {
+
+      return "";
+
+    }
+
+
+    return String(
+      value
+    ).trim();
+
+  }
+
+
+  /* =======================================================
+     NORMALIZE SLUG
+  ====================================================== */
+
+  function normalizeSlug(
+    value
+  ) {
+
+    return clean(
+      value
+    )
+      .toLowerCase()
+      .replace(
+        /^\/+|\/+$/g,
+        ""
+      );
+
+  }
+
+
+  /* =======================================================
+     API URL
   ====================================================== */
 
   function getAPIURL() {
 
     const apiURL =
-      String(
-        config.API_URL || ""
-      ).trim();
+      clean(
+        config.API_URL
+      );
 
 
     if (!apiURL) {
@@ -90,6 +182,12 @@
     params
   ) {
 
+    action =
+      clean(
+        action
+      );
+
+
     if (!action) {
 
       throw new Error(
@@ -100,7 +198,8 @@
 
 
     params =
-      params || {};
+      params ||
+      {};
 
 
     const query =
@@ -108,12 +207,12 @@
 
 
     /*
-     * API ACTION
+     * ACTION
      */
 
     query.set(
       "action",
-      String(action).trim()
+      action
     );
 
 
@@ -121,27 +220,47 @@
      * PARAMETERS
      */
 
-    Object.keys(params)
-      .forEach(function (key) {
+    Object.keys(
+      params
+    ).forEach(
+      function (
+        key
+      ) {
 
         const value =
           params[key];
 
 
         if (
-          value !== undefined &&
-          value !== null &&
-          String(value).trim() !== ""
+          value === undefined ||
+          value === null
         ) {
 
-          query.set(
-            key,
-            String(value).trim()
-          );
+          return;
 
         }
 
-      });
+
+        const stringValue =
+          clean(
+            value
+          );
+
+
+        if (!stringValue) {
+
+          return;
+
+        }
+
+
+        query.set(
+          key,
+          stringValue
+        );
+
+      }
+    );
 
 
     return (
@@ -154,13 +273,220 @@
 
 
   /* =======================================================
+     CACHE KEY
+  ====================================================== */
+
+  function buildCacheKey(
+    action,
+    params
+  ) {
+
+    return (
+      clean(
+        action
+      ) +
+      "|" +
+      JSON.stringify(
+        params ||
+        {}
+      )
+    );
+
+  }
+
+
+  /* =======================================================
+     CACHE READ
+  ====================================================== */
+
+  function getCached(
+    key
+  ) {
+
+    if (
+      !DEFAULTS.CACHE_TTL ||
+      DEFAULTS.CACHE_TTL <= 0
+    ) {
+
+      return null;
+
+    }
+
+
+    const item =
+      responseCache.get(
+        key
+      );
+
+
+    if (!item) {
+
+      return null;
+
+    }
+
+
+    if (
+      Date.now() -
+      item.time >
+      DEFAULTS.CACHE_TTL
+    ) {
+
+      responseCache.delete(
+        key
+      );
+
+
+      return null;
+
+    }
+
+
+    return item.data;
+
+  }
+
+
+  /* =======================================================
+     CACHE WRITE
+  ====================================================== */
+
+  function setCached(
+    key,
+    data
+  ) {
+
+    if (
+      !DEFAULTS.CACHE_TTL ||
+      DEFAULTS.CACHE_TTL <= 0
+    ) {
+
+      return;
+
+    }
+
+
+    responseCache.set(
+      key,
+      {
+
+        time:
+          Date.now(),
+
+        data:
+          data
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     CLEAR CACHE
+  ====================================================== */
+
+  function clearCache() {
+
+    responseCache.clear();
+
+  }
+
+
+  /* =======================================================
+     REQUEST WITH TIMEOUT
+  ====================================================== */
+
+  async function fetchWithTimeout(
+    url,
+    options
+  ) {
+
+    options =
+      options ||
+      {};
+
+
+    /*
+     * AbortController support
+     */
+
+    if (
+      typeof AbortController !==
+      "undefined"
+    ) {
+
+      const controller =
+        new AbortController();
+
+
+      const timeout =
+        setTimeout(
+          function () {
+
+            controller.abort();
+
+          },
+          DEFAULTS.REQUEST_TIMEOUT
+        );
+
+
+      try {
+
+        const response =
+          await fetch(
+            url,
+            Object.assign(
+              {},
+              options,
+              {
+                signal:
+                  controller.signal
+              }
+            )
+          );
+
+
+        return response;
+
+      } finally {
+
+        clearTimeout(
+          timeout
+        );
+
+      }
+
+    }
+
+
+    /*
+     * Fallback for browsers
+     * without AbortController
+     */
+
+    return fetch(
+      url,
+      options
+    );
+
+  }
+
+
+  /* =======================================================
      CENTRAL REQUEST
   ====================================================== */
 
   async function request(
     action,
-    params
+    params,
+    options
   ) {
+
+    options =
+      options ||
+      {};
+
 
     if (!action) {
 
@@ -171,6 +497,11 @@
     }
 
 
+    params =
+      params ||
+      {};
+
+
     const url =
       buildURL(
         action,
@@ -178,19 +509,50 @@
       );
 
 
+    const cacheKey =
+      buildCacheKey(
+        action,
+        params
+      );
+
+
+    /*
+     * CACHE
+     */
+
+    if (
+      options.cache !== false
+    ) {
+
+      const cached =
+        getCached(
+          cacheKey
+        );
+
+
+      if (cached) {
+
+        return cached;
+
+      }
+
+    }
+
+
     let response;
 
 
     /* =====================================================
        FETCH
-    ===================================================== */
+    ==================================================== */
 
     try {
 
       response =
-        await fetch(
+        await fetchWithTimeout(
           url,
           {
+
             method:
               "GET",
 
@@ -203,6 +565,7 @@
                 "application/json"
 
             }
+
           }
         );
 
@@ -216,6 +579,19 @@
       );
 
 
+      if (
+        error &&
+        error.name ===
+        "AbortError"
+      ) {
+
+        throw new Error(
+          "UBnux API request timed out."
+        );
+
+      }
+
+
       throw new Error(
         "Unable to connect to UBnux API."
       );
@@ -225,14 +601,14 @@
 
     /* =====================================================
        HTTP ERROR
-    ===================================================== */
+    ==================================================== */
 
     if (
       !response.ok
     ) {
 
       throw new Error(
-        "API request failed: " +
+        "API request failed: HTTP " +
         response.status
       );
 
@@ -240,8 +616,8 @@
 
 
     /* =====================================================
-       JSON PARSE
-    ===================================================== */
+       JSON
+    ==================================================== */
 
     let data;
 
@@ -269,8 +645,8 @@
 
 
     /* =====================================================
-       API RESPONSE VALIDATION
-    ===================================================== */
+       RESPONSE VALIDATION
+    ==================================================== */
 
     if (
       !data ||
@@ -280,30 +656,50 @@
       const message =
         data &&
         data.message
-          ? String(data.message)
+          ? String(
+              data.message
+            )
           : "API returned an error.";
 
 
       console.error(
         "[UBnux API] Server error:",
         {
+
           action:
             action,
 
           params:
-            params || {},
+            params,
 
           message:
             message,
 
           response:
             data
+
         }
       );
 
 
       throw new Error(
         message
+      );
+
+    }
+
+
+    /*
+     * SAVE CACHE
+     */
+
+    if (
+      options.cache !== false
+    ) {
+
+      setCached(
+        cacheKey,
+        data
       );
 
     }
@@ -318,10 +714,14 @@
      STATES
   ====================================================== */
 
-  async function getStates() {
+  async function getStates(
+    options
+  ) {
 
     return request(
-      "states"
+      "states",
+      {},
+      options
     );
 
   }
@@ -332,12 +732,17 @@
   ====================================================== */
 
   async function getDistricts(
-    stateCode
+    stateCode,
+    options
   ) {
 
-    if (
-      !stateCode
-    ) {
+    stateCode =
+      clean(
+        stateCode
+      );
+
+
+    if (!stateCode) {
 
       throw new Error(
         "State code is required."
@@ -353,7 +758,8 @@
         state:
           stateCode
 
-      }
+      },
+      options
     );
 
   }
@@ -363,10 +769,14 @@
      CATEGORIES
   ====================================================== */
 
-  async function getCategories() {
+  async function getCategories(
+    options
+  ) {
 
     return request(
-      "categories"
+      "categories",
+      {},
+      options
     );
 
   }
@@ -381,21 +791,44 @@
   ) {
 
     options =
-      options || {};
+      options ||
+      {};
 
 
-    const page =
+    let page =
       Number(
-        options.page || 1
+        options.page ||
+        1
       );
 
 
-    const limit =
+    let limit =
       Number(
         options.limit ||
-        config.BUSINESS_PAGE_SIZE ||
-        20
+        DEFAULTS.BUSINESS_PAGE_SIZE
       );
+
+
+    if (
+      !Number.isFinite(page) ||
+      page < 1
+    ) {
+
+      page =
+        1;
+
+    }
+
+
+    if (
+      !Number.isFinite(limit) ||
+      limit < 1
+    ) {
+
+      limit =
+        DEFAULTS.BUSINESS_PAGE_SIZE;
+
+    }
 
 
     return request(
@@ -403,33 +836,40 @@
       {
 
         state:
-          options.state ||
-          "",
+          clean(
+            options.state ||
+            options.stateSlug ||
+            ""
+          ),
 
         district:
-          options.district ||
-          "",
+          clean(
+            options.district ||
+            options.districtSlug ||
+            ""
+          ),
 
         category:
-          options.category ||
-          "",
+          clean(
+            options.category ||
+            options.categorySlug ||
+            ""
+          ),
 
         page:
-          page > 0
-            ? page
-            : 1,
+          page,
 
         limit:
-          limit > 0
-            ? limit
-            : 20,
+          limit,
 
         sort:
-          options.sort ||
-          config.DEFAULT_SORT ||
-          ""
+          clean(
+            options.sort ||
+            DEFAULTS.DEFAULT_SORT
+          )
 
-      }
+      },
+      options
     );
 
   }
@@ -438,13 +878,13 @@
   /* =======================================================
      BUSINESS
      
-     Supports BOTH:
+     Supports:
 
      1. Business ID
 
         getBusiness("B001")
 
-     2. SEO parameters
+     2. SEO object
 
         getBusiness({
           state: "bihar",
@@ -453,19 +893,22 @@
           slug: "siwan-fashion-house"
         })
 
-     Backend action:
+     3. Business object
 
-        action=business
+        getBusiness({
+          id: "B001"
+        })
   ====================================================== */
 
   async function getBusiness(
-    input
+    input,
+    options
   ) {
 
-    /* =====================================================
-       CASE 1
-       Simple Business ID
-    ===================================================== */
+    /*
+     * CASE 1
+     * Business ID
+     */
 
     if (
       typeof input === "string" ||
@@ -473,7 +916,9 @@
     ) {
 
       const businessId =
-        String(input).trim();
+        clean(
+          input
+        );
 
 
       if (!businessId) {
@@ -492,20 +937,22 @@
           id:
             businessId
 
-        }
+        },
+        options
       );
 
     }
 
 
-    /* =====================================================
-       CASE 2
-       Object Parameters
-    ===================================================== */
+    /*
+     * CASE 2
+     * Object
+     */
 
     if (
       !input ||
-      typeof input !== "object"
+      typeof input !==
+      "object"
     ) {
 
       throw new Error(
@@ -516,40 +963,40 @@
 
 
     const stateSlug =
-      String(
+      normalizeSlug(
         input.state ||
         input.stateSlug ||
         ""
-      ).trim();
+      );
 
 
     const districtSlug =
-      String(
+      normalizeSlug(
         input.district ||
         input.districtSlug ||
         ""
-      ).trim();
+      );
 
 
     const categorySlug =
-      String(
+      normalizeSlug(
         input.category ||
         input.categorySlug ||
         ""
-      ).trim();
+      );
 
 
     const businessSlug =
-      String(
+      normalizeSlug(
         input.slug ||
         input.businessSlug ||
         ""
-      ).trim();
+      );
 
 
-    /* =====================================================
-       SEO REQUEST
-    ===================================================== */
+    /*
+     * SEO LOOKUP
+     */
 
     if (
       stateSlug &&
@@ -574,28 +1021,27 @@
           slug:
             businessSlug
 
-        }
+        },
+        options
       );
 
     }
 
 
-    /* =====================================================
-       OBJECT WITH BUSINESS ID
-    ===================================================== */
+    /*
+     * BUSINESS ID LOOKUP
+     */
 
     const businessId =
-      String(
+      clean(
         input.id ||
         input.BusinessID ||
         input.businessId ||
         ""
-      ).trim();
+      );
 
 
-    if (
-      businessId
-    ) {
+    if (businessId) {
 
       return request(
         "business",
@@ -604,15 +1050,12 @@
           id:
             businessId
 
-        }
+        },
+        options
       );
 
     }
 
-
-    /* =====================================================
-       INVALID PARAMETERS
-    ===================================================== */
 
     throw new Error(
       "Complete business SEO path or Business ID is required."
@@ -624,150 +1067,191 @@
   /* =======================================================
      BUSINESS BY SEO SLUG
      
-     Example:
+     Supports BOTH:
 
-     /in/bihar/siwan/libraries/abc-library/
+     Positional:
 
-     Backend:
+     getBusinessBySlug(
+       "bihar",
+       "siwan",
+       "clothing-and-fashion",
+       "siwan-fashion-house"
+     )
 
-     ?action=business
-     &state=bihar
-     &district=siwan
-     &category=libraries
-     &slug=abc-library
-  ====================================================== */
+     Object:
 
-  async function getBusinessBySlug(
-  stateSlug,
-  districtSlug,
-  categorySlug,
-  businessSlug
-) {
-
-  /*
-    Object format support:
-
-    getBusinessBySlug({
-      state: "bihar",
-      district: "siwan",
-      category: "clothing-and-fashion",
-      slug: "siwan-fashion-house"
-    })
-  */
-
-  if (
-    stateSlug &&
-    typeof stateSlug === "object"
-  ) {
-
-    const params =
-      stateSlug;
-
-    return getBusiness({
-
-      state:
-        params.state ||
-        params.stateSlug ||
-        "",
-
-      district:
-        params.district ||
-        params.districtSlug ||
-        "",
-
-      category:
-        params.category ||
-        params.categorySlug ||
-        "",
-
-      slug:
-        params.slug ||
-        params.businessSlug ||
-        ""
-
-    });
-
-  }
-
-
-  /*
-    Original positional format
-  */
-
-  if (!stateSlug) {
-
-    throw new Error(
-      "State slug is required."
-    );
-
-  }
-
-
-  if (!districtSlug) {
-
-    throw new Error(
-      "District slug is required."
-    );
-
-  }
-
-
-  if (!categorySlug) {
-
-    throw new Error(
-      "Category slug is required."
-    );
-
-  }
-
-
-  if (!businessSlug) {
-
-    throw new Error(
-      "Business slug is required."
-    );
-
-  }
-
-
-  return getBusiness({
-
-    state:
-      stateSlug,
-
-    district:
-      districtSlug,
-
-    category:
-      categorySlug,
-
-    slug:
-      businessSlug
-
-  });
-
-}
-
-  /* =======================================================
-     BUSINESS BY SEO OBJECT
-     
-     Convenience method:
-
-     getBusinessBySEO({
-       state,
-       district,
-       category,
-       slug
+     getBusinessBySlug({
+       state: "bihar",
+       district: "siwan",
+       category: "clothing-and-fashion",
+       slug: "siwan-fashion-house"
      })
   ====================================================== */
 
+  async function getBusinessBySlug(
+    stateSlug,
+    districtSlug,
+    categorySlug,
+    businessSlug,
+    options
+  ) {
+
+    /*
+     * OBJECT FORMAT
+     */
+
+    if (
+      stateSlug &&
+      typeof stateSlug ===
+      "object"
+    ) {
+
+      const params =
+        stateSlug;
+
+
+      /*
+       * Allow second argument
+       * to act as options.
+       */
+
+      const requestOptions =
+        districtSlug &&
+        typeof districtSlug ===
+        "object"
+          ? districtSlug
+          : options;
+
+
+      return getBusiness(
+        {
+
+          state:
+            params.state ||
+            params.stateSlug ||
+            "",
+
+          district:
+            params.district ||
+            params.districtSlug ||
+            "",
+
+          category:
+            params.category ||
+            params.categorySlug ||
+            "",
+
+          slug:
+            params.slug ||
+            params.businessSlug ||
+            ""
+
+        },
+        requestOptions
+      );
+
+    }
+
+
+    /*
+     * POSITIONAL FORMAT
+     */
+
+    stateSlug =
+      normalizeSlug(
+        stateSlug
+      );
+
+
+    districtSlug =
+      normalizeSlug(
+        districtSlug
+      );
+
+
+    categorySlug =
+      normalizeSlug(
+        categorySlug
+      );
+
+
+    businessSlug =
+      normalizeSlug(
+        businessSlug
+      );
+
+
+    if (!stateSlug) {
+
+      throw new Error(
+        "State slug is required."
+      );
+
+    }
+
+
+    if (!districtSlug) {
+
+      throw new Error(
+        "District slug is required."
+      );
+
+    }
+
+
+    if (!categorySlug) {
+
+      throw new Error(
+        "Category slug is required."
+      );
+
+    }
+
+
+    if (!businessSlug) {
+
+      throw new Error(
+        "Business slug is required."
+      );
+
+    }
+
+
+    return getBusiness(
+      {
+
+        state:
+          stateSlug,
+
+        district:
+          districtSlug,
+
+        category:
+          categorySlug,
+
+        slug:
+          businessSlug
+
+      },
+      options
+    );
+
+  }
+
+
+  /* =======================================================
+     BUSINESS BY SEO OBJECT
+  ====================================================== */
+
   async function getBusinessBySEO(
-    params
+    params,
+    options
   ) {
 
     if (
       !params ||
-      typeof params !== "object"
+      typeof params !==
+      "object"
     ) {
 
       throw new Error(
@@ -778,8 +1262,102 @@
 
 
     return getBusiness(
-      params
+      params,
+      options
     );
+
+  }
+
+
+  /* =======================================================
+     API HEALTH
+  ====================================================== */
+
+  async function healthCheck() {
+
+    try {
+
+      const result =
+        await request(
+          "states",
+          {},
+          {
+            cache:
+              false
+          }
+        );
+
+
+      return {
+
+        success:
+          true,
+
+        data:
+          result
+
+      };
+
+    } catch (
+      error
+    ) {
+
+      return {
+
+        success:
+          false,
+
+        message:
+          error &&
+          error.message
+            ? error.message
+            : "API health check failed."
+
+      };
+
+    }
+
+  }
+
+
+  /* =======================================================
+     CLEAR API CACHE
+  ====================================================== */
+
+  function clearAPICache() {
+
+    clearCache();
+
+  }
+
+
+  /* =======================================================
+     GET CONFIG
+  ====================================================== */
+
+  function getConfig() {
+
+    return {
+
+      version:
+        VERSION,
+
+      apiURL:
+        getSafeAPIURLForDebug(),
+
+      cacheTTL:
+        DEFAULTS.CACHE_TTL,
+
+      requestTimeout:
+        DEFAULTS.REQUEST_TIMEOUT,
+
+      businessPageSize:
+        DEFAULTS.BUSINESS_PAGE_SIZE,
+
+      defaultSort:
+        DEFAULTS.DEFAULT_SORT
+
+    };
 
   }
 
@@ -789,6 +1367,14 @@
   ====================================================== */
 
   const api = {
+
+    /*
+     * Version
+     */
+
+    version:
+      VERSION,
+
 
     /*
      * Core
@@ -805,7 +1391,31 @@
 
 
     /*
-     * Master data
+     * Cache
+     */
+
+    clearCache:
+      clearAPICache,
+
+
+    /*
+     * Config
+     */
+
+    getConfig:
+      getConfig,
+
+
+    /*
+     * Health
+     */
+
+    healthCheck:
+      healthCheck,
+
+
+    /*
+     * Master Data
      */
 
     getStates:
@@ -854,22 +1464,6 @@
 
 
   /* =======================================================
-     DEBUG
-  ====================================================== */
-
-  console.debug(
-    "[UBnux API] Initialized.",
-    {
-      version:
-        "2.3.0",
-
-      apiURL:
-        getSafeAPIURLForDebug()
-    }
-  );
-
-
-  /* =======================================================
      SAFE DEBUG URL
   ====================================================== */
 
@@ -881,13 +1475,10 @@
         getAPIURL();
 
 
-      /*
-       * API URL को console में पूरा expose
-       * करने के बजाय केवल origin/path दिखाएं.
-       */
-
       const parsed =
-        new URL(url);
+        new URL(
+          url
+        );
 
 
       return (
@@ -902,6 +1493,35 @@
       return "";
 
     }
+
+  }
+
+
+  /* =======================================================
+     DEBUG
+  ====================================================== */
+
+  if (
+    window.console &&
+    typeof window.console.debug ===
+      "function"
+  ) {
+
+    window.console.debug(
+      "[UBnux API] Initialized.",
+      {
+
+        version:
+          VERSION,
+
+        apiURL:
+          getSafeAPIURLForDebug(),
+
+        businessPageSize:
+          DEFAULTS.BUSINESS_PAGE_SIZE
+
+      }
+    );
 
   }
 
