@@ -638,74 +638,115 @@
   ====================================================== */
 
   async function getBusinessBySlug(
-    stateSlug,
-    districtSlug,
-    categorySlug,
-    businessSlug
+  stateSlug,
+  districtSlug,
+  categorySlug,
+  businessSlug
+) {
+
+  /*
+    Object format support:
+
+    getBusinessBySlug({
+      state: "bihar",
+      district: "siwan",
+      category: "clothing-and-fashion",
+      slug: "siwan-fashion-house"
+    })
+  */
+
+  if (
+    stateSlug &&
+    typeof stateSlug === "object"
   ) {
 
-    if (
-      !stateSlug
-    ) {
-
-      throw new Error(
-        "State slug is required."
-      );
-
-    }
-
-
-    if (
-      !districtSlug
-    ) {
-
-      throw new Error(
-        "District slug is required."
-      );
-
-    }
-
-
-    if (
-      !categorySlug
-    ) {
-
-      throw new Error(
-        "Category slug is required."
-      );
-
-    }
-
-
-    if (
-      !businessSlug
-    ) {
-
-      throw new Error(
-        "Business slug is required."
-      );
-
-    }
-
+    const params =
+      stateSlug;
 
     return getBusiness({
 
       state:
-        stateSlug,
+        params.state ||
+        params.stateSlug ||
+        "",
 
       district:
-        districtSlug,
+        params.district ||
+        params.districtSlug ||
+        "",
 
       category:
-        categorySlug,
+        params.category ||
+        params.categorySlug ||
+        "",
 
       slug:
-        businessSlug
+        params.slug ||
+        params.businessSlug ||
+        ""
 
     });
 
   }
 
+
+  /*
+    Original positional format
+  */
+
+  if (!stateSlug) {
+
+    throw new Error(
+      "State slug is required."
+    );
+
+  }
+
+
+  if (!districtSlug) {
+
+    throw new Error(
+      "District slug is required."
+    );
+
+  }
+
+
+  if (!categorySlug) {
+
+    throw new Error(
+      "Category slug is required."
+    );
+
+  }
+
+
+  if (!businessSlug) {
+
+    throw new Error(
+      "Business slug is required."
+    );
+
+  }
+
+
+  return getBusiness({
+
+    state:
+      stateSlug,
+
+    district:
+      districtSlug,
+
+    category:
+      categorySlug,
+
+    slug:
+      businessSlug
+
+  });
+
+}
 
   /* =======================================================
      BUSINESS BY SEO OBJECT
