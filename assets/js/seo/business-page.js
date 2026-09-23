@@ -1,28 +1,47 @@
 /* =========================================================
    UBnux - Business SEO Page Controller
-   File: assets/js/seo/business-page.js
+
+   File:
+   assets/js/seo/business-page.js
 
    Version:
-   9.0.0
+   10.0.0
 
-   Responsibilities:
+   RESPONSIBILITIES
    ---------------------------------------------------------
-   - Detect permanent Business SEO route
-   - Support direct /in/... business URLs
-   - Load business through centralized UBnux API
-   - Consume BusinessSEO backend response
-   - Apply backend SEO metadata
+   - Detect permanent Business SEO URL
+   - Direct /in/... business route support
+   - Centralized UBnux API lookup
+   - Normalize BusinessSEO response
+   - Build safe business context
+   - Apply SEO metadata
    - Render backend JSON-LD
    - Resolve BusinessTemplate
-   - Safely load template HTML / CSS / JS
-   - Auto-create Business Page shell when missing
+   - Preflight template HTML
+   - Load matching CSS
+   - Inject template HTML
+   - Load matching JS
    - Bind common business data
    - Render breadcrumbs
-   - Protect against stale async responses
-   - Clean old template state before reload
-   - Expose current business page context
-   - Never redirect permanent SEO URLs
-   ========================================================= */
+   - Protect against stale requests
+   - Destroy previous template safely
+   - Handle route changes
+   - Handle template fallback
+   - Handle invalid business pages
+   - Expose business page state
+   - NEVER redirect permanent SEO URLs
+
+   IMPORTANT
+   ---------------------------------------------------------
+   Permanent URL:
+
+   /in/{state}/{district}/{category}/{business}/
+
+   Example:
+
+   /in/bihar/siwan/clothing-and-fashion/
+   siwan-fashion-house/
+========================================================= */
 
 (function (window, document) {
 
@@ -62,7 +81,7 @@
   var CONFIG = {
 
     VERSION:
-      "9.0.0",
+      "10.0.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -81,17 +100,17 @@
     DEFAULT_TEMPLATE:
       "default",
 
-    ROOT_SELECTOR:
-      "#businessPageRoot",
+    ROOT_ID:
+      "businessPageRoot",
 
-    CONTENT_SELECTOR:
-      "#businessPageContent",
+    LOADER_ID:
+      "businessPageLoader",
 
-    LOADER_SELECTOR:
-      "#businessPageLoader",
+    ERROR_ID:
+      "businessPageError",
 
-    ERROR_SELECTOR:
-      "#businessPageError",
+    CONTENT_ID:
+      "businessPageContent",
 
     SHELL_STYLE_ID:
       "ubnux-business-page-shell-style",
@@ -120,7 +139,7 @@
 
 
   /* =======================================================
-     STATE
+     INTERNAL STATE
   ======================================================= */
 
   var state = {
@@ -170,7 +189,13 @@
     activeRequestId:
       0,
 
-    lastPathname:
+    pathname:
+      "",
+
+    lastCanonical:
+      "",
+
+    previousTemplate:
       ""
 
   };
@@ -184,7 +209,8 @@
 
     if (
       window.console &&
-      typeof window.console.log === "function"
+      typeof window.console.log ===
+        "function"
     ) {
 
       console.log.apply(
@@ -192,7 +218,9 @@
         [
           "[UBnux BusinessPage]"
         ].concat(
-          Array.prototype.slice.call(arguments)
+          Array.prototype.slice.call(
+            arguments
+          )
         )
       );
 
@@ -205,7 +233,8 @@
 
     if (
       window.console &&
-      typeof window.console.warn === "function"
+      typeof window.console.warn ===
+        "function"
     ) {
 
       console.warn.apply(
@@ -213,7 +242,9 @@
         [
           "[UBnux BusinessPage]"
         ].concat(
-          Array.prototype.slice.call(arguments)
+          Array.prototype.slice.call(
+            arguments
+          )
         )
       );
 
@@ -226,7 +257,8 @@
 
     if (
       window.console &&
-      typeof window.console.error === "function"
+      typeof window.console.error ===
+        "function"
     ) {
 
       console.error.apply(
@@ -234,7 +266,9 @@
         [
           "[UBnux BusinessPage]"
         ].concat(
-          Array.prototype.slice.call(arguments)
+          Array.prototype.slice.call(
+            arguments
+          )
         )
       );
 
@@ -259,6 +293,35 @@
     }
 
     return String(value).trim();
+
+  }
+
+
+  function firstValue() {
+
+    var values =
+      Array.prototype.slice.call(
+        arguments
+      );
+
+    for (
+      var i = 0;
+      i < values.length;
+      i++
+    ) {
+
+      var value =
+        clean(values[i]);
+
+      if (value) {
+
+        return value;
+
+      }
+
+    }
+
+    return "";
 
   }
 
@@ -299,81 +362,12 @@
   }
 
 
-  function firstValue() {
-
-    var values =
-      Array.prototype.slice.call(arguments);
-
-    for (
-      var i = 0;
-      i < values.length;
-      i++
-    ) {
-
-      var value =
-        clean(values[i]);
-
-      if (value) {
-
-        return value;
-
-      }
-
-    }
-
-    return "";
-
-  }
-
-
-  function toBoolean(
-    value,
-    defaultValue
-  ) {
-
-    if (
-      value === true ||
-      value === false
-    ) {
-
-      return value;
-
-    }
-
-    var normalized =
-      clean(value).toLowerCase();
-
-    if (
-      normalized === "true" ||
-      normalized === "yes" ||
-      normalized === "1"
-    ) {
-
-      return true;
-
-    }
-
-    if (
-      normalized === "false" ||
-      normalized === "no" ||
-      normalized === "0"
-    ) {
-
-      return false;
-
-    }
-
-    return Boolean(defaultValue);
-
-  }
-
-
   function normalizeSlug(value) {
 
     return clean(value)
       .toLowerCase()
       .replace(/^\/+|\/+$/g, "")
-      .replace(/\s+/g, "-")
+      .replace(/[_\s]+/g, "-")
       .replace(/[^a-z0-9-]/g, "")
       .replace(/-+/g, "-")
       .replace(/^-+|-+$/g, "");
@@ -418,6 +412,15 @@
 
     try {
 
+      if (
+        allowRelative === true &&
+        raw.charAt(0) === "/"
+      ) {
+
+        return raw;
+
+      }
+
       var url =
         new URL(
           raw,
@@ -430,15 +433,6 @@
       ) {
 
         return "";
-
-      }
-
-      if (
-        allowRelative === true &&
-        raw.charAt(0) === "/"
-      ) {
-
-        return raw;
 
       }
 
@@ -456,8 +450,14 @@
   function safeImageURL(value) {
 
     return (
-      safeHTTPURL(value, true) ||
-      safeHTTPURL(CONFIG.DEFAULT_IMAGE, true) ||
+      safeHTTPURL(
+        value,
+        true
+      ) ||
+      safeHTTPURL(
+        CONFIG.DEFAULT_IMAGE,
+        true
+      ) ||
       ""
     );
 
@@ -480,106 +480,100 @@
   }
 
 
-  function isCurrentRequest(requestId) {
+  function toBoolean(
+    value,
+    defaultValue
+  ) {
 
-    return (
-      requestId ===
-      state.activeRequestId
+    if (
+      value === true ||
+      value === false
+    ) {
+
+      return value;
+
+    }
+
+    var normalized =
+      clean(value)
+        .toLowerCase();
+
+    if (
+      normalized === "true" ||
+      normalized === "yes" ||
+      normalized === "1"
+    ) {
+
+      return true;
+
+    }
+
+    if (
+      normalized === "false" ||
+      normalized === "no" ||
+      normalized === "0"
+    ) {
+
+      return false;
+
+    }
+
+    return Boolean(
+      defaultValue
     );
 
   }
 
 
   /* =======================================================
-     ROUTE FALLBACK PARSER
+     DOM
   ======================================================= */
 
-  function parseDirectBusinessRoute() {
+  function getElement(id) {
 
-    var pathname =
-      clean(
-        window.location &&
-        window.location.pathname
-      );
+    return document.getElementById(id);
 
-    pathname =
-      pathname
-        .split("?")[0]
-        .split("#")[0];
+  }
 
-    var parts =
-      pathname
-        .split("/")
-        .filter(Boolean);
 
-    /*
-     * Permanent business URL:
-     *
-     * /in/{state}/{district}/{category}/{business}/
-     */
+  function getRoot() {
 
-    if (
-      parts.length !== 5 ||
-      parts[0].toLowerCase() !== "in"
-    ) {
+    return getElement(
+      CONFIG.ROOT_ID
+    );
 
-      return null;
+  }
 
-    }
 
-    var stateSlug =
-      normalizeSlug(parts[1]);
+  function getLoader() {
 
-    var districtSlug =
-      normalizeSlug(parts[2]);
+    return getElement(
+      CONFIG.LOADER_ID
+    );
 
-    var categorySlug =
-      normalizeSlug(parts[3]);
+  }
 
-    var businessSlug =
-      normalizeSlug(parts[4]);
 
-    if (
-      !stateSlug ||
-      !districtSlug ||
-      !categorySlug ||
-      !businessSlug
-    ) {
+  function getError() {
 
-      return null;
+    return getElement(
+      CONFIG.ERROR_ID
+    );
 
-    }
+  }
 
-    return normalizeRoute({
 
-      type:
-        "business",
+  function getContent() {
 
-      isBusinessPage:
-        true,
-
-      isSEOPage:
-        true,
-
-      stateSlug:
-        stateSlug,
-
-      districtSlug:
-        districtSlug,
-
-      categorySlug:
-        categorySlug,
-
-      businessSlug:
-        businessSlug
-
-    });
+    return getElement(
+      CONFIG.CONTENT_ID
+    );
 
   }
 
 
   /* =======================================================
-     ROUTE NORMALIZATION
+     ROUTE
   ======================================================= */
 
   function normalizeRoute(route) {
@@ -642,10 +636,10 @@
       type:
         "business",
 
-      isBusinessPage:
+      isSEOPage:
         true,
 
-      isSEOPage:
+      isBusinessPage:
         true,
 
       stateSlug:
@@ -672,14 +666,57 @@
   }
 
 
-  /* =======================================================
-     ROUTE RESOLVER
-  ======================================================= */
+  function parseDirectRoute() {
+
+    var pathname =
+      (
+        window.location &&
+        window.location.pathname
+      ) || "/";
+
+    pathname =
+      pathname
+        .split("?")[0]
+        .split("#")[0];
+
+    var parts =
+      pathname
+        .split("/")
+        .filter(Boolean);
+
+    if (
+      parts.length !== 5 ||
+      String(parts[0])
+        .toLowerCase() !== "in"
+    ) {
+
+      return null;
+
+    }
+
+    return normalizeRoute({
+
+      stateSlug:
+        parts[1],
+
+      districtSlug:
+        parts[2],
+
+      categorySlug:
+        parts[3],
+
+      businessSlug:
+        parts[4]
+
+    });
+
+  }
+
 
   function getRoute() {
 
     /*
-     * 1. Dedicated SEO Router
+     * 1. Dedicated SEO router
      */
 
     try {
@@ -690,15 +727,14 @@
 
       if (seoRouter) {
 
-        var seoRoute =
-          null;
+        var route = null;
 
         if (
           typeof seoRouter.getCurrentRoute ===
           "function"
         ) {
 
-          seoRoute =
+          route =
             seoRouter.getCurrentRoute();
 
         } else if (
@@ -706,18 +742,18 @@
           "function"
         ) {
 
-          seoRoute =
+          route =
             seoRouter.parse();
 
         }
 
         if (
-          seoRoute &&
-          seoRoute.isBusinessPage === true
+          route &&
+          route.isBusinessPage === true
         ) {
 
           return normalizeRoute(
-            seoRoute
+            route
           );
 
         }
@@ -727,7 +763,7 @@
     } catch (error) {
 
       warn(
-        "SEO router failed:",
+        "SEO router failed.",
         error
       );
 
@@ -735,7 +771,7 @@
 
 
     /*
-     * 2. Main Router
+     * 2. Main router
      */
 
     try {
@@ -743,7 +779,7 @@
       if (
         App.router &&
         typeof App.router.getCurrentRoute ===
-          "function"
+        "function"
       ) {
 
         var mainRoute =
@@ -765,7 +801,7 @@
     } catch (error2) {
 
       warn(
-        "Main router failed:",
+        "Main router failed.",
         error2
       );
 
@@ -773,33 +809,30 @@
 
 
     /*
-     * 3. Direct browser pathname fallback
+     * 3. Browser URL
      */
 
-    return parseDirectBusinessRoute();
+    return parseDirectRoute();
 
   }
 
 
-  /* =======================================================
-     BUSINESS PAGE DETECTION
-  ======================================================= */
-
-  function isBusinessPage() {
-
-    var route =
-      getRoute();
+  function isBusinessRoute(route) {
 
     return Boolean(
       route &&
-      route.isBusinessPage === true
+      route.isBusinessPage === true &&
+      route.stateSlug &&
+      route.districtSlug &&
+      route.categorySlug &&
+      route.businessSlug
     );
 
   }
 
 
   /* =======================================================
-     SHELL STYLE
+     SHELL
   ======================================================= */
 
   function ensureShellStyles() {
@@ -815,7 +848,9 @@
     }
 
     var style =
-      document.createElement("style");
+      document.createElement(
+        "style"
+      );
 
     style.id =
       CONFIG.SHELL_STYLE_ID;
@@ -834,8 +869,8 @@
 
       #businessPageRoot {
         display: block;
-        min-height: 100vh;
         width: 100%;
+        min-height: 100vh;
       }
 
       #businessPageRoot[hidden] {
@@ -847,8 +882,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 32px 20px;
         box-sizing: border-box;
+        padding: 40px 20px;
         background: #ffffff;
       }
 
@@ -861,7 +896,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 18px;
+        gap: 16px;
         text-align: center;
       }
 
@@ -876,16 +911,16 @@
 
       .ubnux-business-loader-text {
         margin: 0;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        line-height: 1.5;
-        color: #555555;
+        font: 14px/1.5 Arial, sans-serif;
+        color: #555;
       }
 
       @keyframes ubnuxBusinessSpin {
+
         to {
           transform: rotate(360deg);
         }
+
       }
 
       #businessPageError {
@@ -904,45 +939,44 @@
 
       .business-page-error-inner {
         width: min(560px, 100%);
-        padding: 38px 30px;
-        border-radius: 20px;
         box-sizing: border-box;
-        background: #ffffff;
-        box-shadow:
-          0 18px 60px rgba(0,0,0,.08);
+        padding: 38px 30px;
+        background: #fff;
+        border-radius: 20px;
         text-align: center;
+        box-shadow: 0 18px 60px rgba(0,0,0,.08);
         font-family: Arial, sans-serif;
       }
 
-      .business-page-error-inner h2 {
+      .business-page-error-inner h1 {
         margin: 0 0 12px;
         font-size: 28px;
         line-height: 1.2;
-        color: #171717;
       }
 
       .business-page-error-inner p {
-        margin: 0 0 22px;
-        color: #666666;
-        font-size: 15px;
+        margin: 0 0 24px;
+        color: #666;
         line-height: 1.7;
       }
 
-      .business-page-error-link,
-      .business-page-retry-button {
-        display: inline-flex;
-        align-items: center;
+      .business-page-error-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
         justify-content: center;
+      }
+
+      .business-page-error-actions a,
+      .business-page-error-actions button {
         min-height: 44px;
         padding: 0 20px;
-        margin: 5px;
         border: 0;
         border-radius: 10px;
-        background: #111111;
-        color: #ffffff;
+        background: #111;
+        color: #fff;
         text-decoration: none;
-        font-size: 14px;
-        font-weight: 700;
+        font: 700 14px/44px Arial, sans-serif;
         cursor: pointer;
       }
 
@@ -964,18 +998,12 @@
   }
 
 
-  /* =======================================================
-     ENSURE SHELL
-  ======================================================= */
-
   function ensureShell() {
 
     ensureShellStyles();
 
     var root =
-      document.querySelector(
-        CONFIG.ROOT_SELECTOR
-      );
+      getRoot();
 
     if (!root) {
 
@@ -985,7 +1013,7 @@
         );
 
       root.id =
-        "businessPageRoot";
+        CONFIG.ROOT_ID;
 
       root.hidden =
         true;
@@ -994,8 +1022,11 @@
 
         <div
           id="businessPageLoader"
+          hidden
           aria-live="polite"
+          aria-busy="true"
         >
+
           <div class="ubnux-business-loader-inner">
 
             <div
@@ -1008,11 +1039,13 @@
             </p>
 
           </div>
+
         </div>
 
         <div
           id="businessPageError"
           hidden
+          role="alert"
         ></div>
 
         <main
@@ -1027,124 +1060,13 @@
 
     }
 
-
-    /*
-     * Repair incomplete shell if user later adds
-     * only some containers manually.
-     */
-
-    if (
-      !root.querySelector(
-        CONFIG.LOADER_SELECTOR
-      )
-    ) {
-
-      var loader =
-        document.createElement("div");
-
-      loader.id =
-        "businessPageLoader";
-
-      loader.innerHTML = `
-        <div class="ubnux-business-loader-inner">
-          <div
-            class="ubnux-business-loader-spinner"
-            aria-hidden="true"
-          ></div>
-          <p class="ubnux-business-loader-text">
-            Loading business...
-          </p>
-        </div>
-      `;
-
-      root.appendChild(loader);
-
-    }
-
-
-    if (
-      !root.querySelector(
-        CONFIG.ERROR_SELECTOR
-      )
-    ) {
-
-      var error =
-        document.createElement("div");
-
-      error.id =
-        "businessPageError";
-
-      error.hidden =
-        true;
-
-      root.appendChild(error);
-
-    }
-
-
-    if (
-      !root.querySelector(
-        CONFIG.CONTENT_SELECTOR
-      )
-    ) {
-
-      var content =
-        document.createElement("main");
-
-      content.id =
-        "businessPageContent";
-
-      root.appendChild(content);
-
-    }
-
     return root;
 
   }
 
 
   /* =======================================================
-     DOM HELPERS
-  ======================================================= */
-
-  function getRoot() {
-
-    return document.querySelector(
-      CONFIG.ROOT_SELECTOR
-    );
-
-  }
-
-
-  function getContent() {
-
-    return document.querySelector(
-      CONFIG.CONTENT_SELECTOR
-    );
-
-  }
-
-
-  function getLoader() {
-
-    return document.querySelector(
-      CONFIG.LOADER_SELECTOR
-    );
-
-  }
-
-
-  function getErrorContainer() {
-
-    return document.querySelector(
-      CONFIG.ERROR_SELECTOR
-    );
-
-  }
-
-
-  /* =======================================================
-     BUSINESS PAGE MODE
+     BUSINESS MODE
   ======================================================= */
 
   function activateBusinessMode() {
@@ -1207,7 +1129,7 @@
       getLoader();
 
     var error =
-      getErrorContainer();
+      getError();
 
     var content =
       getContent();
@@ -1217,8 +1139,10 @@
       loader.hidden =
         false;
 
-      loader.style.display =
-        "";
+      loader.setAttribute(
+        "aria-busy",
+        "true"
+      );
 
     }
 
@@ -1226,9 +1150,6 @@
 
       error.hidden =
         true;
-
-      error.style.display =
-        "none";
 
       error.innerHTML =
         "";
@@ -1250,18 +1171,20 @@
     var loader =
       getLoader();
 
+    var content =
+      getContent();
+
     if (loader) {
 
       loader.hidden =
         true;
 
-      loader.style.display =
-        "none";
+      loader.setAttribute(
+        "aria-busy",
+        "false"
+      );
 
     }
-
-    var content =
-      getContent();
 
     if (content) {
 
@@ -1274,7 +1197,7 @@
 
 
   /* =======================================================
-     ERROR VIEW
+     ERROR
   ======================================================= */
 
   function showError(message) {
@@ -1283,15 +1206,18 @@
 
     hideLoader();
 
-    var error =
-      getErrorContainer();
-
     var content =
       getContent();
+
+    var error =
+      getError();
 
     if (content) {
 
       content.innerHTML =
+        "";
+
+      content.style.visibility =
         "";
 
     }
@@ -1302,42 +1228,45 @@
 
     }
 
+    var safeMessage =
+      escapeHTML(
+        message ||
+        "The requested business page could not be loaded."
+      );
+
+    error.innerHTML = `
+
+      <div class="business-page-error-inner">
+
+        <h1>
+          Business Not Found
+        </h1>
+
+        <p>
+          ${safeMessage}
+        </p>
+
+        <div class="business-page-error-actions">
+
+          <button
+            type="button"
+            data-ubnux-business-retry
+          >
+            Try Again
+          </button>
+
+          <a href="/">
+            Go to UBnux
+          </a>
+
+        </div>
+
+      </div>
+
+    `;
+
     error.hidden =
       false;
-
-    error.style.display =
-      "";
-
-    error.innerHTML =
-
-      '<div class="business-page-error-inner">' +
-
-        "<h2>Business page unavailable</h2>" +
-
-        "<p>" +
-          escapeHTML(
-            message ||
-            "We could not load this business page."
-          ) +
-        "</p>" +
-
-        '<button ' +
-          'type="button" ' +
-          'class="business-page-retry-button" ' +
-          'data-ubnux-business-retry' +
-        ">" +
-          "Try again" +
-        "</button>" +
-
-        '<a ' +
-          'href="/" ' +
-          'class="business-page-error-link"' +
-        ">" +
-          "Go to UBnux" +
-        "</a>" +
-
-      "</div>";
-
 
     var retry =
       error.querySelector(
@@ -1354,8 +1283,7 @@
 
         },
         {
-          once:
-            true
+          once: true
         }
       );
 
@@ -1383,65 +1311,46 @@
     }
 
 
-    /*
-     * Preferred canonical API
-     */
+    var params = {
+
+      state:
+        route.stateSlug,
+
+      district:
+        route.districtSlug,
+
+      category:
+        route.categorySlug,
+
+      slug:
+        route.businessSlug
+
+    };
+
 
     if (
       typeof API.getBusiness ===
       "function"
     ) {
 
-      return await API.getBusiness({
-
-        state:
-          route.stateSlug,
-
-        district:
-          route.districtSlug,
-
-        category:
-          route.categorySlug,
-
-        slug:
-          route.businessSlug
-
-      });
+      return await API.getBusiness(
+        params
+      );
 
     }
 
-
-    /*
-     * Compatibility
-     */
 
     if (
       typeof API.getBusinessBySEO ===
       "function"
     ) {
 
-      return await API.getBusinessBySEO({
-
-        state:
-          route.stateSlug,
-
-        district:
-          route.districtSlug,
-
-        category:
-          route.categorySlug,
-
-        slug:
-          route.businessSlug
-
-      });
+      return await API.getBusinessBySEO(
+        params
+      );
 
     }
 
-
-    /*
-     * Older compatibility API
-     */
 
     if (
       typeof API.getBusinessBySlug ===
@@ -1450,36 +1359,23 @@
 
       try {
 
-        return await API.getBusinessBySlug({
+        return await API.getBusinessBySlug(
+          params
+        );
 
-          state:
-            route.stateSlug,
-
-          district:
-            route.districtSlug,
-
-          category:
-            route.categorySlug,
-
-          slug:
-            route.businessSlug
-
-        });
-
-      } catch (objectStyleError) {
+      } catch (objectError) {
 
         return await API.getBusinessBySlug(
-
           route.stateSlug,
           route.districtSlug,
           route.categorySlug,
           route.businessSlug
-
         );
 
       }
 
     }
+
 
     throw new Error(
       "UBnux API does not provide a business lookup method."
@@ -1492,7 +1388,9 @@
      RESPONSE NORMALIZATION
   ======================================================= */
 
-  function normalizeResponse(response) {
+  function normalizeResponse(
+    response
+  ) {
 
     if (!response) {
 
@@ -1516,14 +1414,13 @@
 
     }
 
-
     var business =
       response.business ||
       null;
 
 
     /*
-     * Support direct business object response.
+     * Support direct business object.
      */
 
     if (
@@ -1592,10 +1489,12 @@
 
 
   /* =======================================================
-     BUSINESS VALUE HELPERS
+     BUSINESS HELPERS
   ======================================================= */
 
-  function getBusinessName(business) {
+  function getBusinessName(
+    business
+  ) {
 
     return firstValue(
       business.BusinessName,
@@ -1774,7 +1673,9 @@
   }
 
 
-  function getDescription(business) {
+  function getDescription(
+    business
+  ) {
 
     return firstValue(
       business.LongDescription,
@@ -1786,7 +1687,9 @@
   }
 
 
-  function getShortDescription(business) {
+  function getShortDescription(
+    business
+  ) {
 
     return firstValue(
       business.ShortDescription,
@@ -1797,7 +1700,9 @@
   }
 
 
-  function getImage(business) {
+  function getImage(
+    business
+  ) {
 
     return safeImageURL(
       firstValue(
@@ -1814,7 +1719,9 @@
   }
 
 
-  function getLogo(business) {
+  function getLogo(
+    business
+  ) {
 
     return safeImageURL(
       firstValue(
@@ -1829,7 +1736,9 @@
   }
 
 
-  function getPhone(business) {
+  function getPhone(
+    business
+  ) {
 
     return firstValue(
       business.Mobile,
@@ -1841,7 +1750,9 @@
   }
 
 
-  function getWhatsApp(business) {
+  function getWhatsApp(
+    business
+  ) {
 
     return firstValue(
       business.WhatsApp,
@@ -1852,7 +1763,9 @@
   }
 
 
-  function getEmail(business) {
+  function getEmail(
+    business
+  ) {
 
     return firstValue(
       business.Email,
@@ -1862,7 +1775,9 @@
   }
 
 
-  function getWebsite(business) {
+  function getWebsite(
+    business
+  ) {
 
     return firstValue(
       business.WebsiteURL,
@@ -1877,12 +1792,14 @@
      INDEXABILITY
   ======================================================= */
 
-  function resolveIndexable(response) {
+  function resolveIndexable(
+    response
+  ) {
 
     if (
       response.indexability &&
       typeof response.indexability.indexable !==
-        "undefined"
+      "undefined"
     ) {
 
       return toBoolean(
@@ -1895,7 +1812,7 @@
     if (
       response.seo &&
       typeof response.seo.indexable !==
-        "undefined"
+      "undefined"
     ) {
 
       return toBoolean(
@@ -1908,7 +1825,7 @@
     if (
       response.business &&
       typeof response.business.Indexable !==
-        "undefined"
+      "undefined"
     ) {
 
       return toBoolean(
@@ -1940,19 +1857,6 @@
       response.seo ||
       {};
 
-    var category =
-      response.category ||
-      {};
-
-    var location =
-      response.location ||
-      {};
-
-    var businessName =
-      getBusinessName(
-        business
-      );
-
     var stateSlug =
       getStateSlug(
         response,
@@ -1977,6 +1881,12 @@
         route
       );
 
+
+    /*
+     * Always build canonical from the
+     * permanent public business route.
+     */
+
     var canonicalPath =
       "/in/" +
       stateSlug +
@@ -1988,18 +1898,29 @@
       businessSlug +
       "/";
 
+
+    var fallbackCanonical =
+      CONFIG.SITE_ORIGIN +
+      canonicalPath;
+
+
     var canonical =
       firstValue(
         seo.canonicalURL,
         seo.canonical,
-        CONFIG.SITE_ORIGIN +
-          canonicalPath
+        fallbackCanonical
       );
 
-    var indexable =
-      resolveIndexable(
-        response
-      );
+
+    /*
+     * Only allow HTTP/HTTPS canonical URLs.
+     */
+
+    canonical =
+      safeHTTPURL(
+        canonical
+      ) ||
+      fallbackCanonical;
 
 
     return {
@@ -2014,28 +1935,24 @@
         seo,
 
       schema:
-        response.schema ||
-        null,
+        response.schema,
 
       category:
-        category,
+        response.category,
 
       location:
-        location,
+        response.location,
 
       indexability:
-        response.indexability ||
-        null,
-
-      source:
-        response.source ||
-        null,
+        response.indexability,
 
       route:
         route,
 
       businessName:
-        businessName,
+        getBusinessName(
+          business
+        ),
 
       businessSlug:
         businessSlug,
@@ -2193,7 +2110,9 @@
         canonical,
 
       indexable:
-        indexable
+        resolveIndexable(
+          response
+        )
 
     };
 
@@ -2217,42 +2136,21 @@
       response.category ||
       {};
 
-
-    /*
-     * 1. Business-level template
-     */
-
     var template =
       firstValue(
+
         business.BusinessTemplate,
         business.businessTemplate,
         business.Template,
-        business.template
-      );
+        business.template,
 
-    if (template) {
-
-      return (
-        normalizeTemplateName(
-          template
-        ) ||
-        CONFIG.DEFAULT_TEMPLATE
-      );
-
-    }
-
-
-    /*
-     * 2. Category-level template
-     */
-
-    template =
-      firstValue(
         category.BusinessTemplate,
         category.businessTemplate,
         category.Template,
         category.template
+
       );
+
 
     if (template) {
 
@@ -2265,10 +2163,6 @@
 
     }
 
-
-    /*
-     * 3. Compatibility category aliases
-     */
 
     var categorySlug =
       normalizeSlug(
@@ -2277,6 +2171,7 @@
           route
         )
       );
+
 
     var aliases = {
 
@@ -2312,17 +2207,11 @@
 
     };
 
-    if (
-      aliases[categorySlug]
-    ) {
 
-      return aliases[
-        categorySlug
-      ];
-
-    }
-
-    return CONFIG.DEFAULT_TEMPLATE;
+    return (
+      aliases[categorySlug] ||
+      CONFIG.DEFAULT_TEMPLATE
+    );
 
   }
 
@@ -2331,31 +2220,25 @@
      TEMPLATE URL
   ======================================================= */
 
-  function getTemplateURL(
+  function templateURL(
     template,
     file
   ) {
 
-    template =
+    var safeTemplate =
       normalizeTemplateName(
         template
-      );
-
-    if (!template) {
-
-      template =
-        CONFIG.DEFAULT_TEMPLATE;
-
-    }
+      ) ||
+      CONFIG.DEFAULT_TEMPLATE;
 
     var safeFile =
       clean(file)
         .replace(/\.\./g, "")
-        .replace(/^\/+/, "");
+        .replace(/^\/+/g, "");
 
     return (
       CONFIG.TEMPLATE_ROOT +
-      template +
+      safeTemplate +
       "/" +
       safeFile
     );
@@ -2367,7 +2250,9 @@
      FETCH TEXT
   ======================================================= */
 
-  async function fetchText(url) {
+  async function fetchText(
+    url
+  ) {
 
     var controller =
       null;
@@ -2395,6 +2280,7 @@
 
     }
 
+
     try {
 
       var response =
@@ -2406,7 +2292,7 @@
               "GET",
 
             cache:
-              "default",
+              "no-store",
 
             credentials:
               "same-origin",
@@ -2419,6 +2305,7 @@
           }
         );
 
+
       if (!response.ok) {
 
         throw new Error(
@@ -2429,6 +2316,7 @@
         );
 
       }
+
 
       return await response.text();
 
@@ -2448,7 +2336,7 @@
 
 
   /* =======================================================
-     TEMPLATE BUNDLE PREFLIGHT
+     TEMPLATE HTML PREFLIGHT
   ======================================================= */
 
   async function resolveTemplateBundle(
@@ -2461,15 +2349,17 @@
       ) ||
       CONFIG.DEFAULT_TEMPLATE;
 
+
     try {
 
       var html =
         await fetchText(
-          getTemplateURL(
+          templateURL(
             template,
             "index.html"
           )
         );
+
 
       return {
 
@@ -2492,19 +2382,21 @@
 
       }
 
+
       warn(
-        "Template HTML not available:",
-        template,
-        "→ falling back to default."
+        "Template HTML failed. Falling back:",
+        template
       );
+
 
       var fallbackHTML =
         await fetchText(
-          getTemplateURL(
+          templateURL(
             CONFIG.DEFAULT_TEMPLATE,
             "index.html"
           )
         );
+
 
       return {
 
@@ -2522,7 +2414,7 @@
 
 
   /* =======================================================
-     TEMPLATE DESTROY
+     TEMPLATE CLEANUP
   ======================================================= */
 
   function destroyCurrentTemplate() {
@@ -2532,7 +2424,7 @@
       if (
         window.UBnuxBusinessSite &&
         typeof window.UBnuxBusinessSite.destroy ===
-          "function"
+        "function"
       ) {
 
         window.UBnuxBusinessSite.destroy();
@@ -2542,11 +2434,12 @@
     } catch (error) {
 
       warn(
-        "Template destroy failed:",
+        "Template destroy failed.",
         error
       );
 
     }
+
 
     try {
 
@@ -2562,21 +2455,18 @@
     } catch (error2) {
 
       warn(
-        "Compatibility template destroy failed:",
+        "Compatibility destroy failed.",
         error2
       );
 
     }
+
 
     state.templateInitialized =
       false;
 
   }
 
-
-  /* =======================================================
-     TEMPLATE CSS
-  ======================================================= */
 
   function removeTemplateCSS() {
 
@@ -2594,69 +2484,6 @@
 
   }
 
-
-  function loadTemplateCSS(template) {
-
-    return new Promise(
-      function (
-        resolve,
-        reject
-      ) {
-
-        removeTemplateCSS();
-
-        var link =
-          document.createElement(
-            "link"
-          );
-
-        link.rel =
-          "stylesheet";
-
-        link.href =
-          getTemplateURL(
-            template,
-            "style.css"
-          );
-
-        link.dataset
-          .ubnuxBusinessTemplateStyle =
-            template;
-
-        link.onload =
-          function () {
-
-            resolve();
-
-          };
-
-        link.onerror =
-          function () {
-
-            link.remove();
-
-            reject(
-              new Error(
-                "Template CSS failed: " +
-                link.href
-              )
-            );
-
-          };
-
-        document.head.appendChild(
-          link
-        );
-
-      }
-    );
-
-  }
-
-
-  /* =======================================================
-     TEMPLATE JS
-  ======================================================= */
 
   function removeTemplateJS() {
 
@@ -2688,6 +2515,7 @@
 
     }
 
+
     try {
 
       delete window.initBusinessSite;
@@ -2698,6 +2526,7 @@
         undefined;
 
     }
+
 
     try {
 
@@ -2713,7 +2542,36 @@
   }
 
 
-  function loadTemplateJS(template) {
+  function cleanupTemplate() {
+
+    destroyCurrentTemplate();
+
+    removeTemplateCSS();
+
+    removeTemplateJS();
+
+    clearTemplateGlobals();
+
+    var content =
+      getContent();
+
+    if (content) {
+
+      content.innerHTML =
+        "";
+
+    }
+
+  }
+
+
+  /* =======================================================
+     TEMPLATE CSS
+  ======================================================= */
+
+  function loadTemplateCSS(
+    template
+  ) {
 
     return new Promise(
       function (
@@ -2721,51 +2579,50 @@
         reject
       ) {
 
-        removeTemplateJS();
-
-        clearTemplateGlobals();
-
-        var script =
+        var link =
           document.createElement(
-            "script"
+            "link"
           );
 
-        script.src =
-          getTemplateURL(
+        link.rel =
+          "stylesheet";
+
+        link.href =
+          templateURL(
             template,
-            "script.js"
+            "style.css"
           );
 
-        script.async =
-          false;
-
-        script.dataset
-          .ubnuxBusinessTemplateScript =
+        link.dataset
+          .ubnuxBusinessTemplateStyle =
             template;
 
-        script.onload =
+
+        link.onload =
           function () {
 
             resolve();
 
           };
 
-        script.onerror =
+
+        link.onerror =
           function () {
 
-            script.remove();
+            link.remove();
 
             reject(
               new Error(
-                "Template JS failed: " +
-                script.src
+                "Template CSS failed: " +
+                link.href
               )
             );
 
           };
 
-        document.body.appendChild(
-          script
+
+        document.head.appendChild(
+          link
         );
 
       }
@@ -2775,10 +2632,12 @@
 
 
   /* =======================================================
-     INSERT TEMPLATE HTML
+     TEMPLATE HTML
   ======================================================= */
 
-  function renderTemplateHTML(html) {
+  function renderTemplateHTML(
+    html
+  ) {
 
     var content =
       getContent();
@@ -2798,7 +2657,201 @@
 
 
   /* =======================================================
-     NESTED VALUES
+     TEMPLATE JS
+  ======================================================= */
+
+  function loadTemplateJS(
+    template
+  ) {
+
+    return new Promise(
+      function (
+        resolve,
+        reject
+      ) {
+
+        var script =
+          document.createElement(
+            "script"
+          );
+
+        script.src =
+          templateURL(
+            template,
+            "script.js"
+          );
+
+        script.async =
+          false;
+
+        script.dataset
+          .ubnuxBusinessTemplateScript =
+            template;
+
+
+        script.onload =
+          function () {
+
+            resolve();
+
+          };
+
+
+        script.onerror =
+          function () {
+
+            script.remove();
+
+            reject(
+              new Error(
+                "Template JS failed: " +
+                script.src
+              )
+            );
+
+          };
+
+
+        document.body.appendChild(
+          script
+        );
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     TEMPLATE PIPELINE
+  ======================================================= */
+
+  async function loadTemplate(
+    preferredTemplate,
+    requestId
+  ) {
+
+    /*
+     * First resolve HTML.
+     *
+     * This prevents a situation where CSS/JS from
+     * one template is loaded while HTML comes from
+     * another template.
+     */
+
+    var bundle =
+      await resolveTemplateBundle(
+        preferredTemplate
+      );
+
+
+    if (
+      !isCurrentRequest(
+        requestId
+      )
+    ) {
+
+      return null;
+
+    }
+
+
+    var actualTemplate =
+      bundle.template;
+
+
+    /*
+     * Clean previous template completely.
+     */
+
+    cleanupTemplate();
+
+
+    if (
+      !isCurrentRequest(
+        requestId
+      )
+    ) {
+
+      return null;
+
+    }
+
+
+    /*
+     * Load CSS.
+     */
+
+    try {
+
+      await loadTemplateCSS(
+        actualTemplate
+      );
+
+    } catch (cssError) {
+
+      warn(
+        "Template CSS failed:",
+        cssError
+      );
+
+    }
+
+
+    if (
+      !isCurrentRequest(
+        requestId
+      )
+    ) {
+
+      return null;
+
+    }
+
+
+    /*
+     * Insert HTML.
+     */
+
+    renderTemplateHTML(
+      bundle.html
+    );
+
+
+    /*
+     * Load JS after HTML exists.
+     */
+
+    try {
+
+      await loadTemplateJS(
+        actualTemplate
+      );
+
+    } catch (jsError) {
+
+      warn(
+        "Template JS failed:",
+        jsError
+      );
+
+    }
+
+
+    state.template =
+      actualTemplate;
+
+    state.previousTemplate =
+      actualTemplate;
+
+
+    return actualTemplate;
+
+  }
+
+
+  /* =======================================================
+     NESTED VALUE
   ======================================================= */
 
   function getNestedValue(
@@ -2850,11 +2903,13 @@
      GENERIC DATA BINDING
   ======================================================= */
 
-  function bindGenericData(context) {
+  function bindGenericData(
+    context
+  ) {
 
     document
       .querySelectorAll(
-        "[data-business-bind]"
+        "#businessPageContent [data-business-bind]"
       )
       .forEach(
         function (element) {
@@ -2870,9 +2925,12 @@
               key
             );
 
+
           if (
-            element.tagName === "INPUT" ||
-            element.tagName === "TEXTAREA"
+            element.tagName ===
+            "INPUT" ||
+            element.tagName ===
+            "TEXTAREA"
           ) {
 
             element.value =
@@ -2891,10 +2949,6 @@
   }
 
 
-  /* =======================================================
-     SIMPLE TEXT BINDERS
-  ======================================================= */
-
   function bindText(
     selector,
     value
@@ -2902,13 +2956,14 @@
 
     document
       .querySelectorAll(
+        "#businessPageContent " +
         selector
       )
       .forEach(
         function (element) {
 
           element.textContent =
-            value || "";
+            clean(value);
 
         }
       );
@@ -2916,119 +2971,173 @@
   }
 
 
-  function bindBusinessName(context) {
+  /* =======================================================
+     COMMON BUSINESS BINDINGS
+  ======================================================= */
+
+  function bindBusinessData(
+    context
+  ) {
+
+    bindGenericData(
+      context
+    );
+
 
     bindText(
       "[data-business-name]",
       context.businessName
     );
 
-  }
-
-
-  function bindDescription(context) {
 
     bindText(
       "[data-business-description]",
       context.description
     );
 
+
     bindText(
       "[data-business-short-description]",
       context.shortDescription
     );
 
-  }
-
-
-  function bindLocation(context) {
 
     bindText(
       "[data-business-address]",
       context.address
     );
 
+
     bindText(
       "[data-business-area]",
       context.area
     );
+
 
     bindText(
       "[data-business-pincode]",
       context.pincode
     );
 
+
     bindText(
       "[data-business-district]",
       context.districtName
     );
+
 
     bindText(
       "[data-business-state]",
       context.stateName
     );
 
+
     bindText(
       "[data-business-category]",
       context.categoryName
     );
 
-  }
-
-
-  function bindHours(context) {
 
     bindText(
       "[data-business-opening-time]",
       context.openingTime
     );
 
+
     bindText(
       "[data-business-closing-time]",
       context.closingTime
     );
+
 
     bindText(
       "[data-business-working-days]",
       context.workingDays
     );
 
-  }
-
-
-  function bindRating(context) {
 
     bindText(
       "[data-business-rating]",
       context.rating
     );
 
+
     bindText(
       "[data-business-review-count]",
       context.reviewCount
+    );
+
+
+    bindText(
+      "[data-business-established-year]",
+      context.establishedYear
+    );
+
+
+    bindImages(
+      context
+    );
+
+
+    bindLogo(
+      context
+    );
+
+
+    bindPhone(
+      context
+    );
+
+
+    bindEmail(
+      context
+    );
+
+
+    bindWebsite(
+      context
+    );
+
+
+    bindWhatsApp(
+      context
+    );
+
+
+    bindSocialLinks(
+      context
     );
 
   }
 
 
   /* =======================================================
-     IMAGES
+     IMAGE
   ======================================================= */
 
-  function bindImages(context) {
+  function bindImages(
+    context
+  ) {
 
     document
       .querySelectorAll(
-        "[data-business-image]"
+        "#businessPageContent [data-business-image]"
       )
       .forEach(
         function (element) {
 
           if (!context.image) {
 
+            element.hidden =
+              true;
+
             return;
 
           }
+
+          element.hidden =
+            false;
+
 
           if (
             element.tagName ===
@@ -3039,7 +3148,9 @@
               context.image;
 
             if (
-              !clean(element.alt)
+              !clean(
+                element.alt
+              )
             ) {
 
               element.alt =
@@ -3062,19 +3173,36 @@
         }
       );
 
+  }
+
+
+  /* =======================================================
+     LOGO
+  ======================================================= */
+
+  function bindLogo(
+    context
+  ) {
 
     document
       .querySelectorAll(
-        "[data-business-logo]"
+        "#businessPageContent [data-business-logo]"
       )
       .forEach(
         function (element) {
 
           if (!context.logo) {
 
+            element.hidden =
+              true;
+
             return;
 
           }
+
+          element.hidden =
+            false;
+
 
           if (
             element.tagName ===
@@ -3085,7 +3213,9 @@
               context.logo;
 
             if (
-              !clean(element.alt)
+              !clean(
+                element.alt
+              )
             ) {
 
               element.alt =
@@ -3116,19 +3246,46 @@
      PHONE
   ======================================================= */
 
-  function bindPhone(context) {
+  function bindPhone(
+    context
+  ) {
 
     var phone =
       normalizePhone(
         context.phone
       );
 
+
     document
       .querySelectorAll(
-        "[data-business-phone]"
+        "#businessPageContent [data-business-phone]"
       )
       .forEach(
         function (element) {
+
+          if (!context.phone) {
+
+            element.hidden =
+              true;
+
+            return;
+
+          }
+
+          element.hidden =
+            false;
+
+
+          if (
+            element.tagName ===
+            "A"
+          ) {
+
+            element.href =
+              "tel:" +
+              phone;
+
+          }
 
           if (
             !clean(
@@ -3138,25 +3295,6 @@
 
             element.textContent =
               context.phone;
-
-          }
-
-          if (
-            element.tagName ===
-              "A" &&
-            phone
-          ) {
-
-            element.href =
-              "tel:" +
-              phone;
-
-          }
-
-          if (!context.phone) {
-
-            element.hidden =
-              true;
 
           }
 
@@ -3170,14 +3308,40 @@
      EMAIL
   ======================================================= */
 
-  function bindEmail(context) {
+  function bindEmail(
+    context
+  ) {
 
     document
       .querySelectorAll(
-        "[data-business-email]"
+        "#businessPageContent [data-business-email]"
       )
       .forEach(
         function (element) {
+
+          if (!context.email) {
+
+            element.hidden =
+              true;
+
+            return;
+
+          }
+
+          element.hidden =
+            false;
+
+
+          if (
+            element.tagName ===
+            "A"
+          ) {
+
+            element.href =
+              "mailto:" +
+              context.email;
+
+          }
 
           if (
             !clean(
@@ -3187,25 +3351,6 @@
 
             element.textContent =
               context.email;
-
-          }
-
-          if (
-            element.tagName ===
-              "A" &&
-            context.email
-          ) {
-
-            element.href =
-              "mailto:" +
-              context.email;
-
-          }
-
-          if (!context.email) {
-
-            element.hidden =
-              true;
 
           }
 
@@ -3219,16 +3364,19 @@
      WEBSITE
   ======================================================= */
 
-  function bindWebsite(context) {
+  function bindWebsite(
+    context
+  ) {
 
     var website =
       safeHTTPURL(
         context.website
       );
 
+
     document
       .querySelectorAll(
-        "[data-business-website]"
+        "#businessPageContent [data-business-website]"
       )
       .forEach(
         function (element) {
@@ -3244,6 +3392,7 @@
 
           element.hidden =
             false;
+
 
           if (
             element.tagName ===
@@ -3271,16 +3420,19 @@
      WHATSAPP
   ======================================================= */
 
-  function bindWhatsApp(context) {
+  function bindWhatsApp(
+    context
+  ) {
 
     var number =
       normalizeWhatsApp(
         context.whatsapp
       );
 
+
     document
       .querySelectorAll(
-        "[data-business-whatsapp]"
+        "#businessPageContent [data-business-whatsapp]"
       )
       .forEach(
         function (element) {
@@ -3296,6 +3448,7 @@
 
           element.hidden =
             false;
+
 
           if (
             element.tagName ===
@@ -3330,10 +3483,14 @@
   ) {
 
     var url =
-      safeHTTPURL(value);
+      safeHTTPURL(
+        value
+      );
+
 
     document
       .querySelectorAll(
+        "#businessPageContent " +
         selector
       )
       .forEach(
@@ -3350,6 +3507,7 @@
 
           element.hidden =
             false;
+
 
           if (
             element.tagName ===
@@ -3373,83 +3531,31 @@
   }
 
 
-  function bindSocialLinks(context) {
+  function bindSocialLinks(
+    context
+  ) {
 
     bindExternalLink(
       "[data-business-facebook]",
       context.facebook
     );
 
+
     bindExternalLink(
       "[data-business-instagram]",
       context.instagram
     );
+
 
     bindExternalLink(
       "[data-business-youtube]",
       context.youtube
     );
 
+
     bindExternalLink(
       "[data-business-google-place]",
       context.googlePlace
-    );
-
-  }
-
-
-  /* =======================================================
-     BIND ALL
-  ======================================================= */
-
-  function bindBusinessData(context) {
-
-    bindGenericData(
-      context
-    );
-
-    bindBusinessName(
-      context
-    );
-
-    bindDescription(
-      context
-    );
-
-    bindLocation(
-      context
-    );
-
-    bindHours(
-      context
-    );
-
-    bindRating(
-      context
-    );
-
-    bindImages(
-      context
-    );
-
-    bindPhone(
-      context
-    );
-
-    bindEmail(
-      context
-    );
-
-    bindWebsite(
-      context
-    );
-
-    bindWhatsApp(
-      context
-    );
-
-    bindSocialLinks(
-      context
     );
 
   }
@@ -3471,6 +3577,7 @@
 
         url:
           "/"
+
       },
 
       {
@@ -3481,6 +3588,7 @@
           "/in/" +
           context.stateSlug +
           "/"
+
       },
 
       {
@@ -3493,6 +3601,7 @@
           "/" +
           context.districtSlug +
           "/"
+
       },
 
       {
@@ -3507,6 +3616,7 @@
           "/" +
           context.categorySlug +
           "/"
+
       },
 
       {
@@ -3515,6 +3625,7 @@
 
         url:
           context.canonical
+
       }
 
     ];
@@ -3522,70 +3633,17 @@
   }
 
 
-  function getBreadcrumbItems(context) {
-
-    var backendItems =
-      context.seo &&
-      Array.isArray(
-        context.seo.breadcrumbs
-      )
-        ? context.seo.breadcrumbs
-        : null;
-
-    if (
-      backendItems &&
-      backendItems.length
-    ) {
-
-      return backendItems
-        .map(
-          function (item) {
-
-            return {
-
-              name:
-                firstValue(
-                  item.name,
-                  item.label,
-                  item.title
-                ),
-
-              url:
-                firstValue(
-                  item.url,
-                  item.href,
-                  item.item
-                )
-
-            };
-
-          }
-        )
-        .filter(
-          function (item) {
-
-            return Boolean(
-              item.name
-            );
-
-          }
-        );
-
-    }
-
-    return buildFallbackBreadcrumbs(
-      context
-    );
-
-  }
-
-
-  function renderBreadcrumbs(context) {
+  function renderBreadcrumbs(
+    context
+  ) {
 
     var containers =
       document.querySelectorAll(
-        "[data-business-breadcrumbs]"
+        "#businessPageContent [data-business-breadcrumb], " +
+        "#businessPageContent .business-breadcrumb, " +
+        "#businessPageContent #businessBreadcrumb"
       );
+
 
     if (!containers.length) {
 
@@ -3593,10 +3651,24 @@
 
     }
 
+
+    var backendBreadcrumbs =
+      context.seo &&
+      Array.isArray(
+        context.seo.breadcrumbs
+      )
+        ? context.seo.breadcrumbs
+        : null;
+
+
     var items =
-      getBreadcrumbItems(
-        context
-      );
+      backendBreadcrumbs &&
+      backendBreadcrumbs.length
+        ? backendBreadcrumbs
+        : buildFallbackBreadcrumbs(
+            context
+          );
+
 
     containers.forEach(
       function (container) {
@@ -3604,11 +3676,25 @@
         container.innerHTML =
           "";
 
+
         items.forEach(
           function (
             item,
             index
           ) {
+
+            var name =
+              firstValue(
+                item.name,
+                item.title
+              );
+
+            var url =
+              safeHTTPURL(
+                item.url,
+                true
+              );
+
 
             var wrapper =
               document.createElement(
@@ -3621,7 +3707,8 @@
 
             if (
               index <
-              items.length - 1
+              items.length - 1 &&
+              url
             ) {
 
               var link =
@@ -3630,11 +3717,10 @@
                 );
 
               link.href =
-                item.url ||
-                "#";
+                url;
 
               link.textContent =
-                item.name;
+                name;
 
               wrapper.appendChild(
                 link
@@ -3643,7 +3729,7 @@
             } else {
 
               wrapper.textContent =
-                item.name;
+                name;
 
               wrapper.setAttribute(
                 "aria-current",
@@ -3671,13 +3757,13 @@
               separator.className =
                 "ubnux-breadcrumb-separator";
 
+              separator.textContent =
+                "›";
+
               separator.setAttribute(
                 "aria-hidden",
                 "true"
               );
-
-              separator.textContent =
-                "›";
 
               container.appendChild(
                 separator
@@ -3698,29 +3784,68 @@
      SEO FALLBACK
   ======================================================= */
 
-  function buildSEOFallback(context) {
+  function buildSEOFallback(
+    context
+  ) {
+
+    var businessName =
+      context.businessName ||
+      "Business";
+
+    var categoryName =
+      context.categoryName ||
+      "Business";
+
+    var districtName =
+      context.districtName ||
+      "";
+
+    var stateName =
+      context.stateName ||
+      "";
+
 
     var title =
-      context.businessName +
+      businessName +
       " - " +
-      context.categoryName +
-      " in " +
-      context.districtName +
-      ", " +
-      context.stateName +
+      categoryName +
+      (
+        districtName
+          ? " in " + districtName
+          : ""
+      ) +
+      (
+        stateName
+          ? ", " + stateName
+          : ""
+      ) +
       " | " +
       CONFIG.SITE_NAME;
 
+
     var description =
-      firstValue(
-        context.shortDescription,
-        context.description,
-        "Find information, contact details and services for " +
-          context.businessName +
-          " in " +
-          context.districtName +
-          "."
+      context.shortDescription ||
+      context.description ||
+      (
+        "Find " +
+        businessName +
+        ", a " +
+        categoryName +
+        (
+          districtName
+            ? " in " + districtName
+            : ""
+        ) +
+        (
+          stateName
+            ? ", " + stateName
+            : ""
+        ) +
+        " on " +
+        CONFIG.SITE_NAME +
+        "."
       );
+
 
     return {
 
@@ -3736,16 +3861,16 @@
       canonicalURL:
         context.canonical,
 
+      robots:
+        context.indexable === false
+          ? "noindex,follow"
+          : CONFIG.DEFAULT_ROBOTS,
+
       image:
         context.image,
 
       indexable:
-        context.indexable,
-
-      robots:
         context.indexable
-          ? CONFIG.DEFAULT_ROBOTS
-          : "noindex,follow"
 
     };
 
@@ -3756,41 +3881,40 @@
      APPLY SEO + SCHEMA
   ======================================================= */
 
-  function applySEO(context) {
+  function applySEO(
+    context
+  ) {
 
     var seoPayload =
       Object.assign(
         {},
-        buildSEOFallback(context),
-        context.seo || {}
+        buildSEOFallback(
+          context
+        ),
+        context.seo ||
+        {}
       );
 
 
     /*
-     * Always preserve canonical business URL if backend
-     * returned no canonical.
+     * Canonical is always the permanent
+     * business URL.
      */
 
-    if (
-      !seoPayload.canonical &&
-      !seoPayload.canonicalURL
-    ) {
+    seoPayload.canonical =
+      context.canonical;
 
-      seoPayload.canonical =
-        context.canonical;
-
-      seoPayload.canonicalURL =
-        context.canonical;
-
-    }
+    seoPayload.canonicalURL =
+      context.canonical;
 
 
     /*
-     * Backend indexability remains authoritative.
+     * Backend indexability is authoritative.
      */
 
     seoPayload.indexable =
       context.indexable;
+
 
     if (
       context.indexable === false
@@ -3802,10 +3926,14 @@
     }
 
 
+    /*
+     * Meta.
+     */
+
     if (
       window.UBnuxSEOMeta &&
       typeof window.UBnuxSEOMeta.apply ===
-        "function"
+      "function"
     ) {
 
       window.UBnuxSEOMeta.apply(
@@ -3822,13 +3950,13 @@
 
 
     /*
-     * Schema must come from backend.
+     * Backend JSON-LD only.
      */
 
     if (
       window.UBNUX_SCHEMA &&
       typeof window.UBNUX_SCHEMA.renderFromSEO ===
-        "function"
+      "function"
     ) {
 
       window.UBNUX_SCHEMA.renderFromSEO(
@@ -3842,6 +3970,10 @@
       );
 
     }
+
+
+    state.lastCanonical =
+      context.canonical;
 
   }
 
@@ -3858,6 +3990,7 @@
 
     }
 
+
     Array.prototype
       .slice.call(
         document.body.classList
@@ -3866,20 +3999,29 @@
         function (className) {
 
           if (
+
             className ===
-              "ubnux-business-page" ||
+            "ubnux-business-page-active" ||
+
+            className ===
+            "ubnux-business-page" ||
+
             className.indexOf(
               "ubnux-state-"
             ) === 0 ||
+
             className.indexOf(
               "ubnux-district-"
             ) === 0 ||
+
             className.indexOf(
               "ubnux-category-"
             ) === 0 ||
+
             className.indexOf(
               "ubnux-template-"
             ) === 0
+
           ) {
 
             document.body.classList.remove(
@@ -3894,7 +4036,9 @@
   }
 
 
-  function applyBodyClasses(context) {
+  function applyBodyClasses(
+    context
+  ) {
 
     if (!document.body) {
 
@@ -3902,13 +4046,18 @@
 
     }
 
+
     removeBusinessBodyClasses();
+
 
     document.body.classList.add(
       "ubnux-business-page"
     );
 
-    if (context.stateSlug) {
+
+    if (
+      context.stateSlug
+    ) {
 
       document.body.classList.add(
         "ubnux-state-" +
@@ -3919,7 +4068,10 @@
 
     }
 
-    if (context.districtSlug) {
+
+    if (
+      context.districtSlug
+    ) {
 
       document.body.classList.add(
         "ubnux-district-" +
@@ -3930,7 +4082,10 @@
 
     }
 
-    if (context.categorySlug) {
+
+    if (
+      context.categorySlug
+    ) {
 
       document.body.classList.add(
         "ubnux-category-" +
@@ -3941,7 +4096,10 @@
 
     }
 
-    if (state.template) {
+
+    if (
+      state.template
+    ) {
 
       document.body.classList.add(
         "ubnux-template-" +
@@ -3959,7 +4117,9 @@
      TEMPLATE INITIALIZER
   ======================================================= */
 
-  function initializeTemplate(context) {
+  function initializeTemplate(
+    context
+  ) {
 
     if (
       state.templateInitialized
@@ -3971,7 +4131,7 @@
 
 
     /*
-     * Preferred modern template API
+     * Modern API.
      */
 
     if (
@@ -3980,7 +4140,7 @@
 
       if (
         typeof window.UBnuxBusinessSite.init ===
-          "function"
+        "function"
       ) {
 
         window.UBnuxBusinessSite.init(
@@ -3994,9 +4154,10 @@
 
       }
 
+
       if (
         typeof window.UBnuxBusinessSite.initialize ===
-          "function"
+        "function"
       ) {
 
         window.UBnuxBusinessSite.initialize(
@@ -4014,7 +4175,7 @@
 
 
     /*
-     * Compatibility initializer
+     * Compatibility API.
      */
 
     if (
@@ -4035,8 +4196,7 @@
 
 
     /*
-     * Pure data-attribute template:
-     * no JS initializer required.
+     * Data-attribute-only template.
      */
 
     state.templateInitialized =
@@ -4046,10 +4206,12 @@
 
 
   /* =======================================================
-     EXPOSE PAGE DATA
+     EXPOSE DATA
   ======================================================= */
 
-  function exposePageData(context) {
+  function exposePageData(
+    context
+  ) {
 
     window.UBnuxBusinessPageData = {
 
@@ -4098,19 +4260,14 @@
 
   function dispatchReady() {
 
-    var detail =
-      window.UBnuxBusinessPageData;
-
     try {
 
       document.dispatchEvent(
         new CustomEvent(
           "ubnux:business-page-ready",
           {
-
             detail:
-              detail
-
+              window.UBnuxBusinessPageData
           }
         )
       );
@@ -4128,7 +4285,7 @@
           "ubnux:business-page-ready",
           false,
           false,
-          detail
+          window.UBnuxBusinessPageData
         );
 
         document.dispatchEvent(
@@ -4147,118 +4304,29 @@
 
 
   /* =======================================================
-     STATE RESET
+     REQUEST SAFETY
   ======================================================= */
 
-  function clearDataState() {
+  function beginRequest() {
 
-    state.response =
-      null;
+    state.requestId += 1;
 
-    state.business =
-      null;
+    state.activeRequestId =
+      state.requestId;
 
-    state.seo =
-      null;
-
-    state.schema =
-      null;
-
-    state.category =
-      null;
-
-    state.location =
-      null;
-
-    state.context =
-      null;
-
-    state.template =
-      null;
-
-    state.loaded =
-      false;
-
-    state.templateInitialized =
-      false;
+    return state.activeRequestId;
 
   }
 
 
-  /* =======================================================
-     CLEAN CURRENT PAGE
-  ======================================================= */
+  function isCurrentRequest(
+    requestId
+  ) {
 
-  function cleanup(options) {
-
-    options =
-      options ||
-      {};
-
-    destroyCurrentTemplate();
-
-    removeTemplateCSS();
-
-    removeTemplateJS();
-
-    clearTemplateGlobals();
-
-    removeBusinessBodyClasses();
-
-    var content =
-      getContent();
-
-    var error =
-      getErrorContainer();
-
-    if (content) {
-
-      content.innerHTML =
-        "";
-
-      content.style.visibility =
-        "";
-
-    }
-
-    if (error) {
-
-      error.innerHTML =
-        "";
-
-      error.hidden =
-        true;
-
-    }
-
-    if (
-      window.UBNUX_SCHEMA &&
-      typeof window.UBNUX_SCHEMA.clear ===
-        "function"
-    ) {
-
-      try {
-
-        window.UBNUX_SCHEMA.clear();
-
-      } catch (error2) {
-
-        /* Ignore */
-
-      }
-
-    }
-
-    clearDataState();
-
-    if (
-      options.keepBusinessMode !==
-      true
-    ) {
-
-      deactivateBusinessMode();
-
-    }
+    return (
+      requestId ===
+      state.activeRequestId
+    );
 
   }
 
@@ -4267,19 +4335,13 @@
      MAIN INITIALIZER
   ======================================================= */
 
-  async function initialize(options) {
+  async function initialize(
+    options
+  ) {
 
     options =
-      options ||
-      {};
+      options || {};
 
-    var force =
-      options.force === true;
-
-
-    /*
-     * Resolve route before doing anything.
-     */
 
     var route =
       getRoute();
@@ -4290,87 +4352,89 @@
      */
 
     if (
-      !route ||
-      route.isBusinessPage !==
-        true
+      !isBusinessRoute(
+        route
+      )
     ) {
 
       if (
-        state.loaded ||
-        state.initialized
+        state.initialized ||
+        state.loading
       ) {
 
-        cleanup();
+        cleanupTemplate();
+
+        state.initialized =
+          false;
+
+        state.loaded =
+          false;
+
+        state.loading =
+          false;
+
+        state.route =
+          null;
+
+        state.business =
+          null;
+
+        state.response =
+          null;
+
+        state.context =
+          null;
+
+        deactivateBusinessMode();
 
       }
 
-      state.initialized =
-        false;
-
-      state.loading =
-        false;
-
-      return null;
+      return;
 
     }
 
 
     /*
-     * Same route already loaded.
+     * Avoid unnecessary duplicate initialization
+     * when the same URL is already loaded.
      */
+
+    var pathname =
+      (
+        window.location &&
+        window.location.pathname
+      ) || "";
+
 
     if (
       state.initialized &&
-      state.loaded &&
-      !force &&
-      state.route &&
-      state.route.canonicalPath ===
-        route.canonicalPath
+      !options.force &&
+      state.pathname === pathname
     ) {
 
-      return state.context;
+      return;
 
     }
 
-
-    /*
-     * Same route currently loading.
-     */
-
-    if (
-      state.loading &&
-      !force &&
-      state.route &&
-      state.route.canonicalPath ===
-        route.canonicalPath
-    ) {
-
-      return null;
-
-    }
-
-
-    /*
-     * Start new request generation.
-     */
 
     var requestId =
-      ++state.requestId;
+      beginRequest();
 
-    state.activeRequestId =
-      requestId;
 
     state.loading =
       true;
 
+    state.loaded =
+      false;
+
     state.initialized =
-      true;
+      false;
+
+    state.pathname =
+      pathname;
 
     state.route =
       route;
-
-    state.lastPathname =
-      window.location.pathname;
 
 
     activateBusinessMode();
@@ -4378,43 +4442,17 @@
     showLoader();
 
 
-    /*
-     * Clear old template before loading new business.
-     */
-
-    destroyCurrentTemplate();
-
-    removeTemplateCSS();
-
-    removeTemplateJS();
-
-    clearTemplateGlobals();
-
-    removeBusinessBodyClasses();
-
-
-    var oldContent =
-      getContent();
-
-    if (oldContent) {
-
-      oldContent.innerHTML =
-        "";
-
-    }
-
-
     try {
+
+      /* ===================================================
+         API
+      ================================================== */
 
       log(
         "Loading business:",
-        route.canonicalPath
+        route
       );
 
-
-      /* ===================================================
-         1. LOAD API
-      ================================================== */
 
       var rawResponse =
         await loadBusiness(
@@ -4422,29 +4460,26 @@
         );
 
 
-      /*
-       * Ignore stale response.
-       */
-
       if (
         !isCurrentRequest(
           requestId
         )
       ) {
 
-        return null;
+        return;
 
       }
 
 
       /* ===================================================
-         2. NORMALIZE RESPONSE
+         NORMALIZE
       ================================================== */
 
       var response =
         normalizeResponse(
           rawResponse
         );
+
 
       state.response =
         response;
@@ -4466,7 +4501,7 @@
 
 
       /* ===================================================
-         3. CONTEXT
+         CONTEXT
       ================================================== */
 
       var context =
@@ -4475,23 +4510,13 @@
           route
         );
 
+
       state.context =
         context;
 
 
-      if (
-        !context.businessName
-      ) {
-
-        throw new Error(
-          "Business name is missing."
-        );
-
-      }
-
-
       /* ===================================================
-         4. SEO
+         SEO
       ================================================== */
 
       applySEO(
@@ -4500,7 +4525,7 @@
 
 
       /* ===================================================
-         5. RESOLVE TEMPLATE
+         TEMPLATE
       ================================================== */
 
       var preferredTemplate =
@@ -4509,21 +4534,17 @@
           route
         );
 
+
       log(
-        "Requested template:",
+        "Preferred template:",
         preferredTemplate
       );
 
 
-      /*
-       * Fetch HTML first without touching DOM so that
-       * fallback template CSS/JS always match its HTML.
-       */
-
-      var bundle =
-        await resolveTemplateBundle(
-          preferredTemplate
-        );
+      await loadTemplate(
+        preferredTemplate,
+        requestId
+      );
 
 
       if (
@@ -4532,105 +4553,13 @@
         )
       ) {
 
-        return null;
-
-      }
-
-      state.template =
-        bundle.template;
-
-
-      /* ===================================================
-         6. TEMPLATE CSS
-      ================================================== */
-
-      try {
-
-        await loadTemplateCSS(
-          bundle.template
-        );
-
-      } catch (cssError) {
-
-        warn(
-          "Template CSS failed:",
-          cssError
-        );
-
-      }
-
-
-      if (
-        !isCurrentRequest(
-          requestId
-        )
-      ) {
-
-        return null;
+        return;
 
       }
 
 
       /* ===================================================
-         7. TEMPLATE HTML
-      ================================================== */
-
-      renderTemplateHTML(
-        bundle.html
-      );
-
-
-      /* ===================================================
-         8. TEMPLATE JS
-      ================================================== */
-
-      try {
-
-        await loadTemplateJS(
-          bundle.template
-        );
-
-      } catch (jsError) {
-
-        warn(
-          "Template JS failed:",
-          jsError
-        );
-
-      }
-
-
-      if (
-        !isCurrentRequest(
-          requestId
-        )
-      ) {
-
-        return null;
-
-      }
-
-
-      /* ===================================================
-         9. DATA BINDING
-      ================================================== */
-
-      bindBusinessData(
-        context
-      );
-
-
-      /* ===================================================
-         10. BREADCRUMBS
-      ================================================== */
-
-      renderBreadcrumbs(
-        context
-      );
-
-
-      /* ===================================================
-         11. BODY CLASSES
+         BODY CLASSES
       ================================================== */
 
       applyBodyClasses(
@@ -4639,11 +4568,26 @@
 
 
       /* ===================================================
-         12. TEMPLATE INIT
+         DATA BINDING
       ================================================== */
 
-      state.templateInitialized =
-        false;
+      bindBusinessData(
+        context
+      );
+
+
+      /* ===================================================
+         BREADCRUMBS
+      ================================================== */
+
+      renderBreadcrumbs(
+        context
+      );
+
+
+      /* ===================================================
+         TEMPLATE INIT
+      ================================================== */
 
       initializeTemplate(
         context
@@ -4651,7 +4595,7 @@
 
 
       /* ===================================================
-         13. EXPOSE GLOBAL DATA
+         GLOBAL DATA
       ================================================== */
 
       exposePageData(
@@ -4660,7 +4604,7 @@
 
 
       /* ===================================================
-         14. COMPLETE
+         FINAL STATE
       ================================================== */
 
       state.loaded =
@@ -4669,25 +4613,20 @@
       state.initialized =
         true;
 
+
       hideLoader();
+
 
       dispatchReady();
 
 
       log(
         "Business page loaded:",
-        context.businessName,
-        "| Template:",
-        state.template
+        context.businessName
       );
 
-      return context;
 
     } catch (error) {
-
-      /*
-       * Ignore errors belonging to an old request.
-       */
 
       if (
         !isCurrentRequest(
@@ -4695,26 +4634,31 @@
         )
       ) {
 
-        return null;
+        return;
 
       }
 
+
       state.loaded =
         false;
+
+      state.initialized =
+        false;
+
 
       logError(
         "Business page failed:",
         error
       );
 
+
       showError(
         error &&
         error.message
           ? error.message
-          : "Unable to load business page."
+          : "Unable to load this business page."
       );
 
-      return null;
 
     } finally {
 
@@ -4763,34 +4707,39 @@
 
 
   /* =======================================================
-     ROUTE CHANGE HANDLER
+     ROUTE CHANGE WATCHER
+     -------------------------------------------------------
+     Useful when navigation changes pathname without
+     a full page reload.
   ======================================================= */
 
-  function handleRouteChange() {
+  function checkRouteChange() {
 
-    var pathname =
-      window.location.pathname;
+    var currentPath =
+      (
+        window.location &&
+        window.location.pathname
+      ) || "";
+
 
     if (
-      pathname ===
-      state.lastPathname &&
-      state.loaded
+      currentPath ===
+      state.pathname
     ) {
 
       return;
 
     }
 
-    state.lastPathname =
-      pathname;
 
     var route =
       getRoute();
 
+
     if (
-      route &&
-      route.isBusinessPage ===
-        true
+      isBusinessRoute(
+        route
+      )
     ) {
 
       initialize({
@@ -4800,74 +4749,34 @@
 
       });
 
-      return;
+    } else {
+
+      cleanupTemplate();
+
+      deactivateBusinessMode();
+
+      state.initialized =
+        false;
+
+      state.loaded =
+        false;
+
+      state.route =
+        null;
+
+      state.business =
+        null;
+
+      state.response =
+        null;
+
+      state.context =
+        null;
+
+      state.pathname =
+        currentPath;
 
     }
-
-
-    /*
-     * Leaving business page.
-     */
-
-    cleanup();
-
-    state.initialized =
-      false;
-
-    state.loading =
-      false;
-
-  }
-
-
-  /* =======================================================
-     PUBLIC STATE
-  ======================================================= */
-
-  function getPublicState() {
-
-    return {
-
-      version:
-        CONFIG.VERSION,
-
-      initialized:
-        state.initialized,
-
-      loading:
-        state.loading,
-
-      loaded:
-        state.loaded,
-
-      route:
-        state.route,
-
-      business:
-        state.business,
-
-      seo:
-        state.seo,
-
-      schema:
-        state.schema,
-
-      category:
-        state.category,
-
-      location:
-        state.location,
-
-      context:
-        state.context,
-
-      template:
-        state.template,
-
-      requestId:
-        state.activeRequestId
-
-    };
 
   }
 
@@ -4881,34 +4790,62 @@
     version:
       CONFIG.VERSION,
 
-
     init:
       initialize,
-
 
     initialize:
       initialize,
 
-
     reload:
       reload,
 
-
-    cleanup:
-      cleanup,
-
-
-    isBusinessPage:
-      isBusinessPage,
-
-
-    getRoute:
-      getRoute,
-
-
     getState:
-      getPublicState,
+      function () {
 
+        return {
+
+          version:
+            CONFIG.VERSION,
+
+          initialized:
+            state.initialized,
+
+          loading:
+            state.loading,
+
+          loaded:
+            state.loaded,
+
+          route:
+            state.route,
+
+          business:
+            state.business,
+
+          seo:
+            state.seo,
+
+          schema:
+            state.schema,
+
+          category:
+            state.category,
+
+          location:
+            state.location,
+
+          context:
+            state.context,
+
+          template:
+            state.template,
+
+          canonical:
+            state.lastCanonical
+
+        };
+
+      },
 
     getBusiness:
       function () {
@@ -4917,14 +4854,12 @@
 
       },
 
-
     getSEO:
       function () {
 
         return state.seo;
 
       },
-
 
     getSchema:
       function () {
@@ -4933,19 +4868,17 @@
 
       },
 
+    getTemplate:
+      function () {
+
+        return state.template;
+
+      },
 
     getContext:
       function () {
 
         return state.context;
-
-      },
-
-
-    getTemplate:
-      function () {
-
-        return state.template;
 
       }
 
@@ -4953,7 +4886,7 @@
 
 
   /* =======================================================
-     GLOBAL EXPORT
+     GLOBAL EXPORTS
   ======================================================= */
 
   window.UBnuxBusinessPage =
@@ -4967,23 +4900,7 @@
 
 
   /* =======================================================
-     HISTORY / ROUTE EVENTS
-  ======================================================= */
-
-  window.addEventListener(
-    "popstate",
-    handleRouteChange
-  );
-
-
-  document.addEventListener(
-    "ubnux:routechange",
-    handleRouteChange
-  );
-
-
-  /* =======================================================
-     AUTO INIT
+     AUTO BOOT
   ======================================================= */
 
   function boot() {
@@ -5019,6 +4936,30 @@
     boot();
 
   }
+
+
+  /* =======================================================
+     HISTORY / POPSTATE
+  ======================================================= */
+
+  window.addEventListener(
+    "popstate",
+    function () {
+
+      checkRouteChange();
+
+    }
+  );
+
+
+  window.addEventListener(
+    "hashchange",
+    function () {
+
+      checkRouteChange();
+
+    }
+  );
 
 
 })(window, document);
