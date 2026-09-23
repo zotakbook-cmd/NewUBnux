@@ -3,7 +3,7 @@
    File: assets/js/seo/business-page.js
 
    Version:
-   7.0.0
+   8.0.0
 
    Responsibilities:
    ---------------------------------------------------------
@@ -15,13 +15,14 @@
    - Load template CSS
    - Load template JS
    - Bind business data
-   - Call UBnuxSEOMeta
-   - Call UBNUX_SCHEMA
+   - Apply SEO Meta
+   - Render backend JSON-LD
    - Render breadcrumbs
    - Expose business page data
    - Initialize business template
    - Never redirect
-   ========================================================= */
+   - Preserve permanent /in/ SEO URL
+========================================================= */
 
 (function (
   window,
@@ -40,8 +41,10 @@
     window.ZilaBiz ||
     {};
 
+
   window.ZilaBiz =
     window.UBnux;
+
 
   var App =
     window.UBnux;
@@ -54,7 +57,7 @@
   var CONFIG = {
 
     VERSION:
-      "7.0.0",
+      "8.0.0",
 
     SITE_NAME:
       "UBnux",
@@ -208,7 +211,9 @@
      SAFE HELPERS
   ====================================================== */
 
-  function clean(value) {
+  function clean(
+    value
+  ) {
 
     if (
       value === null ||
@@ -218,6 +223,7 @@
       return "";
 
     }
+
 
     return String(
       value
@@ -260,7 +266,9 @@
   }
 
 
-  function normalizeSlug(value) {
+  function normalizeSlug(
+    value
+  ) {
 
     return clean(
       value
@@ -275,6 +283,10 @@
         "-"
       )
       .replace(
+        /[^a-z0-9-]/g,
+        ""
+      )
+      .replace(
         /-+/g,
         "-"
       );
@@ -282,7 +294,9 @@
   }
 
 
-  function safeURL(value) {
+  function safeURL(
+    value
+  ) {
 
     var url =
       clean(
@@ -304,7 +318,9 @@
         CONFIG.SITE_ORIGIN
       ).href;
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       return "";
 
@@ -313,7 +329,9 @@
   }
 
 
-  function escapeHTML(value) {
+  function escapeHTML(
+    value
+  ) {
 
     return clean(
       value
@@ -343,7 +361,7 @@
 
 
   /* =======================================================
-     DOM
+     DOM HELPERS
   ====================================================== */
 
   function getContent() {
@@ -372,6 +390,10 @@
 
   }
 
+
+  /* =======================================================
+     LOADER
+  ====================================================== */
 
   function showLoader() {
 
@@ -426,7 +448,13 @@
   }
 
 
-  function showError(message) {
+  /* =======================================================
+     ERROR
+  ====================================================== */
+
+  function showError(
+    message
+  ) {
 
     hideLoader();
 
@@ -478,9 +506,9 @@
   function getRoute() {
 
     /*
-      PRIMARY:
-      Existing SEO router
-    */
+     * PRIMARY:
+     * Dedicated Business SEO Router
+     */
 
     try {
 
@@ -501,7 +529,8 @@
 
         if (
           seoRoute &&
-          seoRoute.isBusinessPage
+          seoRoute.isBusinessPage ===
+            true
         ) {
 
           return normalizeRoute(
@@ -512,7 +541,9 @@
 
       }
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       warn(
         "SEO router failed:",
@@ -523,9 +554,9 @@
 
 
     /*
-      FALLBACK:
-      Main router
-    */
+     * FALLBACK:
+     * Main application router
+     */
 
     try {
 
@@ -541,7 +572,8 @@
 
         if (
           mainRoute &&
-          mainRoute.isBusinessPage
+          mainRoute.isBusinessPage ===
+            true
         ) {
 
           return normalizeRoute(
@@ -552,7 +584,9 @@
 
       }
 
-    } catch (error2) {
+    } catch (
+      error2
+    ) {
 
       warn(
         "Main router failed:",
@@ -567,7 +601,13 @@
   }
 
 
-  function normalizeRoute(route) {
+  /* =======================================================
+     NORMALIZE ROUTE
+  ====================================================== */
+
+  function normalizeRoute(
+    route
+  ) {
 
     if (!route) {
 
@@ -682,8 +722,8 @@
 
 
     /*
-      Preferred method.
-    */
+     * Preferred API
+     */
 
     if (
       typeof API.getBusiness ===
@@ -710,42 +750,38 @@
 
 
     /*
-      Compatibility method.
-    */
+     * Compatibility API
+     */
 
     if (
       typeof API.getBusinessBySlug ===
         "function"
     ) {
 
-      return await API.getBusinessBySlug({
+      return await API.getBusinessBySlug(
 
-        state:
-          route.stateSlug,
+        route.stateSlug,
 
-        district:
-          route.districtSlug,
+        route.districtSlug,
 
-        category:
-          route.categorySlug,
+        route.categorySlug,
 
-        slug:
-          route.businessSlug
+        route.businessSlug
 
-      });
+      );
 
     }
 
 
     throw new Error(
-      "UBnux API does not provide getBusiness()."
+      "UBnux API does not provide a business lookup method."
     );
 
   }
 
 
   /* =======================================================
-     API RESPONSE
+     API RESPONSE NORMALIZATION
   ====================================================== */
 
   function normalizeResponse(
@@ -782,9 +818,9 @@
 
 
     /*
-      Compatibility:
-      direct business response.
-    */
+     * Compatibility:
+     * Direct business response
+     */
 
     if (
       !business &&
@@ -898,13 +934,13 @@
     return firstValue(
 
       response.business &&
-      response.business.CategoryName,
+        response.business.CategoryName,
 
       response.category &&
-      response.category.CategoryName,
+        response.category.CategoryName,
 
       response.category &&
-      response.category.categoryName,
+        response.category.categoryName,
 
       route.categorySlug
 
@@ -921,13 +957,13 @@
     return firstValue(
 
       response.business &&
-      response.business.CategorySlug,
+        response.business.CategorySlug,
 
       response.category &&
-      response.category.Slug,
+        response.category.Slug,
 
       response.category &&
-      response.category.slug,
+        response.category.slug,
 
       route.categorySlug
 
@@ -944,13 +980,13 @@
     return firstValue(
 
       response.business &&
-      response.business.DistrictName,
+        response.business.DistrictName,
 
       response.location &&
-      response.location.DistrictName,
+        response.location.DistrictName,
 
       response.location &&
-      response.location.districtName,
+        response.location.districtName,
 
       route.districtSlug
 
@@ -967,13 +1003,13 @@
     return firstValue(
 
       response.business &&
-      response.business.DistrictSlug,
+        response.business.DistrictSlug,
 
       response.location &&
-      response.location.DistrictSlug,
+        response.location.DistrictSlug,
 
       response.location &&
-      response.location.Slug,
+        response.location.Slug,
 
       route.districtSlug
 
@@ -987,18 +1023,25 @@
     route
   ) {
 
+    /*
+     * IMPORTANT:
+     * Never hardcode Bihar.
+     */
+
     return firstValue(
 
       response.business &&
-      response.business.StateName,
+        response.business.StateName,
 
       response.location &&
-      response.location.StateName,
+        response.location.StateName,
 
       response.location &&
-      response.location.stateName,
+        response.location.stateName,
 
-      "Bihar"
+      route.stateName,
+
+      route.stateSlug
 
     );
 
@@ -1013,13 +1056,13 @@
     return firstValue(
 
       response.business &&
-      response.business.StateSlug,
+        response.business.StateSlug,
 
       response.location &&
-      response.location.StateSlug,
+        response.location.StateSlug,
 
       response.location &&
-      response.location.stateSlug,
+        response.location.stateSlug,
 
       route.stateSlug
 
@@ -1136,8 +1179,8 @@
 
 
     /*
-      Prevent path traversal.
-    */
+     * Prevent path traversal.
+     */
 
     return template
       .replace(
@@ -1168,8 +1211,8 @@
 
 
     /*
-      1. Business template
-    */
+     * 1. Business Template
+     */
 
     var template =
       firstValue(
@@ -1187,16 +1230,19 @@
 
     if (template) {
 
-      return normalizeTemplateName(
-        template
+      return (
+        normalizeTemplateName(
+          template
+        ) ||
+        CONFIG.DEFAULT_TEMPLATE
       );
 
     }
 
 
     /*
-      2. Category template
-    */
+     * 2. Category Template
+     */
 
     template =
       firstValue(
@@ -1214,16 +1260,19 @@
 
     if (template) {
 
-      return normalizeTemplateName(
-        template
+      return (
+        normalizeTemplateName(
+          template
+        ) ||
+        CONFIG.DEFAULT_TEMPLATE
       );
 
     }
 
 
     /*
-      3. Category aliases
-    */
+     * 3. Category aliases
+     */
 
     var categorySlug =
       normalizeSlug(
@@ -1273,7 +1322,9 @@
       aliases[categorySlug]
     ) {
 
-      return aliases[categorySlug];
+      return aliases[
+        categorySlug
+      ];
 
     }
 
@@ -1292,11 +1343,23 @@
     file
   ) {
 
+    template =
+      normalizeTemplateName(
+        template
+      );
+
+
+    if (!template) {
+
+      template =
+        CONFIG.DEFAULT_TEMPLATE;
+
+    }
+
+
     return (
       CONFIG.TEMPLATE_ROOT +
-      encodeURIComponent(
-        template
-      ) +
+      template +
       "/" +
       file
     );
@@ -1314,7 +1377,6 @@
 
     var controller =
       null;
-
 
     var timer =
       null;
@@ -1397,7 +1459,7 @@
 
 
   /* =======================================================
-     LOAD HTML
+     LOAD TEMPLATE HTML
   ====================================================== */
 
   async function loadTemplateHTML(
@@ -1434,12 +1496,13 @@
 
       return template;
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       /*
-        Category template missing:
-        fallback to default.
-      */
+       * Fallback to default template.
+       */
 
       if (
         template !==
@@ -1447,8 +1510,9 @@
       ) {
 
         warn(
-          "Template not found:",
-          template
+          "Template HTML not found:",
+          template,
+          "→ loading default template."
         );
 
 
@@ -1490,7 +1554,9 @@
 
 
     links.forEach(
-      function (link) {
+      function (
+        link
+      ) {
 
         link.remove();
 
@@ -1597,7 +1663,9 @@
 
 
     scripts.forEach(
-      function (script) {
+      function (
+        script
+      ) {
 
         script.remove();
 
@@ -1732,7 +1800,8 @@
         seo,
 
       schema:
-        response.schema,
+        response.schema ||
+        null,
 
       category:
         category,
@@ -1741,7 +1810,8 @@
         location,
 
       indexability:
-        response.indexability,
+        response.indexability ||
+        null,
 
       route:
         route,
@@ -1838,7 +1908,7 @@
 
 
   /* =======================================================
-     DATA-BIND
+     NESTED VALUE
   ====================================================== */
 
   function getNestedValue(
@@ -1890,6 +1960,10 @@
   }
 
 
+  /* =======================================================
+     GENERIC DATA BIND
+  ====================================================== */
+
   function bindGenericData(
     context
   ) {
@@ -1901,7 +1975,9 @@
 
 
     elements.forEach(
-      function (element) {
+      function (
+        element
+      ) {
 
         var key =
           element.getAttribute(
@@ -1952,7 +2028,9 @@
         "[data-business-name]"
       )
       .forEach(
-        function (element) {
+        function (
+          element
+        ) {
 
           element.textContent =
             context.businessName;
@@ -1976,7 +2054,9 @@
         "[data-business-description]"
       )
       .forEach(
-        function (element) {
+        function (
+          element
+        ) {
 
           element.textContent =
             context.description;
@@ -2000,7 +2080,9 @@
         "[data-business-image]"
       )
       .forEach(
-        function (element) {
+        function (
+          element
+        ) {
 
           if (
             !context.image
@@ -2054,7 +2136,9 @@
         "[data-business-phone]"
       )
       .forEach(
-        function (element) {
+        function (
+          element
+        ) {
 
           element.textContent =
             context.phone;
@@ -2094,7 +2178,9 @@
         "[data-business-email]"
       )
       .forEach(
-        function (element) {
+        function (
+          element
+        ) {
 
           element.textContent =
             context.email;
@@ -2131,7 +2217,9 @@
         "[data-business-website]"
       )
       .forEach(
-        function (element) {
+        function (
+          element
+        ) {
 
           if (
             element.tagName ===
@@ -2144,8 +2232,10 @@
               ) ||
               "#";
 
+
             element.target =
               "_blank";
+
 
             element.rel =
               "noopener noreferrer";
@@ -2190,7 +2280,9 @@
         "[data-business-whatsapp]"
       )
       .forEach(
-        function (element) {
+        function (
+          element
+        ) {
 
           if (!number) {
 
@@ -2232,7 +2324,7 @@
 
 
   /* =======================================================
-     BIND ALL
+     BIND ALL BUSINESS DATA
   ====================================================== */
 
   function bindBusinessData(
@@ -2358,7 +2450,9 @@
 
 
     containers.forEach(
-      function (container) {
+      function (
+        container
+      ) {
 
         container.innerHTML =
           "";
@@ -2457,7 +2551,7 @@
 
 
   /* =======================================================
-     SEO MODULE
+     SEO
   ====================================================== */
 
   function applySEO(
@@ -2465,8 +2559,8 @@
   ) {
 
     /*
-      seo-meta.js
-    */
+     * META
+     */
 
     if (
       window.UBnuxSEOMeta &&
@@ -2488,8 +2582,8 @@
 
 
     /*
-      schema.js
-    */
+     * BACKEND JSON-LD
+     */
 
     if (
       window.UBNUX_SCHEMA &&
@@ -2530,8 +2624,8 @@
 
 
     /*
-      Preferred API.
-    */
+     * Preferred API
+     */
 
     if (
       window.UBnuxBusinessSite
@@ -2578,8 +2672,8 @@
 
 
     /*
-      Compatibility initializer.
-    */
+     * Compatibility initializer
+     */
 
     if (
       typeof window.initBusinessSite ===
@@ -2601,9 +2695,8 @@
 
 
     /*
-      Template may be
-      data-attribute driven only.
-    */
+     * Data-attribute driven template
+     */
 
     state.templateInitialized =
       true;
@@ -2629,6 +2722,34 @@
     document.body.classList.add(
       "ubnux-business-page"
     );
+
+
+    if (
+      context.stateSlug
+    ) {
+
+      document.body.classList.add(
+        "ubnux-state-" +
+        normalizeSlug(
+          context.stateSlug
+        )
+      );
+
+    }
+
+
+    if (
+      context.districtSlug
+    ) {
+
+      document.body.classList.add(
+        "ubnux-district-" +
+        normalizeSlug(
+          context.districtSlug
+        )
+      );
+
+    }
 
 
     if (
@@ -2727,11 +2848,13 @@
         )
       );
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       /*
-        Safe fallback for older browsers.
-      */
+       * Older browser fallback.
+       */
 
       try {
 
@@ -2753,13 +2876,27 @@
           event
         );
 
-      } catch (fallbackError) {
+      } catch (
+        fallbackError
+      ) {
 
         /* Ignore */
 
       }
 
     }
+
+  }
+
+
+  /* =======================================================
+     RESET TEMPLATE STATE
+  ====================================================== */
+
+  function resetTemplateState() {
+
+    state.templateInitialized =
+      false;
 
   }
 
@@ -2813,7 +2950,8 @@
 
       if (
         !route ||
-        !route.isBusinessPage
+        route.isBusinessPage !==
+          true
       ) {
 
         hideLoader();
@@ -2833,11 +2971,11 @@
 
 
       /*
-        IMPORTANT:
-
-        No redirect.
-        SEO URL remains untouched.
-      */
+       * IMPORTANT:
+       *
+       * Never redirect.
+       * The permanent /in/ URL remains untouched.
+       */
 
 
       /* ===================================================
@@ -2879,7 +3017,8 @@
 
 
       state.schema =
-        response.schema;
+        response.schema ||
+        null;
 
 
       state.category =
@@ -2928,8 +3067,8 @@
 
 
       /*
-        Load CSS first.
-      */
+       * CSS
+       */
 
       try {
 
@@ -2937,7 +3076,9 @@
           template
         );
 
-      } catch (cssError) {
+      } catch (
+        cssError
+      ) {
 
         warn(
           "Template CSS failed:",
@@ -2948,8 +3089,8 @@
 
 
       /*
-        Load HTML.
-      */
+       * HTML
+       */
 
       var actualTemplate =
         await loadTemplateHTML(
@@ -2962,8 +3103,8 @@
 
 
       /*
-        Load JS.
-      */
+       * JS
+       */
 
       try {
 
@@ -2971,7 +3112,9 @@
           actualTemplate
         );
 
-      } catch (jsError) {
+      } catch (
+        jsError
+      ) {
 
         warn(
           "Template JS failed:",
@@ -2982,7 +3125,7 @@
 
 
       /* ===================================================
-         7. DATA BINDING
+         7. DATA
       ================================================== */
 
       bindBusinessData(
@@ -3011,6 +3154,9 @@
       /* ===================================================
          10. TEMPLATE INIT
       ================================================== */
+
+      resetTemplateState();
+
 
       initializeTemplate(
         context
@@ -3049,8 +3195,9 @@
         context.businessName
       );
 
-
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       state.loaded =
         false;
@@ -3063,8 +3210,10 @@
 
 
       showError(
-        error.message ||
-        "Unable to load business page."
+        error &&
+        error.message
+          ? error.message
+          : "Unable to load business page."
       );
 
     } finally {
@@ -3086,11 +3235,14 @@
     version:
       CONFIG.VERSION,
 
+
     init:
       initialize,
 
+
     initialize:
       initialize,
+
 
     reload:
       function () {
@@ -3101,16 +3253,22 @@
         state.loaded =
           false;
 
+        state.loading =
+          false;
+
         state.templateInitialized =
           false;
 
 
         return initialize({
+
           force:
             true
+
         });
 
       },
+
 
     getState:
       function () {
@@ -3154,12 +3312,14 @@
 
       },
 
+
     getBusiness:
       function () {
 
         return state.business;
 
       },
+
 
     getSEO:
       function () {
@@ -3168,12 +3328,14 @@
 
       },
 
+
     getSchema:
       function () {
 
         return state.schema;
 
       },
+
 
     getTemplate:
       function () {
