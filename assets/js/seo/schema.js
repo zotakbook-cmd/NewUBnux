@@ -1,10 +1,28 @@
 /* =========================================================
-   UBnux Schema Generator
+   UBnux Schema Renderer
    File: assets/js/seo/schema.js
 
+   Version:
+   2.0.0
+
    Responsibilities:
-   - LocalBusiness JSON-LD
-   - BreadcrumbList JSON-LD
+   - Render backend-generated JSON-LD
+   - Remove previous UBnux schema
+   - Prevent duplicate schema
+   - Support @graph
+   - Support BusinessSEO response.schema
+   - No fake schema generation
+   - No frontend rating generation
+
+   IMPORTANT:
+   Schema generation is handled by:
+
+   SchemaEngine.gs
+        ↓
+   BusinessSEO.gs
+        ↓
+   response.schema
+
 ========================================================= */
 
 (function (
@@ -15,319 +33,323 @@
   "use strict";
 
 
-  const UBNUX_SCHEMA = {
+  /* =======================================================
+     CONFIG
+  ====================================================== */
+
+  const CONFIG = {
+
+    VERSION:
+      "2.0.0",
+
+    SCRIPT_ATTRIBUTE:
+      "data-ubnux-schema"
+
+  };
 
 
-    /* =====================================================
-       INSERT JSON-LD
-    ==================================================== */
+  /* =======================================================
+     SAFE VALUE
+  ====================================================== */
 
-    insert(
-      elementId,
-      data
+  function clean(value) {
+
+    if (
+      value === null ||
+      value === undefined
     ) {
 
-      const element =
-        document.getElementById(
-          elementId
-        );
+      return "";
+
+    }
+
+    return String(value).trim();
+
+  }
 
 
-      if (!element) {
+  /* =======================================================
+     REMOVE EXISTING UBNUX SCHEMA
+  ====================================================== */
 
-        return;
+  function removeExisting() {
+
+    const scripts =
+      document.querySelectorAll(
+        `script[type="application/ld+json"][${CONFIG.SCRIPT_ATTRIBUTE}]`
+      );
+
+
+    scripts.forEach(
+      function (script) {
+
+        script.remove();
 
       }
+    );
+
+  }
 
 
-      element.textContent =
-        JSON.stringify(
-          data
-        );
+  /* =======================================================
+     NORMALIZE SCHEMA
+  ====================================================== */
 
-    },
+  function normalizeSchema(
+    schema
+  ) {
+
+    if (!schema) {
+
+      return null;
+
+    }
 
 
-    /* =====================================================
-       BUSINESS SCHEMA
-    ==================================================== */
+    /*
+      BusinessSEO may return:
 
-    buildBusinessSchema(
-      business,
-      seo
+      {
+        schema: {...}
+      }
+    */
+
+    if (
+      schema.schema
     ) {
 
-      if (!business) {
+      schema =
+        schema.schema;
 
-        return null;
-
-      }
-
-
-      const schema = {
-
-        "@context":
-          "https://schema.org",
-
-        "@type":
-          "LocalBusiness",
-
-        "@id":
-          seo.canonicalURL +
-          "#business",
-
-        "name":
-          business.name,
-
-        "url":
-          seo.canonicalURL
-
-      };
+    }
 
 
-      /* ================================================
-         DESCRIPTION
-      ================================================= */
+    /*
+      Array → @graph
+    */
 
-      if (
-        business.description
-      ) {
-
-        schema.description =
-          business.description;
-
-      }
-
-
-      /* ================================================
-         IMAGE
-      ================================================= */
-
-      const image =
-        business.cover ||
-        business.logo;
-
-
-      if (image) {
-
-        schema.image =
-          image;
-
-      }
-
-
-      /* ================================================
-         LOGO
-      ================================================= */
-
-      if (
-        business.logo
-      ) {
-
-        schema.logo =
-          business.logo;
-
-      }
-
-
-      /* ================================================
-         TELEPHONE
-      ================================================= */
-
-      if (
-        business.mobile
-      ) {
-
-        schema.telephone =
-          business.mobile;
-
-      }
-
-
-      /* ================================================
-         ADDRESS
-      ================================================= */
-
-      if (
-        business.address
-      ) {
-
-        schema.address = {
-
-          "@type":
-            "PostalAddress",
-
-          "streetAddress":
-            business.address,
-
-          "addressCountry":
-            "IN"
-
-        };
-
-      }
-
-
-      /* ================================================
-         AREA
-      ================================================= */
-
-      if (
-        business.area
-      ) {
-
-        schema.areaServed =
-          business.area;
-
-      }
-
-
-      /* ================================================
-         RATING
-      ================================================= */
-
-      if (
-        business.rating > 0 &&
-        business.reviewCount > 0
-      ) {
-
-        schema.aggregateRating = {
-
-          "@type":
-            "AggregateRating",
-
-          "ratingValue":
-            business.rating,
-
-          "reviewCount":
-            business.reviewCount
-
-        };
-
-      }
-
-
-      return schema;
-
-    },
-
-
-    /* =====================================================
-       BREADCRUMB SCHEMA
-    ==================================================== */
-
-    buildBreadcrumbSchema(
-      breadcrumbs
+    if (
+      Array.isArray(schema)
     ) {
-
-      if (
-        !Array.isArray(
-          breadcrumbs
-        )
-      ) {
-
-        return null;
-
-      }
-
 
       return {
 
         "@context":
           "https://schema.org",
 
-        "@type":
-          "BreadcrumbList",
-
-        "itemListElement":
-          breadcrumbs.map(
-            function (
-              item,
-              index
-            ) {
-
-              return {
-
-                "@type":
-                  "ListItem",
-
-                "position":
-                  index + 1,
-
-                "name":
-                  item.name,
-
-                "item":
-                  item.url
-
-              };
-
-            }
-          )
+        "@graph":
+          schema
 
       };
 
-    },
+    }
 
 
-    /* =====================================================
-       RENDER
-    ==================================================== */
+    /*
+      Object without @context
+    */
 
-    render(
-      seo
+    if (
+      typeof schema === "object" &&
+      !schema["@context"]
     ) {
 
-      if (!seo) {
+      return Object.assign(
 
-        return;
+        {
+          "@context":
+            "https://schema.org"
+        },
 
-      }
+        schema
 
-
-      const businessSchema =
-        this.buildBusinessSchema(
-          seo.business,
-          seo
-        );
-
-
-      const breadcrumbSchema =
-        this.buildBreadcrumbSchema(
-          seo.breadcrumbs
-        );
-
-
-      if (
-        businessSchema
-      ) {
-
-        this.insert(
-          "businessSchema",
-          businessSchema
-        );
-
-      }
-
-
-      if (
-        breadcrumbSchema
-      ) {
-
-        this.insert(
-          "breadcrumbSchema",
-          breadcrumbSchema
-        );
-
-      }
+      );
 
     }
 
+
+    return schema;
+
+  }
+
+
+  /* =======================================================
+     INSERT
+  ====================================================== */
+
+  function insert(
+    schema
+  ) {
+
+    const normalized =
+      normalizeSchema(
+        schema
+      );
+
+
+    if (
+      !normalized
+    ) {
+
+      return false;
+
+    }
+
+
+    const json =
+      JSON.stringify(
+        normalized
+      );
+
+
+    if (!json) {
+
+      return false;
+
+    }
+
+
+    const script =
+      document.createElement(
+        "script"
+      );
+
+
+    script.type =
+      "application/ld+json";
+
+
+    script.setAttribute(
+      CONFIG.SCRIPT_ATTRIBUTE,
+      "true"
+    );
+
+
+    script.textContent =
+      json;
+
+
+    document.head.appendChild(
+      script
+    );
+
+
+    return true;
+
+  }
+
+
+  /* =======================================================
+     RENDER
+  ====================================================== */
+
+  function render(
+    schema
+  ) {
+
+    removeExisting();
+
+    return insert(
+      schema
+    );
+
+  }
+
+
+  /* =======================================================
+     RENDER BUSINESS SEO RESPONSE
+  ====================================================== */
+
+  function renderFromSEO(
+    seoResponse
+  ) {
+
+    if (!seoResponse) {
+
+      return false;
+
+    }
+
+
+    const schema =
+      seoResponse.schema ||
+      seoResponse.seo &&
+      seoResponse.seo.schema;
+
+
+    if (!schema) {
+
+      return false;
+
+    }
+
+
+    return render(
+      schema
+    );
+
+  }
+
+
+  /* =======================================================
+     GET CURRENT SCHEMA
+  ====================================================== */
+
+  function getCurrent() {
+
+    const script =
+      document.querySelector(
+        `script[type="application/ld+json"][${CONFIG.SCRIPT_ATTRIBUTE}]`
+      );
+
+
+    if (!script) {
+
+      return null;
+
+    }
+
+
+    try {
+
+      return JSON.parse(
+        script.textContent
+      );
+
+    } catch (error) {
+
+      return null;
+
+    }
+
+  }
+
+
+  /* =======================================================
+     PUBLIC API
+  ====================================================== */
+
+  window.UBNUX_SCHEMA = {
+
+    version:
+      CONFIG.VERSION,
+
+    insert:
+      insert,
+
+    render:
+      render,
+
+    renderFromSEO:
+      renderFromSEO,
+
+    remove:
+      removeExisting,
+
+    getCurrent:
+      getCurrent
+
   };
-
-
-  window.UBNUX_SCHEMA =
-    UBNUX_SCHEMA;
 
 
 })(window, document);
