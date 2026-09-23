@@ -1,14 +1,19 @@
 /* =========================================================
-   UBnux SEO Meta
+   UBnux SEO Meta Manager
    File: assets/js/seo/seo-meta.js
+
+   Version:
+   3.0.0
 
    Responsibilities:
    - Document title
    - Meta description
-   - Canonical
    - Robots
+   - Canonical
    - OpenGraph
    - Twitter Card
+   - Social image
+   - Safe duplicate prevention
 ========================================================= */
 
 (function (
@@ -17,6 +22,47 @@
 ) {
 
   "use strict";
+
+
+  /* =======================================================
+     CONFIG
+  ====================================================== */
+
+  const CONFIG = {
+
+    SITE_NAME:
+      "UBnux",
+
+    DEFAULT_IMAGE:
+      "https://ubnux.com/assets/images/default-business.jpg",
+
+    DEFAULT_ROBOTS:
+      "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
+
+    DEFAULT_NOINDEX:
+      "noindex,follow"
+
+  };
+
+
+  /* =======================================================
+     SAFE VALUE
+  ====================================================== */
+
+  function clean(value) {
+
+    if (
+      value === null ||
+      value === undefined
+    ) {
+
+      return "";
+
+    }
+
+    return String(value).trim();
+
+  }
 
 
   /* =======================================================
@@ -29,9 +75,12 @@
     content
   ) {
 
+    content =
+      clean(content);
+
     if (!content) {
 
-      return;
+      return null;
 
     }
 
@@ -68,6 +117,35 @@
       content
     );
 
+
+    return element;
+
+  }
+
+
+  /* =======================================================
+     REMOVE META
+  ====================================================== */
+
+  function removeMeta(
+    attribute,
+    value
+  ) {
+
+    const element =
+      document.head.querySelector(
+        `meta[${attribute}="${CSS.escape(value)}"]`
+      );
+
+
+    if (
+      element
+    ) {
+
+      element.remove();
+
+    }
+
   }
 
 
@@ -79,9 +157,12 @@
     url
   ) {
 
+    url =
+      clean(url);
+
     if (!url) {
 
-      return;
+      return null;
 
     }
 
@@ -114,81 +195,137 @@
     link.href =
       url;
 
+
+    return link;
+
   }
 
 
   /* =======================================================
-     APPLY SEO
+     GET BUSINESS IMAGE
   ====================================================== */
 
-  function apply(
+  function getImage(
     seo
   ) {
 
     if (
-      !seo
+      seo &&
+      seo.image
     ) {
 
-      return;
-
-    }
-
-
-    /* =====================================================
-       TITLE
-    ==================================================== */
-
-    if (
-      seo.title
-    ) {
-
-      document.title =
-        seo.title;
-
-    }
-
-
-    /* =====================================================
-       DESCRIPTION
-    ==================================================== */
-
-    if (
-      seo.description
-    ) {
-
-      setMeta(
-        "name",
-        "description",
-        seo.description
+      return clean(
+        seo.image
       );
 
     }
 
 
-    /* =====================================================
-       ROBOTS
-    ==================================================== */
+    if (
+      seo &&
+      seo.business
+    ) {
 
-    setMeta(
-      "name",
-      "robots",
-      seo.robots ||
-      "index,follow"
-    );
+      if (
+        seo.business.coverURL
+      ) {
 
+        return clean(
+          seo.business.coverURL
+        );
 
-    /* =====================================================
-       CANONICAL
-    ==================================================== */
-
-    setCanonical(
-      seo.canonicalURL
-    );
+      }
 
 
-    /* =====================================================
-       OPEN GRAPH
-    ==================================================== */
+      if (
+        seo.business.logoURL
+      ) {
+
+        return clean(
+          seo.business.logoURL
+        );
+
+      }
+
+
+      if (
+        seo.business.cover
+      ) {
+
+        return clean(
+          seo.business.cover
+        );
+
+      }
+
+
+      if (
+        seo.business.logo
+      ) {
+
+        return clean(
+          seo.business.logo
+        );
+
+      }
+
+    }
+
+
+    return CONFIG.DEFAULT_IMAGE;
+
+  }
+
+
+  /* =======================================================
+     GET ROBOTS
+  ====================================================== */
+
+  function getRobots(
+    seo
+  ) {
+
+    if (
+      seo &&
+      seo.robots
+    ) {
+
+      return clean(
+        seo.robots
+      );
+
+    }
+
+
+    if (
+      seo &&
+      seo.indexable === false
+    ) {
+
+      return CONFIG.DEFAULT_NOINDEX;
+
+    }
+
+
+    return CONFIG.DEFAULT_ROBOTS;
+
+  }
+
+
+  /* =======================================================
+     OPEN GRAPH
+  ====================================================== */
+
+  function applyOpenGraph(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return;
+
+    }
+
 
     setMeta(
       "property",
@@ -218,34 +355,36 @@
     );
 
 
-    if (
-      seo.business &&
-      seo.business.logoURL
-    ) {
+    setMeta(
+      "property",
+      "og:site_name",
+      CONFIG.SITE_NAME
+    );
 
-      setMeta(
-        "property",
-        "og:image",
-        seo.business.logoURL
-      );
 
-    } else if (
-      seo.business &&
-      seo.business.coverURL
-    ) {
+    setMeta(
+      "property",
+      "og:image",
+      getImage(seo)
+    );
 
-      setMeta(
-        "property",
-        "og:image",
-        seo.business.coverURL
-      );
+  }
+
+
+  /* =======================================================
+     TWITTER
+  ====================================================== */
+
+  function applyTwitter(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return;
 
     }
 
-
-    /* =====================================================
-       TWITTER
-    ==================================================== */
 
     setMeta(
       "name",
@@ -268,34 +407,133 @@
     );
 
 
-    if (
-      seo.business &&
-      seo.business.coverURL
-    ) {
-
-      setMeta(
-        "name",
-        "twitter:image",
-        seo.business.coverURL
-      );
-
-    }
+    setMeta(
+      "name",
+      "twitter:image",
+      getImage(seo)
+    );
 
   }
 
 
   /* =======================================================
-     PUBLIC
+     APPLY SEO
+  ====================================================== */
+
+  function apply(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       TITLE
+    ================================================== */
+
+    if (
+      seo.title
+    ) {
+
+      document.title =
+        clean(
+          seo.title
+        );
+
+    }
+
+
+    /* =====================================================
+       DESCRIPTION
+    ================================================== */
+
+    setMeta(
+      "name",
+      "description",
+      seo.description
+    );
+
+
+    /* =====================================================
+       ROBOTS
+    ================================================== */
+
+    setMeta(
+      "name",
+      "robots",
+      getRobots(seo)
+    );
+
+
+    /* =====================================================
+       CANONICAL
+    ================================================== */
+
+    setCanonical(
+      seo.canonicalURL
+    );
+
+
+    /* =====================================================
+       OPEN GRAPH
+    ================================================== */
+
+    applyOpenGraph(
+      seo
+    );
+
+
+    /* =====================================================
+       TWITTER
+    ================================================== */
+
+    applyTwitter(
+      seo
+    );
+
+
+    /* =====================================================
+       THEME / SITE
+    ================================================== */
+
+    setMeta(
+      "name",
+      "application-name",
+      CONFIG.SITE_NAME
+    );
+
+  }
+
+
+  /* =======================================================
+     PUBLIC API
   ====================================================== */
 
   window.UBnuxSEOMeta = {
 
-    apply
+    version:
+      "3.0.0",
+
+    apply:
+      apply,
+
+    setMeta:
+      setMeta,
+
+    setCanonical:
+      setCanonical,
+
+    removeMeta:
+      removeMeta,
+
+    getImage:
+      getImage
 
   };
 
 
-})(
-  window,
-  document
-);
+})(window, document);
