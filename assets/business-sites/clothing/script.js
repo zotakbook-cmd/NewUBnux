@@ -1,8 +1,15 @@
 /* =========================================================
    UBNUX CLOTHING BUSINESS SITE
    PREMIUM BUSINESS WEBSITE SCRIPT
-   File: assets/business-sites/clothing/script.js
-   Version: 2.0.0
+
+   File:
+   assets/business-sites/clothing/script.js
+
+   Version:
+   3.0.0
+
+   Compatible with:
+   UBnux Business Page v10
 ========================================================= */
 
 (function (window, document) {
@@ -18,7 +25,7 @@
 
     NAME: "clothing",
 
-    VERSION: "2.0.0",
+    VERSION: "3.0.0",
 
     SLIDE_INTERVAL: 5000,
 
@@ -46,6 +53,22 @@
   let touchEndX = 0;
 
   let isInitialized = false;
+
+  /* =======================================================
+   V10 LIFECYCLE STATE
+======================================================== */
+
+let lifecycleCleanups = [];
+
+let initializationToken = 0;
+
+let visibilityHandler = null;
+
+let heroMouseEnterHandler = null;
+
+let heroMouseLeaveHandler = null;
+
+let documentClickHandler = null; 
 
 
   /* =======================================================
@@ -3010,12 +3033,27 @@
 
   }
 
-
   /* =======================================================
      INITIALIZE
+     -------------------------------------------------------
+     Controlled by business-page.js
+     Supports:
+     - Re-initialization
+     - Business data injection
+     - Proper lifecycle cleanup
+     - No duplicate initialization
+     - Safe template switching
   ======================================================== */
 
   function init(options) {
+
+    options =
+      options || {};
+
+
+    /* -----------------------------------------------------
+       PREVENT DUPLICATE INITIALIZATION
+    ----------------------------------------------------- */
 
     if (isInitialized) {
 
@@ -3024,22 +3062,32 @@
     }
 
 
+    /*
+      Optional business object from loader.
+
+      business-page.js v10 passes:
+
+        {
+          business: {...}
+        }
+    */
+
+    if (
+      options &&
+      options.business
+    ) {
+
+      business =
+        options.business;
+
+    }
+
+
     try {
 
       /*
-        Optional business object from loader.
+        Normalize business data.
       */
-
-      if (
-        options &&
-        options.business
-      ) {
-
-        business =
-          options.business;
-
-      }
-
 
       normalizeBusiness();
 
@@ -3120,14 +3168,45 @@
 
 
       /*
-        Complete.
+        Mark initialized.
       */
 
-      isInitialized = true;
+      isInitialized =
+        true;
 
+
+      /*
+        Expose current template state.
+      */
+
+      window.UBNUX_CLOTHING_STATE = {
+
+        business:
+          business,
+
+        initialized:
+          true,
+
+        template:
+          "clothing",
+
+        version:
+          CONFIG.VERSION
+
+      };
+
+
+      /*
+        Hide loader after
+        everything is ready.
+      */
 
       hideLoader();
 
+
+      /*
+        Return current state.
+      */
 
       return getState();
 
@@ -3139,10 +3218,171 @@
       );
 
 
+      /*
+        Even if one optional
+        visual component fails,
+        don't leave the page
+        stuck on loader.
+      */
+
       hideLoader();
 
 
       return getState();
+
+    }
+
+  }
+
+
+  /* =======================================================
+     DESTROY
+     -------------------------------------------------------
+     Called by business-page.js before another template
+     or another business is initialized.
+  ======================================================== */
+
+  function destroy() {
+
+    /*
+      Mark template as inactive
+      immediately.
+    */
+
+    isInitialized =
+      false;
+
+
+    /*
+      Stop hero slider if the
+      function exists.
+    */
+
+    try {
+
+      if (
+        typeof stopAutoSlide ===
+        "function"
+      ) {
+
+        stopAutoSlide();
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "[UBnux Clothing] Slider cleanup error:",
+        error
+      );
+
+    }
+
+
+    /*
+      Remove visibility listener
+      when the named handler exists.
+    */
+
+    try {
+
+      if (
+        typeof visibilityHandler !==
+        "undefined" &&
+        visibilityHandler
+      ) {
+
+        document.removeEventListener(
+          "visibilitychange",
+          visibilityHandler
+        );
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "[UBnux Clothing] Visibility cleanup error:",
+        error
+      );
+
+    }
+
+
+    /*
+      Remove hero hover listeners
+      when named handlers exist.
+    */
+
+    try {
+
+      const hero =
+        document.querySelector(
+          ".lux-hero"
+        );
+
+
+      if (hero) {
+
+        if (
+          typeof heroMouseEnterHandler !==
+          "undefined" &&
+          heroMouseEnterHandler
+        ) {
+
+          hero.removeEventListener(
+            "mouseenter",
+            heroMouseEnterHandler
+          );
+
+        }
+
+
+        if (
+          typeof heroMouseLeaveHandler !==
+          "undefined" &&
+          heroMouseLeaveHandler
+        ) {
+
+          hero.removeEventListener(
+            "mouseleave",
+            heroMouseLeaveHandler
+          );
+
+        }
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "[UBnux Clothing] Hero hover cleanup error:",
+        error
+      );
+
+    }
+
+
+    /*
+      Clear exposed clothing state.
+    */
+
+    try {
+
+      if (
+        window.UBNUX_CLOTHING_STATE
+      ) {
+
+        delete window.UBNUX_CLOTHING_STATE;
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "[UBnux Clothing] State cleanup error:",
+        error
+      );
 
     }
 
@@ -3166,6 +3406,9 @@
 
     initialize:
       init,
+
+    destroy:
+      destroy,
 
     getState:
       getState,
@@ -3191,64 +3434,32 @@
 
   /* =======================================================
      AUTO INIT
-  ======================================================== */
+     -------------------------------------------------------
+     DISABLED
+     -------------------------------------------------------
+     business-page.js v10.0.0 is now the single
+     lifecycle controller.
+
+     This prevents:
+     - double initialization
+     - duplicate event listeners
+     - duplicate sliders
+     - duplicate API/template lifecycle
+     ======================================================== */
 
   /*
-    business-page.js normally calls init().
-    This fallback allows the template to work
-    even when loaded independently.
+    IMPORTANT:
+
+    Do NOT add DOMContentLoaded auto-init here.
+
+    business-page.js will call:
+
+      UBnuxBusinessSite.init({
+        business: businessData
+      });
+
+    when the correct business page has been loaded.
   */
-
-  if (
-    document.readyState ===
-    "loading"
-  ) {
-
-    document.addEventListener(
-      "DOMContentLoaded",
-      function () {
-
-        /*
-          Give business-page.js a chance
-          to initialize first.
-        */
-
-        window.setTimeout(
-          function () {
-
-            if (
-              !isInitialized
-            ) {
-
-              init();
-
-            }
-
-          },
-          100
-        );
-
-      }
-    );
-
-  } else {
-
-    window.setTimeout(
-      function () {
-
-        if (
-          !isInitialized
-        ) {
-
-          init();
-
-        }
-
-      },
-      100
-    );
-
-  }
 
 
 })(window, document);
