@@ -3,6 +3,10 @@
 
 <head>
 
+  <!-- =====================================================
+       DOCUMENT
+  ====================================================== -->
+
   <meta charset="UTF-8">
 
   <meta
@@ -10,94 +14,132 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-
-  <!-- =====================================================
-     PRIMARY SEO
-====================================================== -->
-
-<title>
-  UBnux - Find Local Businesses, Shops & Services Near You
-</title>
-
-<meta
-  name="description"
-  content="Discover local businesses, shops, services and professionals near you. Find business details, locations, services and contact information with UBnux."
->
-
-<meta
-  name="robots"
-  content="index, follow"
->
-
-<link
-  rel="canonical"
-  href="https://ubnux.com/"
->
-
-
-<!-- =====================================================
-     OPEN GRAPH
-====================================================== -->
-
-<meta
-  property="og:site_name"
-  content="UBnux"
->
-
-<meta
-  property="og:type"
-  content="website"
->
-
-<meta
-  property="og:title"
-  content="UBnux - Find Local Businesses, Shops & Services Near You"
->
-
-<meta
-  property="og:description"
-  content="Discover local businesses, shops, services and professionals near you with UBnux."
->
-
-<meta
-  property="og:url"
-  content="https://ubnux.com/"
->
-
-<meta
-  property="og:locale"
-  content="en_IN"
->
-
-
-<!-- =====================================================
-     TWITTER / SOCIAL
-====================================================== -->
-
-<meta
-  name="twitter:card"
-  content="summary_large_image"
->
-
-<meta
-  name="twitter:title"
-  content="UBnux - Find Local Businesses, Shops & Services Near You"
->
-
-<meta
-  name="twitter:description"
-  content="Discover local businesses, shops, services and professionals near you with UBnux."
->
-<meta
+  <meta
     name="theme-color"
     content="#2563eb"
->
+  >
 
 
-<link
-  rel="stylesheet"
-  href="/assets/css/style.css"
->
+  <!-- =====================================================
+       PRIMARY SEO
+  ====================================================== -->
+
+  <title>
+    UBnux - Find Local Businesses, Shops & Services Near You
+  </title>
+
+  <meta
+    name="description"
+    content="Discover local businesses, shops, services and professionals near you. Find business details, locations, services and contact information with UBnux."
+  >
+
+  <meta
+    name="robots"
+    content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+  >
+
+  <link
+    rel="canonical"
+    href="https://ubnux.com/"
+  >
+
+
+  <!-- =====================================================
+       OPEN GRAPH
+  ====================================================== -->
+
+  <meta
+    property="og:site_name"
+    content="UBnux"
+  >
+
+  <meta
+    property="og:type"
+    content="website"
+  >
+
+  <meta
+    property="og:title"
+    content="UBnux - Find Local Businesses, Shops & Services Near You"
+  >
+
+  <meta
+    property="og:description"
+    content="Discover local businesses, shops, services and professionals near you with UBnux."
+  >
+
+  <meta
+    property="og:url"
+    content="https://ubnux.com/"
+  >
+
+  <meta
+    property="og:locale"
+    content="en_IN"
+  >
+
+  <meta
+    property="og:image"
+    content="https://ubnux.com/assets/images/default-business.jpg"
+  >
+
+  <meta
+    property="og:image:alt"
+    content="UBnux local business discovery platform"
+  >
+
+
+  <!-- =====================================================
+       TWITTER / SOCIAL
+  ====================================================== -->
+
+  <meta
+    name="twitter:card"
+    content="summary_large_image"
+  >
+
+  <meta
+    name="twitter:title"
+    content="UBnux - Find Local Businesses, Shops & Services Near You"
+  >
+
+  <meta
+    name="twitter:description"
+    content="Discover local businesses, shops, services and professionals near you with UBnux."
+  >
+
+  <meta
+    name="twitter:image"
+    content="https://ubnux.com/assets/images/default-business.jpg"
+  >
+
+
+  <!-- =====================================================
+       STYLES
+  ====================================================== -->
+
+  <link
+    rel="stylesheet"
+    href="/assets/css/style.css"
+  >
+
+
+  <!-- =====================================================
+       PRECONNECT
+       Helps reduce connection latency for future assets.
+  ====================================================== -->
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  >
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
 
 </head>
 
@@ -106,7 +148,10 @@
 
 
   <!-- =====================================================
-       PAGE LOADER
+       GLOBAL PAGE LOADER
+       -----------------------------------------------------
+       Used by the homepage application.
+       Business pages use their own loader below.
   ====================================================== -->
 
   <div
@@ -117,7 +162,10 @@
 
     <div class="loader-box">
 
-      <div class="spinner"></div>
+      <div
+        class="spinner"
+        aria-hidden="true"
+      ></div>
 
       <div
         id="loaderText"
@@ -132,568 +180,719 @@
 
 
   <!-- =====================================================
-       HEADER
+       HOMEPAGE APPLICATION
+       -----------------------------------------------------
+       Everything inside this wrapper belongs to the
+       normal UBnux directory/homepage.
   ====================================================== -->
 
-  <header class="site-header">
-
-    <div class="container header-inner">
-
-      <a
-        href="/"
-        class="brand"
-        aria-label="UBnux Home"
-      >
-        <span class="brand-main">UBnux</span>
-        <span class="brand-dot">.com</span>
-      </a>
+  <div id="homePage">
 
 
-      <button
-        id="mobileMenuButton"
-        class="mobile-menu-button"
-        type="button"
-        aria-label="Open menu"
-      >
-        ☰
-      </button>
+    <!-- ===================================================
+         SITE HEADER
+    ==================================================== -->
+
+    <header class="site-header">
+
+      <div class="container header-inner">
 
 
-      <nav
-        id="mainNav"
-        class="main-nav"
-      >
+        <!-- BRAND -->
 
-        <a href="#businesses">
-          Businesses
+        <a
+          href="/"
+          class="brand"
+          aria-label="UBnux Home"
+        >
+
+          <span class="brand-main">
+            UBnux
+          </span>
+
+          <span class="brand-dot">
+            .com
+          </span>
+
         </a>
 
-        <a href="#categories">
-          Categories
-        </a>
 
-        <a href="#about">
-          About
-        </a>
+        <!-- MOBILE MENU -->
 
-      </nav>
-
-    </div>
-
-  </header>
-
-
-  <!-- =====================================================
-       HERO
-  ====================================================== -->
-
-  <main>
-
-   <section class="hero">
-
-  <div class="container">
-
-    <div class="hero-content">
-
-      <span class="hero-badge">
-        Discover Local Businesses
-      </span>
+        <button
+          id="mobileMenuButton"
+          class="mobile-menu-button"
+          type="button"
+          aria-label="Open menu"
+          aria-controls="mainNav"
+          aria-expanded="false"
+        >
+          ☰
+        </button>
 
 
-      <h1>
-        Find the right business
-        <span>near you</span>
-      </h1>
+        <!-- NAVIGATION -->
+
+        <nav
+          id="mainNav"
+          class="main-nav"
+          aria-label="Main navigation"
+        >
+
+          <a href="#businesses">
+            Businesses
+          </a>
+
+          <a href="#categories">
+            Categories
+          </a>
+
+          <a href="#about">
+            About
+          </a>
+
+        </nav>
 
 
-      <p>
-        Discover local shops, services, professionals
-        and businesses with UBnux.
-      </p>
+      </div>
+
+    </header>
+
+
+    <!-- ===================================================
+         HOMEPAGE MAIN
+    ==================================================== -->
+
+    <main id="homeMain">
 
 
       <!-- =================================================
-           LOCATION SELECTOR
+           HERO
       ================================================== -->
 
-      <div class="selector-card">
+      <section
+        class="hero"
+        aria-labelledby="heroTitle"
+      >
+
+        <div class="container">
+
+          <div class="hero-content">
 
 
-        <!-- =================================================
-             SELECTOR TITLE
-        ================================================== -->
-
-        <div class="selector-title">
-
-          <strong>
-            Find Businesses
-          </strong>
-
-          <span>
-            Select your location and category
-          </span>
-
-        </div>
+            <span class="hero-badge">
+              Discover Local Businesses
+            </span>
 
 
-        <!-- =================================================
-             SELECTOR GRID
-        ================================================== -->
+            <h1 id="heroTitle">
 
-        <div class="selector-grid">
+              Find the right business
 
+              <span>
+                near you
+              </span>
 
-          <!-- =================================================
-               STATE
-          ================================================== -->
-
-          <div class="field-group">
-
-            <label for="stateFilter">
-              State
-            </label>
-
-            <select
-              id="stateFilter"
-              disabled
-              aria-label="Select State"
-            >
-
-              <option value="">
-                Select Your State
-              </option>
-
-            </select>
-
-          </div>
+            </h1>
 
 
-          <!-- =================================================
-               DISTRICT
-          ================================================== -->
-
-          <div class="field-group">
-
-            <label for="districtFilter">
-              District
-            </label>
-
-            <select
-              id="districtFilter"
-              disabled
-              aria-label="Select District"
-            >
-
-              <option value="">
-                Select Your District
-              </option>
-
-            </select>
-
-          </div>
+            <p>
+              Discover local shops, services, professionals
+              and businesses with UBnux.
+            </p>
 
 
-          <!-- =================================================
-               BUSINESS CATEGORY
-          ================================================== -->
+            <!-- ===========================================
+                 LOCATION / CATEGORY SELECTOR
+            ============================================ -->
 
-          <div class="field-group">
-
-            <label
-              for="categoryDropdownButton"
-            >
-              Business Category
-            </label>
+            <div class="selector-card">
 
 
-            <div
-              id="categoryDropdown"
-              class="category-dropdown"
-            >
+              <div class="selector-title">
 
+                <strong>
+                  Find Businesses
+                </strong>
 
-              <!-- =================================================
-                   SELECTED CATEGORY BUTTON
-              ================================================== -->
-
-              <button
-                id="categoryDropdownButton"
-                class="category-dropdown-button"
-                type="button"
-                aria-haspopup="listbox"
-                aria-expanded="false"
-                aria-controls="categoryDropdownMenu"
-                disabled
-              >
-
-                <span
-                  id="selectedCategoryIcon"
-                  class="category-selected-icon"
-                  aria-hidden="true"
-                >
-                  🏪
+                <span>
+                  Select your location and category
                 </span>
-
-
-                <span
-                  id="selectedCategoryText"
-                  class="category-selected-text"
-                >
-                  Select Business Category
-                </span>
-
-
-                <span
-                  class="category-arrow"
-                  aria-hidden="true"
-                >
-                  ▼
-                </span>
-
-              </button>
-
-
-              <!-- =================================================
-                   CATEGORY DROPDOWN MENU
-              ================================================== -->
-
-              <div
-                id="categoryDropdownMenu"
-                class="category-dropdown-menu"
-                role="listbox"
-                aria-label="Business Category"
-                hidden
-              >
-
-
-                <!-- =================================================
-                     CATEGORY SEARCH
-                ================================================== -->
-
-                <div class="category-search">
-
-                  <input
-                    id="categorySearchInput"
-                    type="search"
-                    placeholder="Search category..."
-                    autocomplete="off"
-                    aria-label="Search business category"
-                  >
-
-                </div>
-
-
-                <!-- =================================================
-                     CATEGORY OPTIONS
-                ================================================== -->
-
-                <div
-                  id="categoryOptions"
-                  class="category-options"
-                >
-
-                  <!--
-                    Dynamic category options
-                    will be inserted by categories.js
-                  -->
-
-                </div>
-
-
-                <!-- =================================================
-                     EMPTY SEARCH RESULT
-                ================================================== -->
-
-                <div
-                  id="categoryEmptyState"
-                  class="category-empty-state"
-                  hidden
-                >
-                  No category found.
-                </div>
 
               </div>
+
+
+              <div class="selector-grid">
+
+
+                <!-- =======================================
+                     STATE
+                ======================================== -->
+
+                <div class="field-group">
+
+                  <label for="stateFilter">
+                    State
+                  </label>
+
+                  <select
+                    id="stateFilter"
+                    disabled
+                    aria-label="Select State"
+                  >
+
+                    <option value="">
+                      Select Your State
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <!-- =======================================
+                     DISTRICT
+                ======================================== -->
+
+                <div class="field-group">
+
+                  <label for="districtFilter">
+                    District
+                  </label>
+
+                  <select
+                    id="districtFilter"
+                    disabled
+                    aria-label="Select District"
+                  >
+
+                    <option value="">
+                      Select Your District
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <!-- =======================================
+                     CATEGORY
+                ======================================== -->
+
+                <div class="field-group">
+
+                  <label
+                    for="categoryDropdownButton"
+                  >
+                    Business Category
+                  </label>
+
+
+                  <div
+                    id="categoryDropdown"
+                    class="category-dropdown"
+                  >
+
+
+                    <!-- CATEGORY BUTTON -->
+
+                    <button
+                      id="categoryDropdownButton"
+                      class="category-dropdown-button"
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded="false"
+                      aria-controls="categoryDropdownMenu"
+                      disabled
+                    >
+
+                      <span
+                        id="selectedCategoryIcon"
+                        class="category-selected-icon"
+                        aria-hidden="true"
+                      >
+                        🏪
+                      </span>
+
+
+                      <span
+                        id="selectedCategoryText"
+                        class="category-selected-text"
+                      >
+                        Select Business Category
+                      </span>
+
+
+                      <span
+                        class="category-arrow"
+                        aria-hidden="true"
+                      >
+                        ▼
+                      </span>
+
+                    </button>
+
+
+                    <!-- CATEGORY MENU -->
+
+                    <div
+                      id="categoryDropdownMenu"
+                      class="category-dropdown-menu"
+                      role="listbox"
+                      aria-label="Business Category"
+                      hidden
+                    >
+
+
+                      <!-- CATEGORY SEARCH -->
+
+                      <div class="category-search">
+
+                        <input
+                          id="categorySearchInput"
+                          type="search"
+                          placeholder="Search category..."
+                          autocomplete="off"
+                          aria-label="Search business category"
+                        >
+
+                      </div>
+
+
+                      <!-- CATEGORY OPTIONS -->
+
+                      <div
+                        id="categoryOptions"
+                        class="category-options"
+                      >
+                        <!-- Dynamic categories -->
+                      </div>
+
+
+                      <!-- EMPTY RESULT -->
+
+                      <div
+                        id="categoryEmptyState"
+                        class="category-empty-state"
+                        hidden
+                      >
+                        No category found.
+                      </div>
+
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+              </div>
+
+
+              <!-- SELECTION MESSAGE -->
+
+              <div
+                id="selectionMessage"
+                class="selection-message"
+                role="status"
+                aria-live="polite"
+              >
+                Please select your state to continue.
+              </div>
+
 
             </div>
 
           </div>
 
-
         </div>
 
-
-        <!-- =================================================
-             SELECTION MESSAGE
-        ================================================== -->
-
-        <div
-          id="selectionMessage"
-          class="selection-message"
-          role="status"
-          aria-live="polite"
-        >
-          Please select your state to continue.
-        </div>
+      </section>
 
 
-      </div>
+      <!-- =================================================
+           BUSINESS DIRECTORY
+      ================================================== -->
 
-    </div>
+      <section
+        id="businesses"
+        class="business-section"
+        aria-labelledby="businessSectionTitle"
+      >
 
-  </div>
-
-</section>
-
-
-    <!-- =====================================================
-         BUSINESS SECTION
-    ====================================================== -->
-
-    <section
-      id="businesses"
-      class="business-section"
-    >
-
-      <div class="container">
+        <div class="container">
 
 
-        <!-- SECTION HEADER -->
+          <!-- SECTION HEADER -->
 
-        <div class="section-header">
+          <div class="section-header">
 
-          <div>
+            <div>
 
-            <span class="section-kicker">
-              LOCAL BUSINESSES
-            </span>
+              <span class="section-kicker">
+                LOCAL BUSINESSES
+              </span>
 
-            <h2>
-              Businesses near you
-            </h2>
+              <h2 id="businessSectionTitle">
+                Businesses near you
+              </h2>
 
-            <p
-              id="businessSummary"
-              class="business-summary"
+              <p
+                id="businessSummary"
+                class="business-summary"
+              >
+                Select your location and category.
+              </p>
+
+            </div>
+
+
+            <!-- SORT -->
+
+            <div class="sort-wrapper">
+
+              <label for="sortFilter">
+                Sort
+              </label>
+
+              <select
+                id="sortFilter"
+                disabled
+              >
+
+                <option value="featured">
+                  Featured
+                </option>
+
+                <option value="rating">
+                  Rating
+                </option>
+
+                <option value="name">
+                  Name
+                </option>
+
+              </select>
+
+            </div>
+
+
+          </div>
+
+
+          <!-- BUSINESS GRID -->
+
+          <div
+            id="businessGrid"
+            class="business-grid"
+          ></div>
+
+
+          <!-- EMPTY STATE -->
+
+          <div
+            id="emptyState"
+            class="empty-state hidden"
+          >
+
+            <div
+              class="empty-icon"
+              aria-hidden="true"
             >
-              Select your location and category.
+              🔎
+            </div>
+
+            <h3>
+              No businesses found
+            </h3>
+
+            <p>
+              We couldn't find any businesses
+              for your selected location and category.
             </p>
 
           </div>
 
 
-          <div class="sort-wrapper">
+          <!-- LOAD MORE -->
 
-            <label for="sortFilter">
-              Sort
-            </label>
-
-            <select
-              id="sortFilter"
-              disabled
-            >
-
-              <option value="featured">
-                Featured
-              </option>
-
-              <option value="rating">
-                Rating
-              </option>
-
-              <option value="name">
-                Name
-              </option>
-
-            </select>
-
-          </div>
-
-        </div>
-
-
-        <!-- =================================================
-             BUSINESS GRID
-        ================================================== -->
-
-        <div
-          id="businessGrid"
-          class="business-grid"
-        >
-        </div>
-
-
-        <!-- =================================================
-             EMPTY STATE
-        ================================================== -->
-
-        <div
-          id="emptyState"
-          class="empty-state hidden"
-        >
-
-          <div class="empty-icon">
-            🔎
-          </div>
-
-          <h3>
-            No businesses found
-          </h3>
-
-          <p>
-            We couldn't find any businesses
-            for your selected location and category.
-          </p>
-
-        </div>
-
-
-        <!-- =================================================
-             LOAD MORE
-        ================================================== -->
-
-        <div
-          id="loadMoreWrapper"
-          class="load-more-wrapper hidden"
-        >
-
-          <button
-            id="loadMoreButton"
-            class="load-more-button"
-            type="button"
+          <div
+            id="loadMoreWrapper"
+            class="load-more-wrapper hidden"
           >
-            Load More
-          </button>
+
+            <button
+              id="loadMoreButton"
+              class="load-more-button"
+              type="button"
+            >
+              Load More
+            </button>
+
+          </div>
+
 
         </div>
 
-
-      </div>
-
-    </section>
+      </section>
 
 
-    <!-- =====================================================
-         ABOUT
-    ====================================================== -->
+      <!-- =================================================
+           ABOUT
+      ================================================== -->
 
-    <section
-      id="about"
-      class="about-section"
-    >
+      <section
+        id="about"
+        class="about-section"
+        aria-labelledby="aboutTitle"
+      >
 
-      <div class="container">
+        <div class="container">
 
-        <div class="about-card">
+          <div class="about-card">
 
-          <span class="section-kicker">
-            ABOUT UBNux
+            <span class="section-kicker">
+              ABOUT UBNux
+            </span>
+
+            <h2 id="aboutTitle">
+              Your local business discovery platform
+            </h2>
+
+            <p>
+              UBnux helps users discover businesses,
+              shops, services and professionals in their
+              selected state, district and category.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+    </main>
+
+
+    <!-- ===================================================
+         SITE FOOTER
+    ==================================================== -->
+
+    <footer class="site-footer">
+
+      <div class="container footer-inner">
+
+        <div>
+
+          <strong>
+            UBnux
+          </strong>
+
+          <span>
+            - Local Business Discovery
           </span>
 
-          <h2>
-            Your local business discovery platform
-          </h2>
+        </div>
 
-          <p>
-            UBnux helps users discover businesses,
-            shops, services and professionals in their
-            selected state, district and category.
-          </p>
+
+        <div>
+
+          ©
+          <span id="currentYear"></span>
+          UBnux
 
         </div>
 
       </div>
 
-    </section>
+    </footer>
 
-  </main>
+
+  </div>
+  <!-- /#homePage -->
 
 
   <!-- =====================================================
-       FOOTER
+       BUSINESS SEO PAGE
+       -----------------------------------------------------
+       URL:
+       /in/{state}/{district}/{category}/{business}/
+
+       This shell is intentionally OUTSIDE #homePage.
+
+       business-page.js controls:
+       - loading
+       - error
+       - template
+       - business content
+       - SEO
+       - schema
+       - breadcrumbs
   ====================================================== -->
 
-  <footer class="site-footer">
+  <div
+    id="businessPageRoot"
+    class="business-page-root"
+    hidden
+    aria-live="polite"
+  >
 
-    <div class="container footer-inner">
 
-      <div>
-        <strong>UBnux</strong>
-        <span> - Local Business Discovery</span>
-      </div>
+    <!-- ===================================================
+         BUSINESS PAGE LOADER
+    ==================================================== -->
 
-      <div>
-        © <span id="currentYear"></span> UBnux
+    <div
+      id="businessPageLoader"
+      class="business-page-loader"
+      hidden
+      aria-live="polite"
+      aria-busy="true"
+    >
+
+      <div class="business-page-loader-inner">
+
+        <div
+          class="business-page-loader-spinner"
+          aria-hidden="true"
+        ></div>
+
+        <p>
+          Loading business...
+        </p>
+
       </div>
 
     </div>
 
-  </footer>
 
-<!-- =====================================================
-     JAVASCRIPT
-====================================================== -->
+    <!-- ===================================================
+         BUSINESS PAGE ERROR
+    ==================================================== -->
 
-<!-- =====================================================
-     UBNux JAVASCRIPT
-====================================================== -->
-
-<!-- CORE CONFIG -->
-<script src="/assets/js/config.js"></script>
-
-
-<!-- CORE ROUTER -->
-<script src="/assets/js/router.js"></script>
+    <div
+      id="businessPageError"
+      class="business-page-error"
+      hidden
+      role="alert"
+    ></div>
 
 
-<!-- API CLIENT -->
-<script src="/assets/js/api.js"></script>
+    <!-- ===================================================
+         BUSINESS TEMPLATE CONTENT
+
+         Individual template HTML is injected here.
+
+         Example:
+         /assets/business-sites/clothing/index.html
+         /assets/business-sites/restaurant/index.html
+    ==================================================== -->
+
+    <main
+      id="businessPageContent"
+      class="business-page-content"
+    ></main>
 
 
-<!-- =====================================================
-     SEO SYSTEM
-====================================================== -->
-
-<!-- SEO ROUTER
-     Detects:
-     /in/state/district/category/business/
--->
-<script src="/assets/js/seo/seo-router.js"></script>
+  </div>
+  <!-- /#businessPageRoot -->
 
 
-<!-- SEO META
-     title / description / canonical / robots
-     OpenGraph / Twitter
--->
-<script src="/assets/js/seo/seo-meta.js"></script>
+  <!-- =====================================================
+       JAVASCRIPT
+       ===================================================== -->
 
 
-<!-- SEO SCHEMA
-     Backend-generated JSON-LD renderer
--->
-<script src="/assets/js/seo/schema.js"></script>
+  <!-- =====================================================
+       CORE CONFIG
+  ====================================================== -->
+
+  <script src="/assets/js/config.js"></script>
 
 
-<!-- BUSINESS SEO PAGE CONTROLLER
-     Loads business + template + SEO + schema
--->
-<script src="/assets/js/seo/business-page.js"></script>
+  <!-- =====================================================
+       CORE ROUTER
+  ====================================================== -->
+
+  <script src="/assets/js/router.js"></script>
 
 
-<!-- =====================================================
-     HOME PAGE / DIRECTORY SYSTEM
-====================================================== -->
+  <!-- =====================================================
+       API CLIENT
+  ====================================================== -->
 
-<script src="/assets/js/storage.js"></script>
+  <script src="/assets/js/api.js"></script>
 
-<script src="/assets/js/state.js"></script>
 
-<script src="/assets/js/districts.js"></script>
+  <!-- =====================================================
+       SEO ROUTER
+       -----------------------------------------------------
+       Detects:
+       /in/state/district/category/business/
+  ====================================================== -->
 
-<script src="/assets/js/categories.js"></script>
+  <script src="/assets/js/seo/seo-router.js"></script>
 
-<script src="/assets/js/businesses.js"></script>
 
-<script src="/assets/js/app.js"></script>
+  <!-- =====================================================
+       SEO META
+       -----------------------------------------------------
+       Controls:
+       - title
+       - description
+       - canonical
+       - robots
+       - Open Graph
+       - Twitter
+  ====================================================== -->
+
+  <script src="/assets/js/seo/seo-meta.js"></script>
+
+
+  <!-- =====================================================
+       SEO SCHEMA
+       -----------------------------------------------------
+       Renders backend-generated JSON-LD only.
+  ====================================================== -->
+
+  <script src="/assets/js/seo/schema.js"></script>
+
+
+  <!-- =====================================================
+       BUSINESS SEO PAGE CONTROLLER
+       -----------------------------------------------------
+       Controls:
+       - business route
+       - API lookup
+       - template loading
+       - business data binding
+       - SEO
+       - breadcrumbs
+       - schema
+  ====================================================== -->
+
+  <script src="/assets/js/seo/business-page.js"></script>
+
+
+  <!-- =====================================================
+       HOMEPAGE / DIRECTORY SYSTEM
+  ====================================================== -->
+
+  <script src="/assets/js/storage.js"></script>
+
+  <script src="/assets/js/state.js"></script>
+
+  <script src="/assets/js/districts.js"></script>
+
+  <script src="/assets/js/categories.js"></script>
+
+  <script src="/assets/js/businesses.js"></script>
+
+  <script src="/assets/js/app.js"></script>
+
+
 </body>
 
 </html>
