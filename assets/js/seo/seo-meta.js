@@ -3,7 +3,7 @@
    File: assets/js/seo/seo-meta.js
 
    Version:
-   3.0.0
+   3.1.0
 
    Responsibilities:
    - Document title
@@ -13,7 +13,9 @@
    - OpenGraph
    - Twitter Card
    - Social image
-   - Safe duplicate prevention
+   - Duplicate prevention
+   - Safe SEO value handling
+   - Business SEO compatibility
 ========================================================= */
 
 (function (
@@ -30,8 +32,14 @@
 
   const CONFIG = {
 
+    VERSION:
+      "3.1.0",
+
     SITE_NAME:
       "UBnux",
+
+    SITE_URL:
+      "https://ubnux.com",
 
     DEFAULT_IMAGE:
       "https://ubnux.com/assets/images/default-business.jpg",
@@ -40,7 +48,10 @@
       "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
 
     DEFAULT_NOINDEX:
-      "noindex,follow"
+      "noindex,follow",
+
+    DEFAULT_LOCALE:
+      "en_IN"
 
   };
 
@@ -49,7 +60,9 @@
      SAFE VALUE
   ====================================================== */
 
-  function clean(value) {
+  function clean(
+    value
+  ) {
 
     if (
       value === null ||
@@ -60,7 +73,121 @@
 
     }
 
-    return String(value).trim();
+
+    return String(
+      value
+    ).trim();
+
+  }
+
+
+  /* =======================================================
+     BOOLEAN
+  ====================================================== */
+
+  function isFalse(
+    value
+  ) {
+
+    return (
+      value === false ||
+      clean(value).toLowerCase() ===
+        "false"
+    );
+
+  }
+
+
+  /* =======================================================
+     CSS ESCAPE
+  ====================================================== */
+
+  function escapeSelector(
+    value
+  ) {
+
+    value =
+      clean(value);
+
+
+    if (
+      window.CSS &&
+      typeof window.CSS.escape ===
+        "function"
+    ) {
+
+      return window.CSS.escape(
+        value
+      );
+
+    }
+
+
+    /*
+     * Fallback for older browsers.
+     */
+
+    return value.replace(
+      /([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g,
+      "\\$1"
+    );
+
+  }
+
+
+  /* =======================================================
+     NORMALIZE URL
+  ====================================================== */
+
+  function normalizeURL(
+    value
+  ) {
+
+    value =
+      clean(value);
+
+
+    if (!value) {
+
+      return "";
+
+    }
+
+
+    try {
+
+      const url =
+        new URL(
+          value,
+          CONFIG.SITE_URL
+        );
+
+
+      /*
+       * Only HTTP/HTTPS URLs are allowed.
+       */
+
+      if (
+        url.protocol !==
+          "http:" &&
+        url.protocol !==
+          "https:"
+      ) {
+
+        return "";
+
+      }
+
+
+      return url.href;
+
+    } catch (
+      error
+    ) {
+
+      return "";
+
+    }
 
   }
 
@@ -76,7 +203,10 @@
   ) {
 
     content =
-      clean(content);
+      clean(
+        content
+      );
+
 
     if (!content) {
 
@@ -85,9 +215,35 @@
     }
 
 
+    attribute =
+      clean(
+        attribute
+      );
+
+
+    value =
+      clean(
+        value
+      );
+
+
+    if (
+      !attribute ||
+      !value
+    ) {
+
+      return null;
+
+    }
+
+
+    const selector =
+      `meta[${escapeSelector(attribute)}="${escapeSelector(value)}"]`;
+
+
     let element =
       document.head.querySelector(
-        `meta[${attribute}="${CSS.escape(value)}"]`
+        selector
       );
 
 
@@ -132,19 +288,53 @@
     value
   ) {
 
-    const element =
-      document.head.querySelector(
-        `meta[${attribute}="${CSS.escape(value)}"]`
+    attribute =
+      clean(
+        attribute
+      );
+
+
+    value =
+      clean(
+        value
       );
 
 
     if (
-      element
+      !attribute ||
+      !value
     ) {
 
-      element.remove();
+      return false;
 
     }
+
+
+    const selector =
+      `meta[${escapeSelector(attribute)}="${escapeSelector(value)}"]`;
+
+
+    const elements =
+      document.head.querySelectorAll(
+        selector
+      );
+
+
+    elements.forEach(
+      function (
+        element
+      ) {
+
+        element.remove();
+
+      }
+    );
+
+
+    return (
+      elements.length >
+      0
+    );
 
   }
 
@@ -158,7 +348,10 @@
   ) {
 
     url =
-      clean(url);
+      normalizeURL(
+        url
+      );
+
 
     if (!url) {
 
@@ -167,10 +360,39 @@
     }
 
 
-    let link =
-      document.head.querySelector(
+    let links =
+      document.head.querySelectorAll(
         'link[rel="canonical"]'
       );
+
+
+    let link =
+      links.length
+        ? links[0]
+        : null;
+
+
+    /*
+     * If multiple canonical tags
+     * already exist, remove duplicates.
+     */
+
+    if (
+      links.length >
+      1
+    ) {
+
+      for (
+        let i = 1;
+        i < links.length;
+        i++
+      ) {
+
+        links[i].remove();
+
+      }
+
+    }
 
 
     if (!link) {
@@ -181,8 +403,10 @@
         );
 
 
-      link.rel =
-        "canonical";
+      link.setAttribute(
+        "rel",
+        "canonical"
+      );
 
 
       document.head.appendChild(
@@ -192,11 +416,43 @@
     }
 
 
-    link.href =
-      url;
+    link.setAttribute(
+      "href",
+      url
+    );
 
 
     return link;
+
+  }
+
+
+  /* =======================================================
+     GET CANONICAL
+  ====================================================== */
+
+  function getCanonical(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return "";
+
+    }
+
+
+    return normalizeURL(
+
+      seo.canonicalURL ||
+
+      seo.canonical ||
+
+      seo.url ||
+
+      ""
+
+    );
 
   }
 
@@ -209,70 +465,106 @@
     seo
   ) {
 
+    let image =
+      "";
+
+
     if (
-      seo &&
-      seo.image
+      seo
     ) {
 
-      return clean(
-        seo.image
+      image =
+        firstValue(
+
+          seo.image,
+
+          seo.imageURL,
+
+          seo.imageUrl
+
+        );
+
+
+      if (
+        !image &&
+        seo.business
+      ) {
+
+        image =
+          firstValue(
+
+            seo.business.CoverURL,
+
+            seo.business.coverURL,
+
+            seo.business.LogoURL,
+
+            seo.business.logoURL,
+
+            seo.business.cover,
+
+            seo.business.logo
+
+          );
+
+      }
+
+    }
+
+
+    image =
+      normalizeURL(
+        image
       );
 
+
+    if (!image) {
+
+      image =
+        CONFIG.DEFAULT_IMAGE;
+
     }
 
 
-    if (
-      seo &&
-      seo.business
+    return image;
+
+  }
+
+
+  /* =======================================================
+     FIRST VALUE
+  ====================================================== */
+
+  function firstValue() {
+
+    const values =
+      Array.prototype.slice.call(
+        arguments
+      );
+
+
+    for (
+      let i = 0;
+      i < values.length;
+      i++
     ) {
 
-      if (
-        seo.business.coverURL
-      ) {
-
-        return clean(
-          seo.business.coverURL
+      const value =
+        clean(
+          values[i]
         );
 
-      }
 
+      if (value) {
 
-      if (
-        seo.business.logoURL
-      ) {
-
-        return clean(
-          seo.business.logoURL
-        );
-
-      }
-
-
-      if (
-        seo.business.cover
-      ) {
-
-        return clean(
-          seo.business.cover
-        );
-
-      }
-
-
-      if (
-        seo.business.logo
-      ) {
-
-        return clean(
-          seo.business.logo
-        );
+        return value;
 
       }
 
     }
 
 
-    return CONFIG.DEFAULT_IMAGE;
+    return "";
 
   }
 
@@ -282,39 +574,161 @@
   ====================================================== */
 
   function getRobots(
-  seo
-) {
-
-  if (
-    seo &&
-    seo.robots
+    seo
   ) {
 
-    return clean(
+    if (!seo) {
+
+      return CONFIG.DEFAULT_ROBOTS;
+
+    }
+
+
+    /*
+     * Explicit backend robots
+     * always gets priority.
+     */
+
+    if (
       seo.robots
+    ) {
+
+      return clean(
+        seo.robots
+      );
+
+    }
+
+
+    /*
+     * Explicit noindex.
+     */
+
+    if (
+      isFalse(
+        seo.indexable
+      )
+    ) {
+
+      return CONFIG.DEFAULT_NOINDEX;
+
+    }
+
+
+    /*
+     * Backend indexability object.
+     */
+
+    if (
+      seo.indexability &&
+      isFalse(
+        seo.indexability.indexable
+      )
+    ) {
+
+      return CONFIG.DEFAULT_NOINDEX;
+
+    }
+
+
+    return CONFIG.DEFAULT_ROBOTS;
+
+  }
+
+
+  /* =======================================================
+     GET TITLE
+  ====================================================== */
+
+  function getTitle(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return "";
+
+    }
+
+
+    return firstValue(
+
+      seo.title,
+
+      seo.Title,
+
+      seo.seoTitle
+
     );
 
   }
 
 
-  if (
-    seo &&
-    (
-      seo.indexable === false ||
-      String(
-        seo.indexable
-      ).trim().toLowerCase() === "false"
-    )
+  /* =======================================================
+     GET DESCRIPTION
+  ====================================================== */
+
+  function getDescription(
+    seo
   ) {
 
-    return CONFIG.DEFAULT_NOINDEX;
+    if (!seo) {
+
+      return "";
+
+    }
+
+
+    return firstValue(
+
+      seo.description,
+
+      seo.Description,
+
+      seo.metaDescription,
+
+      seo.seoDescription
+
+    );
 
   }
 
 
-  return CONFIG.DEFAULT_ROBOTS;
+  /* =======================================================
+     GET IMAGE ALT
+  ====================================================== */
 
-}
+  function getImageAlt(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return CONFIG.SITE_NAME;
+
+    }
+
+
+    return firstValue(
+
+      seo.imageAlt,
+
+      seo.image_alt,
+
+      seo.business &&
+        seo.business.BusinessName,
+
+      seo.business &&
+        seo.business.businessName,
+
+      getTitle(seo),
+
+      CONFIG.SITE_NAME
+
+    );
+
+  }
+
 
   /* =======================================================
      OPEN GRAPH
@@ -331,25 +745,67 @@
     }
 
 
-    setMeta(
-      "property",
-      "og:title",
-      seo.title
-    );
+    const title =
+      getTitle(
+        seo
+      );
 
 
-    setMeta(
-      "property",
-      "og:description",
-      seo.description
-    );
+    const description =
+      getDescription(
+        seo
+      );
 
 
-    setMeta(
-      "property",
-      "og:url",
-      seo.canonicalURL
-    );
+    const canonical =
+      getCanonical(
+        seo
+      );
+
+
+    const image =
+      getImage(
+        seo
+      );
+
+
+    const imageAlt =
+      getImageAlt(
+        seo
+      );
+
+
+    if (title) {
+
+      setMeta(
+        "property",
+        "og:title",
+        title
+      );
+
+    }
+
+
+    if (description) {
+
+      setMeta(
+        "property",
+        "og:description",
+        description
+      );
+
+    }
+
+
+    if (canonical) {
+
+      setMeta(
+        "property",
+        "og:url",
+        canonical
+      );
+
+    }
 
 
     setMeta(
@@ -368,9 +824,31 @@
 
     setMeta(
       "property",
-      "og:image",
-      getImage(seo)
+      "og:locale",
+      CONFIG.DEFAULT_LOCALE
     );
+
+
+    if (image) {
+
+      setMeta(
+        "property",
+        "og:image",
+        image
+      );
+
+    }
+
+
+    if (imageAlt) {
+
+      setMeta(
+        "property",
+        "og:image:alt",
+        imageAlt
+      );
+
+    }
 
   }
 
@@ -390,6 +868,30 @@
     }
 
 
+    const title =
+      getTitle(
+        seo
+      );
+
+
+    const description =
+      getDescription(
+        seo
+      );
+
+
+    const image =
+      getImage(
+        seo
+      );
+
+
+    const imageAlt =
+      getImageAlt(
+        seo
+      );
+
+
     setMeta(
       "name",
       "twitter:card",
@@ -397,24 +899,186 @@
     );
 
 
-    setMeta(
-      "name",
+    if (title) {
+
+      setMeta(
+        "name",
+        "twitter:title",
+        title
+      );
+
+    }
+
+
+    if (description) {
+
+      setMeta(
+        "name",
+        "twitter:description",
+        description
+      );
+
+    }
+
+
+    if (image) {
+
+      setMeta(
+        "name",
+        "twitter:image",
+        image
+      );
+
+    }
+
+
+    if (imageAlt) {
+
+      setMeta(
+        "name",
+        "twitter:image:alt",
+        imageAlt
+      );
+
+    }
+
+  }
+
+
+  /* =======================================================
+     CLEAN OLD UBNUX META
+  ====================================================== */
+
+  function removeOldUBnuxMeta() {
+
+    const selectors = [
+
+      'meta[data-ubnux-seo="true"]',
+
+      'meta[data-ubnux-meta="true"]'
+
+    ];
+
+
+    selectors.forEach(
+      function (
+        selector
+      ) {
+
+        document
+          .head
+          .querySelectorAll(
+            selector
+          )
+          .forEach(
+            function (
+              element
+            ) {
+
+              element.remove();
+
+            }
+          );
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     MARK UBNUX META
+  ====================================================== */
+
+  function markUBnuxMeta() {
+
+    const names = [
+
+      "description",
+
+      "robots",
+
+      "application-name",
+
+      "twitter:card",
+
       "twitter:title",
-      seo.title
-    );
 
-
-    setMeta(
-      "name",
       "twitter:description",
-      seo.description
+
+      "twitter:image",
+
+      "twitter:image:alt"
+
+    ];
+
+
+    names.forEach(
+      function (
+        name
+      ) {
+
+        const element =
+          document.head.querySelector(
+            `meta[name="${escapeSelector(name)}"]`
+          );
+
+
+        if (element) {
+
+          element.setAttribute(
+            "data-ubnux-seo",
+            "true"
+          );
+
+        }
+
+      }
     );
 
 
-    setMeta(
-      "name",
-      "twitter:image",
-      getImage(seo)
+    const properties = [
+
+      "og:title",
+
+      "og:description",
+
+      "og:url",
+
+      "og:type",
+
+      "og:site_name",
+
+      "og:locale",
+
+      "og:image",
+
+      "og:image:alt"
+
+    ];
+
+
+    properties.forEach(
+      function (
+        property
+      ) {
+
+        const element =
+          document.head.querySelector(
+            `meta[property="${escapeSelector(property)}"]`
+          );
+
+
+        if (element) {
+
+          element.setAttribute(
+            "data-ubnux-seo",
+            "true"
+          );
+
+        }
+
+      }
     );
 
   }
@@ -430,23 +1094,33 @@
 
     if (!seo) {
 
-      return;
+      return false;
 
     }
+
+
+    /*
+     * Do NOT clear all page metadata.
+     * Only update UBnux-managed fields.
+     */
+
+    removeOldUBnuxMeta();
 
 
     /* =====================================================
        TITLE
     ================================================== */
 
-    if (
-      seo.title
-    ) {
+    const title =
+      getTitle(
+        seo
+      );
+
+
+    if (title) {
 
       document.title =
-        clean(
-          seo.title
-        );
+        title;
 
     }
 
@@ -455,11 +1129,21 @@
        DESCRIPTION
     ================================================== */
 
-    setMeta(
-      "name",
-      "description",
-      seo.description
-    );
+    const description =
+      getDescription(
+        seo
+      );
+
+
+    if (description) {
+
+      setMeta(
+        "name",
+        "description",
+        description
+      );
+
+    }
 
 
     /* =====================================================
@@ -469,7 +1153,9 @@
     setMeta(
       "name",
       "robots",
-      getRobots(seo)
+      getRobots(
+        seo
+      )
     );
 
 
@@ -477,9 +1163,19 @@
        CANONICAL
     ================================================== */
 
-    setCanonical(
-      seo.canonicalURL
-    );
+    const canonical =
+      getCanonical(
+        seo
+      );
+
+
+    if (canonical) {
+
+      setCanonical(
+        canonical
+      );
+
+    }
 
 
     /* =====================================================
@@ -501,7 +1197,7 @@
 
 
     /* =====================================================
-       THEME / SITE
+       APPLICATION NAME
     ================================================== */
 
     setMeta(
@@ -509,6 +1205,169 @@
       "application-name",
       CONFIG.SITE_NAME
     );
+
+
+    /* =====================================================
+       MARK UBNUX META
+    ================================================== */
+
+    markUBnuxMeta();
+
+
+    return true;
+
+  }
+
+
+  /* =======================================================
+     RESET BUSINESS SEO
+  ====================================================== */
+
+  function reset() {
+
+    /*
+     * Restore homepage/default canonical
+     * only when explicitly requested.
+     */
+
+    const config =
+      window.UBNUX_CONFIG ||
+      {};
+
+
+    const defaultTitle =
+      firstValue(
+
+        config.SEO &&
+          config.SEO.DEFAULT_TITLE,
+
+        CONFIG.SITE_NAME
+
+      );
+
+
+    const defaultDescription =
+      firstValue(
+
+        config.SEO &&
+          config.SEO.DEFAULT_DESCRIPTION,
+
+        ""
+
+      );
+
+
+    const defaultRobots =
+      firstValue(
+
+        config.SEO &&
+          config.SEO.DEFAULT_ROBOTS,
+
+        CONFIG.DEFAULT_ROBOTS
+
+      );
+
+
+    document.title =
+      defaultTitle;
+
+
+    if (
+      defaultDescription
+    ) {
+
+      setMeta(
+        "name",
+        "description",
+        defaultDescription
+      );
+
+    }
+
+
+    setMeta(
+      "name",
+      "robots",
+      defaultRobots
+    );
+
+
+    setCanonical(
+      CONFIG.SITE_URL + "/"
+    );
+
+
+    return true;
+
+  }
+
+
+  /* =======================================================
+     GET CURRENT SEO
+  ====================================================== */
+
+  function getCurrent() {
+
+    const title =
+      clean(
+        document.title
+      );
+
+
+    const descriptionElement =
+      document.head.querySelector(
+        'meta[name="description"]'
+      );
+
+
+    const robotsElement =
+      document.head.querySelector(
+        'meta[name="robots"]'
+      );
+
+
+    const canonicalElement =
+      document.head.querySelector(
+        'link[rel="canonical"]'
+      );
+
+
+    return {
+
+      title:
+        title,
+
+      description:
+        descriptionElement
+          ? clean(
+              descriptionElement
+                .getAttribute(
+                  "content"
+                )
+            )
+          : "",
+
+      robots:
+        robotsElement
+          ? clean(
+              robotsElement
+                .getAttribute(
+                  "content"
+                )
+            )
+          : "",
+
+      canonical:
+        canonicalElement
+          ? clean(
+              canonicalElement
+                .getAttribute(
+                  "href"
+                )
+            )
+          : ""
+
+    };
 
   }
 
@@ -520,22 +1379,34 @@
   window.UBnuxSEOMeta = {
 
     version:
-      "3.0.0",
+      CONFIG.VERSION,
 
     apply:
       apply,
 
+    reset:
+      reset,
+
+    getCurrent:
+      getCurrent,
+
     setMeta:
       setMeta,
-
-    setCanonical:
-      setCanonical,
 
     removeMeta:
       removeMeta,
 
+    setCanonical:
+      setCanonical,
+
     getImage:
-      getImage
+      getImage,
+
+    getRobots:
+      getRobots,
+
+    getCanonical:
+      getCanonical
 
   };
 
