@@ -1,9 +1,12 @@
-
 /* =========================================================
    UBnux - Business Listing Manager
    File: assets/js/businesses.js
 
+   Version:
+   4.0.0
+
    Responsibilities:
+   ---------------------------------------------------------
    - Business API loading
    - Business card rendering
    - Business count
@@ -12,13 +15,32 @@
    - Sorting
    - Skeleton loading
    - Empty state
+   - Error state
+   - Retry
    - API response normalization
+   - Selection synchronization
+   - SEO business URL generation
+   - Duplicate protection
+   - Stale response protection
 
    IMPORTANT:
+   ---------------------------------------------------------
    - Does NOT contain search-engine logic
-   - Does NOT contain district/category logic
+   - Does NOT contain district/category ownership
+   - Does NOT modify browser URL
+   - Does NOT redirect
    - Works with current UBnuxAPI
-========================================================= */
+   - app.js controls category/state/district flow
+   - Search modules remain independent
+
+   BUSINESS URL:
+   ---------------------------------------------------------
+   /in/{state}/{district}/{category}/{business}/
+
+   LEGACY:
+   ---------------------------------------------------------
+   /business/... URLs are NEVER generated.
+   ========================================================= */
 
 (function (window, document) {
 
@@ -33,6 +55,10 @@
     window.UBNUX_CONFIG || {};
 
 
+  const VERSION =
+    "4.0.0";
+
+
   const PAGE_SIZE =
     Number(
       config.BUSINESS_PAGE_SIZE || 18
@@ -42,11 +68,11 @@
   const DEFAULT_SORT =
     String(
       config.DEFAULT_SORT || "featured"
-    );
+    ).trim() || "featured";
 
 
   /* =========================================================
-     STATE
+     GLOBAL APP STATE
   ========================================================= */
 
   const state = {
@@ -67,7 +93,12 @@
 
     selectedCategory: "",
 
-    selectedSort: DEFAULT_SORT
+    selectedSort:
+      DEFAULT_SORT,
+
+    lastRequestId: 0,
+
+    lastLoadedAt: 0
 
   };
 
@@ -110,6 +141,26 @@
      HELPERS
   ========================================================= */
 
+  function clean(value) {
+
+    if (
+      value === undefined ||
+      value === null
+    ) {
+
+      return "";
+
+    }
+
+    return String(value).trim();
+
+  }
+
+
+  /* =========================================================
+     HTML ESCAPE
+  ========================================================= */
+
   function escapeHTML(value) {
 
     return String(
@@ -118,21 +169,45 @@
         ? ""
         : value
     )
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
 
   }
 
 
-  function safeNumber(value, fallback) {
+  /* =========================================================
+     NUMBER
+  ========================================================= */
+
+  function safeNumber(
+    value,
+    fallback
+  ) {
 
     const number =
       Number(value);
 
-    return Number.isFinite(number)
+    return Number.isFinite(
+      number
+    )
       ? number
       : (
           fallback === undefined
@@ -143,19 +218,29 @@
   }
 
 
+  /* =========================================================
+     BOOLEAN
+  ========================================================= */
+
   function isTrue(value) {
 
     if (
       value === true ||
       value === 1
     ) {
+
       return true;
+
     }
 
+
     const text =
-      String(value || "")
+      String(
+        value || ""
+      )
         .trim()
         .toLowerCase();
+
 
     return (
       text === "true" ||
@@ -167,14 +252,46 @@
   }
 
 
-  function imageOrPlaceholder(url) {
+  /* =========================================================
+     SLUG
+  ========================================================= */
+
+  function normalizeSlug(
+    value
+  ) {
+
+    return clean(value)
+      .toLowerCase()
+      .replace(
+        /^\/+|\/+$/g,
+        ""
+      );
+
+  }
+
+
+  /* =========================================================
+     IMAGE
+  ========================================================= */
+
+  function imageOrPlaceholder(
+    url
+  ) {
 
     const image =
-      String(url || "").trim();
+      clean(url);
 
-    if (image) {
-      return escapeHTML(image);
+
+    if (
+      image
+    ) {
+
+      return escapeHTML(
+        image
+      );
+
     }
+
 
     return (
       "data:image/svg+xml;charset=UTF-8," +
@@ -191,6 +308,7 @@
             height="400"
             fill="#f1f5f9"
           />
+
           <text
             x="300"
             y="200"
@@ -202,6 +320,7 @@
           >
             UBnux Business
           </text>
+
         </svg>
         `
       )
@@ -212,122 +331,134 @@
 
   /* =========================================================
      BUSINESS URL
+     ---------------------------------------------------------
+     Permanent SEO URL only.
   ========================================================= */
-function getBusinessURL(business) {
 
-  const stateSlug =
-    String(
-      business.StateSlug ||
-      business.stateSlug ||
-      ""
-    ).trim();
-
-
-  const districtSlug =
-    String(
-      business.DistrictSlug ||
-      business.districtSlug ||
-      ""
-    ).trim();
-
-
-  const categorySlug =
-    String(
-      business.CategorySlug ||
-      business.categorySlug ||
-      ""
-    ).trim();
-
-
-  const businessSlug =
-    String(
-      business.Slug ||
-      business.slug ||
-      ""
-    ).trim();
-
-
-  /*
-   * =====================================================
-   * PERMANENT BUSINESS SEO URL
-   * =====================================================
-   */
-
-  if (
-    stateSlug &&
-    districtSlug &&
-    categorySlug &&
-    businessSlug
+  function getBusinessURL(
+    business
   ) {
+
+    if (
+      !business
+    ) {
+
+      return "#";
+
+    }
+
+
+    const stateSlug =
+      normalizeSlug(
+        business.StateSlug ||
+        business.stateSlug ||
+        business.State ||
+        business.state
+      );
+
+
+    const districtSlug =
+      normalizeSlug(
+        business.DistrictSlug ||
+        business.districtSlug ||
+        business.District ||
+        business.district
+      );
+
+
+    const categorySlug =
+      normalizeSlug(
+        business.CategorySlug ||
+        business.categorySlug ||
+        business.Category ||
+        business.category
+      );
+
+
+    const businessSlug =
+      normalizeSlug(
+        business.Slug ||
+        business.slug
+      );
+
+
+    if (
+      !stateSlug ||
+      !districtSlug ||
+      !categorySlug ||
+      !businessSlug
+    ) {
+
+      console.warn(
+        "UBnux: Business SEO URL could not be generated.",
+        {
+          BusinessID:
+            business.BusinessID ||
+            business.businessID ||
+            business.id ||
+            "",
+
+          StateSlug:
+            stateSlug,
+
+          DistrictSlug:
+            districtSlug,
+
+          CategorySlug:
+            categorySlug,
+
+          Slug:
+            businessSlug
+        }
+      );
+
+
+      return "#";
+
+    }
+
 
     return (
       "/in/" +
-      encodeURIComponent(stateSlug) +
+      encodeURIComponent(
+        stateSlug
+      ) +
       "/" +
-      encodeURIComponent(districtSlug) +
+      encodeURIComponent(
+        districtSlug
+      ) +
       "/" +
-      encodeURIComponent(categorySlug) +
+      encodeURIComponent(
+        categorySlug
+      ) +
       "/" +
-      encodeURIComponent(businessSlug) +
+      encodeURIComponent(
+        businessSlug
+      ) +
       "/"
     );
 
   }
 
 
-  /*
-   * =====================================================
-   * SEO DATA MISSING
-   * =====================================================
-   *
-   * Do NOT generate legacy /business/ URLs.
-   * The business data must contain all SEO slugs.
-   */
-
-  console.warn(
-    "UBnux: Business SEO URL could not be generated.",
-    {
-      BusinessID:
-        business.BusinessID ||
-        business.businessID ||
-        business.id ||
-        "",
-
-      StateSlug:
-        stateSlug,
-
-      DistrictSlug:
-        districtSlug,
-
-      CategorySlug:
-        categorySlug,
-
-      Slug:
-        businessSlug
-    }
-  );
-
-
-  return "#";
-
-}
-
   /* =========================================================
      LOCATION
   ========================================================= */
 
-  function getBusinessLocation(business) {
+  function getBusinessLocation(
+    business
+  ) {
 
     const area =
-      String(
-        business.Area || ""
-      ).trim();
+      clean(
+        business.Area
+      );
 
 
     const address =
-      String(
-        business.Address || ""
-      ).trim();
+      clean(
+        business.Address
+      );
 
 
     if (
@@ -344,13 +475,25 @@ function getBusinessURL(business) {
     }
 
 
-    if (area) {
-      return escapeHTML(area);
+    if (
+      area
+    ) {
+
+      return escapeHTML(
+        area
+      );
+
     }
 
 
-    if (address) {
-      return escapeHTML(address);
+    if (
+      address
+    ) {
+
+      return escapeHTML(
+        address
+      );
+
     }
 
 
@@ -363,7 +506,9 @@ function getBusinessURL(business) {
      RATING
   ========================================================= */
 
-  function renderRating(business) {
+  function renderRating(
+    business
+  ) {
 
     const rating =
       safeNumber(
@@ -379,12 +524,26 @@ function getBusinessURL(business) {
       );
 
 
-    if (rating <= 0) {
+    if (
+      rating <= 0
+    ) {
 
       return `
-        <div class="business-rating">
-          <span class="rating-star">★</span>
-          <span>No rating</span>
+        <div
+          class="business-rating"
+          aria-label="No rating available"
+        >
+          <span
+            class="rating-star"
+            aria-hidden="true"
+          >
+            ★
+          </span>
+
+          <span>
+            No rating
+          </span>
+
         </div>
       `;
 
@@ -392,14 +551,32 @@ function getBusinessURL(business) {
 
 
     return `
-      <div class="business-rating">
-        <span class="rating-star">★</span>
-        <strong>${rating.toFixed(1)}</strong>
+      <div
+        class="business-rating"
+        aria-label="Rating ${rating.toFixed(1)}"
+      >
+
+        <span
+          class="rating-star"
+          aria-hidden="true"
+        >
+          ★
+        </span>
+
+        <strong>
+          ${rating.toFixed(1)}
+        </strong>
+
         ${
           reviewCount > 0
-            ? `<span>(${reviewCount})</span>`
+            ? `
+              <span>
+                (${reviewCount})
+              </span>
+            `
             : ""
         }
+
       </div>
     `;
 
@@ -410,9 +587,12 @@ function getBusinessURL(business) {
      BADGES
   ========================================================= */
 
-  function renderBadges(business) {
+  function renderBadges(
+    business
+  ) {
 
-    let html = "";
+    let html =
+      "";
 
 
     if (
@@ -422,7 +602,9 @@ function getBusinessURL(business) {
     ) {
 
       html += `
-        <span class="business-badge verified">
+        <span
+          class="business-badge verified"
+        >
           ✓ Verified
         </span>
       `;
@@ -437,7 +619,9 @@ function getBusinessURL(business) {
     ) {
 
       html += `
-        <span class="business-badge featured">
+        <span
+          class="business-badge featured"
+        >
           Featured
         </span>
       `;
@@ -454,22 +638,24 @@ function getBusinessURL(business) {
      BUSINESS CARD
   ========================================================= */
 
-  function renderBusinessCard(business) {
+  function renderBusinessCard(
+    business
+  ) {
 
     const name =
-      String(
+      clean(
         business.BusinessName ||
         business.Name ||
         "Business"
-      ).trim();
+      );
 
 
     const description =
-      String(
+      clean(
         business.ShortDescription ||
         business.Description ||
         "Local business listed on UBnux."
-      ).trim();
+      );
 
 
     const logo =
@@ -497,16 +683,20 @@ function getBusinessURL(business) {
       );
 
 
+    const businessID =
+      clean(
+        business.BusinessID ||
+        business.businessID ||
+        business.id
+      );
+
+
     return `
       <article
         class="business-card"
-        data-business-id="${
-          escapeHTML(
-            business.BusinessID ||
-            business.businessID ||
-            ""
-          )
-        }"
+        data-business-id="${escapeHTML(
+          businessID
+        )}"
       >
 
         <a
@@ -526,7 +716,9 @@ function getBusinessURL(business) {
           ${
             badges
               ? `
-                <div class="business-card-badges">
+                <div
+                  class="business-card-badges"
+                >
                   ${badges}
                 </div>
               `
@@ -536,9 +728,13 @@ function getBusinessURL(business) {
         </a>
 
 
-        <div class="business-card-content">
+        <div
+          class="business-card-content"
+        >
 
-          <h3 class="business-card-title">
+          <h3
+            class="business-card-title"
+          >
 
             <a
               href="${businessURL}"
@@ -549,10 +745,14 @@ function getBusinessURL(business) {
           </h3>
 
 
-          ${renderRating(business)}
+          ${renderRating(
+            business
+          )}
 
 
-          <div class="business-location">
+          <div
+            class="business-location"
+          >
 
             <span
               class="business-location-icon"
@@ -568,16 +768,18 @@ function getBusinessURL(business) {
           </div>
 
 
-          <p class="business-description">
-
+          <p
+            class="business-description"
+          >
             ${escapeHTML(
               description
             )}
-
           </p>
 
 
-          <div class="business-card-footer">
+          <div
+            class="business-card-footer"
+          >
 
             <a
               class="business-view-button"
@@ -600,27 +802,36 @@ function getBusinessURL(business) {
      SKELETON
   ========================================================= */
 
-  function renderSkeletons(count) {
+  function renderSkeletons(
+    count
+  ) {
 
-    if (!businessGrid) {
+    if (
+      !businessGrid
+    ) {
+
       return;
+
     }
 
 
     const total =
       Math.max(
         1,
-        Number(count || 6)
+        Number(
+          count || 6
+        )
       );
 
 
-    let html = "";
+    let html =
+      "";
 
 
     for (
       let i = 0;
       i < total;
-      i++
+      i += 1
     ) {
 
       html += `
@@ -629,19 +840,33 @@ function getBusinessURL(business) {
           aria-hidden="true"
         >
 
-          <div class="skeleton skeleton-image"></div>
+          <div
+            class="skeleton skeleton-image"
+          ></div>
 
-          <div class="business-card-content">
+          <div
+            class="business-card-content"
+          >
 
-            <div class="skeleton skeleton-title"></div>
+            <div
+              class="skeleton skeleton-title"
+            ></div>
 
-            <div class="skeleton skeleton-line short"></div>
+            <div
+              class="skeleton skeleton-line short"
+            ></div>
 
-            <div class="skeleton skeleton-line"></div>
+            <div
+              class="skeleton skeleton-line"
+            ></div>
 
-            <div class="skeleton skeleton-line"></div>
+            <div
+              class="skeleton skeleton-line"
+            ></div>
 
-            <div class="skeleton skeleton-button"></div>
+            <div
+              class="skeleton skeleton-button"
+            ></div>
 
           </div>
 
@@ -661,10 +886,16 @@ function getBusinessURL(business) {
      EMPTY STATE
   ========================================================= */
 
-  function showEmptyState(show) {
+  function showEmptyState(
+    show
+  ) {
 
-    if (!emptyState) {
+    if (
+      !emptyState
+    ) {
+
       return;
+
     }
 
 
@@ -680,8 +911,12 @@ function getBusinessURL(business) {
 
   function updateSummary() {
 
-    if (!businessSummary) {
+    if (
+      !businessSummary
+    ) {
+
       return;
+
     }
 
 
@@ -693,7 +928,9 @@ function getBusinessURL(business) {
       state.total;
 
 
-    if (state.isLoading) {
+    if (
+      state.isLoading
+    ) {
 
       businessSummary.textContent =
         "Loading businesses...";
@@ -703,7 +940,9 @@ function getBusinessURL(business) {
     }
 
 
-    if (!total) {
+    if (
+      !total
+    ) {
 
       businessSummary.textContent =
         "0 businesses found";
@@ -713,7 +952,9 @@ function getBusinessURL(business) {
     }
 
 
-    if (total === count) {
+    if (
+      total === count
+    ) {
 
       businessSummary.textContent =
         `${total} businesses found`;
@@ -739,7 +980,9 @@ function getBusinessURL(business) {
       !loadMoreWrapper ||
       !loadMoreButton
     ) {
+
       return;
+
     }
 
 
@@ -753,7 +996,6 @@ function getBusinessURL(business) {
 
       loadMoreButton.disabled =
         state.isLoading;
-
 
       loadMoreButton.textContent =
         state.isLoading
@@ -776,8 +1018,12 @@ function getBusinessURL(business) {
 
   function renderBusinesses() {
 
-    if (!businessGrid) {
+    if (
+      !businessGrid
+    ) {
+
       return;
+
     }
 
 
@@ -793,6 +1039,7 @@ function getBusinessURL(business) {
       );
 
       updateSummary();
+
       updateLoadMore();
 
       return;
@@ -814,6 +1061,7 @@ function getBusinessURL(business) {
 
 
     updateSummary();
+
     updateLoadMore();
 
   }
@@ -823,23 +1071,26 @@ function getBusinessURL(business) {
      NORMALIZE API RESPONSE
   ========================================================= */
 
-  function normalizeResponse(response) {
+  function normalizeResponse(
+    response
+  ) {
 
     response =
       response || {};
 
 
+    let businesses =
+      [];
+
+
     /*
-       Backend may return:
-
-       response.businesses
-       response.data
-       response.data.businesses
-       response.results
-    */
-
-    let businesses = [];
-
+     * Supported backend formats:
+     *
+     * response.businesses
+     * response.data
+     * response.data.businesses
+     * response.results
+     */
 
     if (
       Array.isArray(
@@ -917,7 +1168,8 @@ function getBusinessURL(business) {
 
     } else if (
       response.data &&
-      response.data.hasMore !== undefined
+      response.data.hasMore !==
+        undefined
     ) {
 
       hasMore =
@@ -937,9 +1189,17 @@ function getBusinessURL(business) {
 
     return {
 
-      businesses,
+      businesses:
+        Array.isArray(
+          businesses
+        )
+          ? businesses
+          : [],
+
       page,
+
       total,
+
       hasMore
 
     };
@@ -948,8 +1208,323 @@ function getBusinessURL(business) {
 
 
   /* =========================================================
-     LOAD BUSINESSES
+     BUSINESS UNIQUE KEY
   ========================================================= */
+
+  function getBusinessKey(
+    business,
+    index
+  ) {
+
+    if (
+      !business
+    ) {
+
+      return (
+        "empty-" +
+        index
+      );
+
+    }
+
+
+    const id =
+      clean(
+        business.BusinessID ||
+        business.businessID ||
+        business.id
+      );
+
+
+    if (
+      id
+    ) {
+
+      return "id:" + id;
+
+    }
+
+
+    const slug =
+      clean(
+        business.Slug ||
+        business.slug
+      );
+
+
+    if (
+      slug
+    ) {
+
+      return "slug:" + slug;
+
+    }
+
+
+    const name =
+      clean(
+        business.BusinessName ||
+        business.Name
+      );
+
+
+    return (
+      "name:" +
+      name.toLowerCase() +
+      ":" +
+      index
+    );
+
+  }
+
+
+  /* =========================================================
+     DEDUPLICATE BUSINESSES
+  ========================================================= */
+
+  function deduplicateBusinesses(
+    businesses
+  ) {
+
+    if (
+      !Array.isArray(
+        businesses
+      )
+    ) {
+
+      return [];
+
+    }
+
+
+    const seen =
+      new Set();
+
+    const output =
+      [];
+
+
+    businesses.forEach(
+      function (
+        business,
+        index
+      ) {
+
+        const key =
+          getBusinessKey(
+            business,
+            index
+          );
+
+
+        if (
+          seen.has(key)
+        ) {
+
+          return;
+
+        }
+
+
+        seen.add(
+          key
+        );
+
+        output.push(
+          business
+        );
+
+      }
+    );
+
+
+    return output;
+
+  }
+
+
+  /* =========================================================
+     SYNC WITH GLOBAL SELECTION
+     ---------------------------------------------------------
+     Global UBnuxState is the source of truth.
+  ========================================================= */
+
+  function syncSelection() {
+
+    try {
+
+      if (
+        window.UBnuxState &&
+        typeof
+          window.UBnuxState
+            .getSelection ===
+          "function"
+      ) {
+
+        const selected =
+          window
+            .UBnuxState
+            .getSelection();
+
+
+        if (
+          selected
+        ) {
+
+          state.selectedState =
+            clean(
+              selected.state
+            );
+
+
+          state.selectedDistrict =
+            clean(
+              selected.district
+            );
+
+
+          state.selectedCategory =
+            clean(
+              selected.category
+            );
+
+
+          if (
+            selected.sort
+          ) {
+
+            state.selectedSort =
+              clean(
+                selected.sort
+              ) ||
+              DEFAULT_SORT;
+
+          }
+
+        }
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "UBnux business selection sync failed:",
+        error
+      );
+
+    }
+
+  }
+
+
+  /* =========================================================
+     SELECTION VALIDATION
+  ========================================================= */
+
+  function hasValidSelection() {
+
+    return Boolean(
+
+      state.selectedState &&
+      state.selectedDistrict &&
+      state.selectedCategory
+
+    );
+
+  }
+
+
+  /* =========================================================
+     RESET LIST
+  ========================================================= */
+
+  function resetList() {
+
+    state.businesses =
+      [];
+
+    state.currentPage =
+      1;
+
+    state.total =
+      0;
+
+    state.hasMore =
+      false;
+
+  }
+
+
+  /* =========================================================
+     BUSINESS PAGE SAFETY
+     ---------------------------------------------------------
+     Never load listing data on a business SEO URL.
+  ========================================================= */
+
+  function isBusinessSEOPage() {
+
+    try {
+
+      if (
+        window.UBnuxApp &&
+        typeof
+          window.UBnuxApp
+            .isBusinessPage ===
+          "function"
+      ) {
+
+        if (
+          window
+            .UBnuxApp
+            .isBusinessPage()
+        ) {
+
+          return true;
+
+        }
+
+      }
+
+
+      const pathname =
+        (
+          window.location &&
+          window.location.pathname
+        ) || "";
+
+
+      const parts =
+        pathname
+          .split("/")
+          .filter(
+            function (item) {
+
+              return Boolean(
+                clean(item)
+              );
+
+            }
+          );
+
+
+      return (
+        parts.length === 5 &&
+        parts[0].toLowerCase() ===
+          "in"
+      );
+
+    } catch (error) {
+
+      return false;
+
+    }
+
+  }
+
+
+  /* =========================================================
+     LOAD BUSINESSES
+     ========================================================= */
 
   async function loadBusinesses(
     append
@@ -961,6 +1536,51 @@ function getBusinessURL(business) {
       );
 
 
+    /* =====================================================
+       BUSINESS PAGE PROTECTION
+    ===================================================== */
+
+    if (
+      isBusinessSEOPage()
+    ) {
+
+      console.debug(
+        "UBnux: Business SEO page detected. Business listing load skipped."
+      );
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       SYNC SELECTION
+    ===================================================== */
+
+    syncSelection();
+
+
+    /* =====================================================
+       VALIDATE SELECTION
+    ===================================================== */
+
+    if (
+      !hasValidSelection()
+    ) {
+
+      resetList();
+
+      renderBusinesses();
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       PREVENT CONCURRENT REQUEST
+    ===================================================== */
+
     if (
       state.isLoading
     ) {
@@ -969,65 +1589,15 @@ function getBusinessURL(business) {
 
     }
 
-/* =========================================================
-   SYNC WITH GLOBAL UBNUX SELECTION
-========================================================= */
 
-try {
+    /* =====================================================
+       REQUEST ID
+       -----------------------------------------------------
+       Protects against stale responses.
+    ===================================================== */
 
-  if (
-    window.UBnuxState &&
-    typeof window.UBnuxState.getSelection === "function"
-  ) {
-
-    const selected =
-      window.UBnuxState.getSelection();
-
-    if (selected) {
-
-      state.selectedState =
-        String(
-          selected.state || ""
-        ).trim();
-
-      state.selectedDistrict =
-        String(
-          selected.district || ""
-        ).trim();
-
-      state.selectedCategory =
-        String(
-          selected.category || ""
-        ).trim();
-
-    }
-
-  }
-
-} catch (error) {
-
-  console.warn(
-    "UBnux business selection sync failed:",
-    error
-  );
-
-}
-    if (
-      !state.selectedState ||
-      !state.selectedDistrict ||
-      !state.selectedCategory
-    ) {
-
-      state.businesses = [];
-      state.total = 0;
-      state.currentPage = 1;
-      state.hasMore = false;
-
-      renderBusinesses();
-
-      return;
-
-    }
+    const requestId =
+      ++state.lastRequestId;
 
 
     state.isLoading =
@@ -1040,7 +1610,9 @@ try {
         : 1;
 
 
-    if (!append) {
+    if (
+      !append
+    ) {
 
       state.currentPage =
         1;
@@ -1054,6 +1626,7 @@ try {
       state.hasMore =
         false;
 
+
       renderSkeletons(
         Math.min(
           PAGE_SIZE,
@@ -1061,11 +1634,14 @@ try {
         )
       );
 
+
       showEmptyState(
         false
       );
 
+
       updateSummary();
+
       updateLoadMore();
 
     } else {
@@ -1077,34 +1653,63 @@ try {
 
     try {
 
+      /* ===================================================
+         API
+      =================================================== */
+
+      if (
+        !window.UBnuxAPI ||
+        typeof
+          window.UBnuxAPI
+            .getBusinesses !==
+          "function"
+      ) {
+
+        throw new Error(
+          "UBnux API is not available."
+        );
+
+      }
+
+
       const response =
-        await window.UBnuxAPI.getBusinesses({
+        await window
+          .UBnuxAPI
+          .getBusinesses({
 
-          state:
-            state.selectedState,
+            state:
+              state.selectedState,
 
-          district:
-            state.selectedDistrict,
+            district:
+              state.selectedDistrict,
 
-          category:
-            state.selectedCategory,
+            category:
+              state.selectedCategory,
 
-          page:
-            page,
+            page:
+              page,
 
-          limit:
-            PAGE_SIZE,
+            limit:
+              PAGE_SIZE,
 
-          sort:
-            state.selectedSort
+            sort:
+              state.selectedSort
 
-        });
+          });
 
 
-      console.log(
-        "UBnux businesses API response:",
-        response
-      );
+      /* ===================================================
+         STALE RESPONSE CHECK
+      =================================================== */
+
+      if (
+        requestId !==
+        state.lastRequestId
+      ) {
+
+        return;
+
+      }
 
 
       const normalized =
@@ -1113,23 +1718,31 @@ try {
         );
 
 
-      console.log(
-        "UBnux businesses received:",
-        normalized.businesses.length
-      );
+      const incomingBusinesses =
+        deduplicateBusinesses(
+          normalized.businesses
+        );
 
 
-      if (append) {
+      /* ===================================================
+         APPEND
+      =================================================== */
+
+      if (
+        append
+      ) {
 
         state.businesses =
-          state.businesses.concat(
-            normalized.businesses
+          deduplicateBusinesses(
+            state.businesses.concat(
+              incomingBusinesses
+            )
           );
 
       } else {
 
         state.businesses =
-          normalized.businesses;
+          incomingBusinesses;
 
       }
 
@@ -1146,10 +1759,28 @@ try {
         normalized.hasMore;
 
 
+      state.lastLoadedAt =
+        Date.now();
+
+
       renderBusinesses();
 
 
     } catch (error) {
+
+      /* ===================================================
+         IGNORE STALE ERROR
+      =================================================== */
+
+      if (
+        requestId !==
+        state.lastRequestId
+      ) {
+
+        return;
+
+      }
+
 
       console.error(
         "UBnux business loading error:",
@@ -1157,25 +1788,23 @@ try {
       );
 
 
-      if (!append) {
+      if (
+        !append
+      ) {
 
-        state.businesses =
-          [];
-
-        state.total =
-          0;
-
-        state.currentPage =
-          1;
-
-        state.hasMore =
-          false;
+        resetList();
 
 
-        if (businessGrid) {
+        if (
+          businessGrid
+        ) {
 
           businessGrid.innerHTML = `
-            <div class="business-error">
+            <div
+              class="business-error"
+              role="alert"
+            >
+
               <h3>
                 Unable to load businesses
               </h3>
@@ -1198,6 +1827,7 @@ try {
               >
                 Try Again
               </button>
+
             </div>
           `;
 
@@ -1208,7 +1838,9 @@ try {
             );
 
 
-          if (retryButton) {
+          if (
+            retryButton
+          ) {
 
             retryButton.addEventListener(
               "click",
@@ -1229,11 +1861,23 @@ try {
 
     } finally {
 
-      state.isLoading =
-        false;
+      /*
+       * Only the latest request may release loading state.
+       */
 
-      updateSummary();
-      updateLoadMore();
+      if (
+        requestId ===
+        state.lastRequestId
+      ) {
+
+        state.isLoading =
+          false;
+
+        updateSummary();
+
+        updateLoadMore();
+
+      }
 
     }
 
@@ -1252,6 +1896,24 @@ try {
       "click",
       function () {
 
+        if (
+          state.isLoading
+        ) {
+
+          return;
+
+        }
+
+
+        if (
+          !state.hasMore
+        ) {
+
+          return;
+
+        }
+
+
         loadBusinesses(
           true
         );
@@ -1263,45 +1925,10 @@ try {
 
 
   /* =========================================================
-     CATEGORY CHANGE
-  ========================================================= */
-
-  document.addEventListener(
-    "ubnux:categorychange",
-    function (event) {
-
-      const detail =
-        event &&
-        event.detail
-          ? event.detail
-          : {};
-
-
-      state.selectedCategory =
-        String(
-          detail.slug ||
-          detail.name ||
-          ""
-        ).trim();
-
-
-      /*
-         Category slug is preferred.
-         The API backend already supports
-         both category slug and category name.
-      */
-
-
-      loadBusinesses(
-        false
-      );
-
-    }
-  );
-
-
-  /* =========================================================
-     STATE / DISTRICT CHANGE
+     SORT CHANGE
+     ---------------------------------------------------------
+     app.js owns actual sorting event.
+     This module only syncs the value.
   ========================================================= */
 
   document.addEventListener(
@@ -1316,38 +1943,54 @@ try {
 
 
       if (
-        detail.state !== undefined
+        detail.state !==
+        undefined
       ) {
 
         state.selectedState =
-          String(
-            detail.state || ""
-          ).trim();
+          clean(
+            detail.state
+          );
 
       }
 
 
       if (
-        detail.district !== undefined
+        detail.district !==
+        undefined
       ) {
 
         state.selectedDistrict =
-          String(
-            detail.district || ""
-          ).trim();
+          clean(
+            detail.district
+          );
 
       }
 
 
       if (
-        detail.sort !== undefined
+        detail.category !==
+        undefined
+      ) {
+
+        state.selectedCategory =
+          clean(
+            detail.category
+          );
+
+      }
+
+
+      if (
+        detail.sort !==
+        undefined
       ) {
 
         state.selectedSort =
-          String(
-            detail.sort ||
-            DEFAULT_SORT
-          ).trim();
+          clean(
+            detail.sort
+          ) ||
+          DEFAULT_SORT;
 
       }
 
@@ -1364,56 +2007,100 @@ try {
   ) {
 
     options =
-      options || {};
+      options ||
+      {};
 
 
     if (
-      options.state !== undefined
+      options.state !==
+      undefined
     ) {
 
       state.selectedState =
-        String(
-          options.state || ""
-        ).trim();
+        clean(
+          options.state
+        );
 
     }
 
 
     if (
-      options.district !== undefined
+      options.district !==
+      undefined
     ) {
 
       state.selectedDistrict =
-        String(
-          options.district || ""
-        ).trim();
+        clean(
+          options.district
+        );
 
     }
 
 
     if (
-      options.category !== undefined
+      options.category !==
+      undefined
     ) {
 
       state.selectedCategory =
-        String(
-          options.category || ""
-        ).trim();
+        clean(
+          options.category
+        );
 
     }
 
 
     if (
-      options.sort !== undefined
+      options.sort !==
+      undefined
     ) {
 
       state.selectedSort =
-        String(
-          options.sort ||
-          DEFAULT_SORT
-        ).trim();
+        clean(
+          options.sort
+        ) ||
+        DEFAULT_SORT;
 
     }
+
+  }
+
+
+  /* =========================================================
+     PUBLIC RESET
+  ========================================================= */
+
+  function reset() {
+
+    /*
+     * Invalidate active request.
+     */
+
+    state.lastRequestId +=
+      1;
+
+
+    state.isLoading =
+      false;
+
+
+    resetList();
+
+
+    renderBusinesses();
+
+  }
+
+
+  /* =========================================================
+     PUBLIC REFRESH
+  ========================================================= */
+
+  async function refresh() {
+
+    return loadBusinesses(
+      false
+    );
 
   }
 
@@ -1424,31 +2111,88 @@ try {
 
   window.UBnuxBusinesses = {
 
-    state,
+    version:
+      VERSION,
 
-    loadBusinesses,
+    state:
 
-    renderBusinesses,
+      state,
 
-    setSelection,
+    loadBusinesses:
 
-    getBusinesses: function () {
+      loadBusinesses,
 
-      return state.businesses.slice();
+    refresh:
 
-    },
+      refresh,
 
-    getState: function () {
+    reset:
 
-      return {
-        ...state,
-        businesses:
-          state.businesses.slice()
-      };
+      reset,
 
-    }
+    renderBusinesses:
+
+      renderBusinesses,
+
+    setSelection:
+
+      setSelection,
+
+    getBusinessURL:
+
+      getBusinessURL,
+
+    getBusinesses:
+      function () {
+
+        return state.businesses.slice();
+
+      },
+
+    getState:
+      function () {
+
+        return {
+
+          ...state,
+
+          businesses:
+            state.businesses.slice()
+
+        };
+
+      }
 
   };
+
+
+  /* =========================================================
+     DEBUG
+  ========================================================= */
+
+  if (
+    window.console &&
+    typeof
+      window.console.debug ===
+      "function"
+  ) {
+
+    window.console.debug(
+      "[UBnux Businesses] Initialized.",
+      {
+        version:
+          VERSION,
+
+        pageSize:
+          PAGE_SIZE,
+
+        defaultSort:
+          DEFAULT_SORT
+
+      }
+    );
+
+  }
 
 
 })(window, document);
