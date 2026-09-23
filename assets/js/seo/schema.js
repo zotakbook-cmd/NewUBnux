@@ -3,16 +3,20 @@
    File: assets/js/seo/schema.js
 
    Version:
-   2.0.0
+   2.1.0
 
    Responsibilities:
+   ---------------------------------------------------------
    - Render backend-generated JSON-LD
    - Remove previous UBnux schema
-   - Prevent duplicate schema
+   - Prevent duplicate UBnux schema
    - Support @graph
    - Support BusinessSEO response.schema
+   - Support seo.schema compatibility
+   - Validate basic schema structure
    - No fake schema generation
    - No frontend rating generation
+   - No frontend review generation
 
    IMPORTANT:
    Schema generation is handled by:
@@ -40,10 +44,16 @@
   const CONFIG = {
 
     VERSION:
-      "2.0.0",
+      "2.1.0",
 
     SCRIPT_ATTRIBUTE:
-      "data-ubnux-schema"
+      "data-ubnux-schema",
+
+    JSON_TYPE:
+      "application/ld+json",
+
+    CONTEXT:
+      "https://schema.org"
 
   };
 
@@ -52,7 +62,9 @@
      SAFE VALUE
   ====================================================== */
 
-  function clean(value) {
+  function clean(
+    value
+  ) {
 
     if (
       value === null ||
@@ -63,7 +75,27 @@
 
     }
 
-    return String(value).trim();
+
+    return String(
+      value
+    ).trim();
+
+  }
+
+
+  /* =======================================================
+     IS OBJECT
+  ====================================================== */
+
+  function isObject(
+    value
+  ) {
+
+    return (
+      value !== null &&
+      typeof value === "object" &&
+      !Array.isArray(value)
+    );
 
   }
 
@@ -76,17 +108,22 @@
 
     const scripts =
       document.querySelectorAll(
-        `script[type="application/ld+json"][${CONFIG.SCRIPT_ATTRIBUTE}]`
+        `script[type="${CONFIG.JSON_TYPE}"][${CONFIG.SCRIPT_ATTRIBUTE}]`
       );
 
 
     scripts.forEach(
-      function (script) {
+      function (
+        script
+      ) {
 
         script.remove();
 
       }
     );
+
+
+    return scripts.length;
 
   }
 
@@ -99,7 +136,9 @@
     schema
   ) {
 
-    if (!schema) {
+    if (
+      !schema
+    ) {
 
       return null;
 
@@ -107,14 +146,15 @@
 
 
     /*
-      BusinessSEO may return:
-
-      {
-        schema: {...}
-      }
-    */
+     * BusinessSEO compatibility:
+     *
+     * {
+     *   schema: {...}
+     * }
+     */
 
     if (
+      isObject(schema) &&
       schema.schema
     ) {
 
@@ -125,17 +165,26 @@
 
 
     /*
-      Array → @graph
-    */
+     * Array → @graph
+     */
 
     if (
       Array.isArray(schema)
     ) {
 
+      if (
+        schema.length === 0
+      ) {
+
+        return null;
+
+      }
+
+
       return {
 
         "@context":
-          "https://schema.org",
+          CONFIG.CONTEXT,
 
         "@graph":
           schema
@@ -146,29 +195,162 @@
 
 
     /*
-      Object without @context
-    */
+     * Schema must be an object
+     */
 
     if (
-      typeof schema === "object" &&
-      !schema["@context"]
+      !isObject(schema)
     ) {
 
-      return Object.assign(
+      return null;
 
-        {
-          "@context":
-            "https://schema.org"
-        },
+    }
 
+
+    /*
+     * Clone object.
+     *
+     * Do not mutate backend response.
+     */
+
+    const normalized =
+      Object.assign(
+        {},
         schema
+      );
 
+
+    /*
+     * Add @context only when backend
+     * did not provide one.
+     */
+
+    if (
+      !normalized["@context"]
+    ) {
+
+      normalized["@context"] =
+        CONFIG.CONTEXT;
+
+    }
+
+
+    return normalized;
+
+  }
+
+
+  /* =======================================================
+     BASIC SCHEMA VALIDATION
+  ====================================================== */
+
+  function isValidSchema(
+    schema
+  ) {
+
+    if (
+      !schema ||
+      !isObject(schema)
+    ) {
+
+      return false;
+
+    }
+
+
+    /*
+     * @graph schema
+     */
+
+    if (
+      Array.isArray(
+        schema["@graph"]
+      )
+    ) {
+
+      return (
+        schema["@graph"].length >
+        0
       );
 
     }
 
 
-    return schema;
+    /*
+     * Normal single schema
+     */
+
+    if (
+      schema["@type"]
+    ) {
+
+      return true;
+
+    }
+
+
+    /*
+     * Some valid schema structures
+     * may primarily use @id.
+     */
+
+    if (
+      schema["@id"]
+    ) {
+
+      return true;
+
+    }
+
+
+    return false;
+
+  }
+
+
+  /* =======================================================
+     SANITIZE SCHEMA
+  ====================================================== */
+
+  function sanitizeSchema(
+    schema
+  ) {
+
+    if (
+      !schema
+    ) {
+
+      return null;
+
+    }
+
+
+    /*
+     * Do not modify original object.
+     */
+
+    let output;
+
+
+    try {
+
+      output =
+        JSON.parse(
+          JSON.stringify(
+            schema
+          )
+        );
+
+    } catch (
+      error
+    ) {
+
+      return null;
+
+    }
+
+
+    return output;
 
   }
 
@@ -196,17 +378,72 @@
     }
 
 
-    const json =
-      JSON.stringify(
+    const sanitized =
+      sanitizeSchema(
         normalized
       );
 
 
-    if (!json) {
+    if (
+      !sanitized
+    ) {
 
       return false;
 
     }
+
+
+    if (
+      !isValidSchema(
+        sanitized
+      )
+    ) {
+
+      return false;
+
+    }
+
+
+    let json;
+
+
+    try {
+
+      json =
+        JSON.stringify(
+          sanitized
+        );
+
+    } catch (
+      error
+    ) {
+
+      console.error(
+        "[UBnux Schema] JSON serialization failed:",
+        error
+      );
+
+
+      return false;
+
+    }
+
+
+    if (
+      !json
+    ) {
+
+      return false;
+
+    }
+
+
+    /*
+     * Prevent accidental duplicate insertion
+     * inside the same render cycle.
+     */
+
+    removeExisting();
 
 
     const script =
@@ -216,7 +453,7 @@
 
 
     script.type =
-      "application/ld+json";
+      CONFIG.JSON_TYPE;
 
 
     script.setAttribute(
@@ -247,10 +484,31 @@
     schema
   ) {
 
+    /*
+     * Always remove old UBnux schema
+     * before rendering the new one.
+     */
+
     removeExisting();
 
+
+    const normalized =
+      normalizeSchema(
+        schema
+      );
+
+
+    if (
+      !normalized
+    ) {
+
+      return false;
+
+    }
+
+
     return insert(
-      schema
+      normalized
     );
 
   }
@@ -261,48 +519,86 @@
   ====================================================== */
 
   function renderFromSEO(
-  seoResponse
-) {
-
-  if (!seoResponse) {
-    return false;
-  }
-
-
-  let schema = null;
-
-
-  if (
-    seoResponse.schema
+    seoResponse
   ) {
 
-    schema =
-      seoResponse.schema;
+    if (
+      !seoResponse
+    ) {
+
+      return false;
+
+    }
+
+
+    let schema =
+      null;
+
+
+    /*
+     * Preferred:
+     *
+     * response.schema
+     */
+
+    if (
+      seoResponse.schema
+    ) {
+
+      schema =
+        seoResponse.schema;
+
+    }
+
+
+    /*
+     * Compatibility:
+     *
+     * response.seo.schema
+     */
+
+    else if (
+      seoResponse.seo &&
+      seoResponse.seo.schema
+    ) {
+
+      schema =
+        seoResponse.seo.schema;
+
+    }
+
+
+    /*
+     * Direct SEO object compatibility.
+     */
+
+    else if (
+      seoResponse["@context"] ||
+      seoResponse["@type"] ||
+      seoResponse["@graph"]
+    ) {
+
+      schema =
+        seoResponse;
+
+    }
+
+
+    if (
+      !schema
+    ) {
+
+      return false;
+
+    }
+
+
+    return render(
+      schema
+    );
 
   }
-  else if (
-    seoResponse.seo &&
-    seoResponse.seo.schema
-  ) {
 
-    schema =
-      seoResponse.seo.schema;
-
-  }
-
-
-  if (!schema) {
-
-    return false;
-
-  }
-
-
-  return render(
-    schema
-  );
-
-}
 
   /* =======================================================
      GET CURRENT SCHEMA
@@ -312,11 +608,26 @@
 
     const script =
       document.querySelector(
-        `script[type="application/ld+json"][${CONFIG.SCRIPT_ATTRIBUTE}]`
+        `script[type="${CONFIG.JSON_TYPE}"][${CONFIG.SCRIPT_ATTRIBUTE}]`
       );
 
 
-    if (!script) {
+    if (
+      !script
+    ) {
+
+      return null;
+
+    }
+
+
+    const text =
+      clean(
+        script.textContent
+      );
+
+
+    if (!text) {
 
       return null;
 
@@ -326,14 +637,48 @@
     try {
 
       return JSON.parse(
-        script.textContent
+        text
       );
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
+
+      console.error(
+        "[UBnux Schema] Existing schema JSON is invalid:",
+        error
+      );
+
 
       return null;
 
     }
+
+  }
+
+
+  /* =======================================================
+     HAS SCHEMA
+  ====================================================== */
+
+  function hasSchema() {
+
+    return !!document.querySelector(
+      `script[type="${CONFIG.JSON_TYPE}"][${CONFIG.SCRIPT_ATTRIBUTE}]`
+    );
+
+  }
+
+
+  /* =======================================================
+     GET SCHEMA COUNT
+  ====================================================== */
+
+  function getCount() {
+
+    return document.querySelectorAll(
+      `script[type="${CONFIG.JSON_TYPE}"][${CONFIG.SCRIPT_ATTRIBUTE}]`
+    ).length;
 
   }
 
@@ -360,7 +705,13 @@
       removeExisting,
 
     getCurrent:
-      getCurrent
+      getCurrent,
+
+    hasSchema:
+      hasSchema,
+
+    getCount:
+      getCount
 
   };
 
