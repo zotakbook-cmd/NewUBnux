@@ -633,13 +633,55 @@
      JAVASCRIPT
 ====================================================== -->
 
+<!-- =====================================================
+     UBNux JAVASCRIPT
+====================================================== -->
+
+<!-- CORE CONFIG -->
 <script src="/assets/js/config.js"></script>
 
+
+<!-- CORE ROUTER -->
 <script src="/assets/js/router.js"></script>
 
-<script src="/assets/js/seo.js"></script>
 
+<!-- API CLIENT -->
 <script src="/assets/js/api.js"></script>
+
+
+<!-- =====================================================
+     SEO SYSTEM
+====================================================== -->
+
+<!-- SEO ROUTER
+     Detects:
+     /in/state/district/category/business/
+-->
+<script src="/assets/js/seo/seo-router.js"></script>
+
+
+<!-- SEO META
+     title / description / canonical / robots
+     OpenGraph / Twitter
+-->
+<script src="/assets/js/seo/seo-meta.js"></script>
+
+
+<!-- SEO SCHEMA
+     Backend-generated JSON-LD renderer
+-->
+<script src="/assets/js/seo/schema.js"></script>
+
+
+<!-- BUSINESS SEO PAGE CONTROLLER
+     Loads business + template + SEO + schema
+-->
+<script src="/assets/js/seo/business-page.js"></script>
+
+
+<!-- =====================================================
+     HOME PAGE / DIRECTORY SYSTEM
+====================================================== -->
 
 <script src="/assets/js/storage.js"></script>
 
@@ -652,7 +694,6 @@
 <script src="/assets/js/businesses.js"></script>
 
 <script src="/assets/js/app.js"></script>
-
 </body>
 
 </html>
