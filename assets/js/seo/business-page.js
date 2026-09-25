@@ -5,7 +5,7 @@
    assets/js/seo/business-page.js
 
    Version:
-   11.1.0
+   11.2.0
 
    RESPONSIBILITIES
    ---------------------------------------------------------
@@ -81,7 +81,7 @@
   var CONFIG = {
 
     VERSION:
-      "11.1.0",
+      "11.2.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -621,11 +621,69 @@
       content
     );
 
+    /*
+     * IMPORTANT: keep the dynamic business mount completely
+     * outside the homepage/business shell.  The shell is still
+     * used for loader/error state, but the actual template mount
+     * becomes a direct <body> child. This eliminates inherited
+     * grid/flex/height/contain rules from both the homepage shell
+     * and the business root.
+     */
+    if (replacement.parentNode !== document.body) {
+      document.body.appendChild(replacement);
+    }
+
+    replacement.style.setProperty(
+      "display", "block", "important"
+    );
+    replacement.style.setProperty(
+      "position", "relative", "important"
+    );
+    replacement.style.setProperty(
+      "width", "100%", "important"
+    );
+    replacement.style.setProperty(
+      "min-height", "1px", "important"
+    );
+    replacement.style.setProperty(
+      "height", "auto", "important"
+    );
+    replacement.style.setProperty(
+      "visibility", "visible", "important"
+    );
+    replacement.style.setProperty(
+      "opacity", "1", "important"
+    );
+    replacement.style.setProperty(
+      "overflow", "visible", "important"
+    );
+    replacement.style.setProperty(
+      "float", "none", "important"
+    );
+    replacement.style.setProperty(
+      "clear", "both", "important"
+    );
+    replacement.style.setProperty(
+      "contain", "none", "important"
+    );
+    replacement.style.setProperty(
+      "content-visibility", "visible", "important"
+    );
+    replacement.style.setProperty(
+      "transform", "none", "important"
+    );
+
     log(
-      "Business content mount normalized to neutral <div>.",
+      "Business content mount normalized to direct <body> child.",
       {
         previousTag: content.tagName,
-        newTag: replacement.tagName
+        newTag: replacement.tagName,
+        parentTag: replacement.parentElement
+          ? replacement.parentElement.tagName
+          : "missing",
+        parentId: replacement.parentElement
+          ? replacement.parentElement.id
+          : ""
       }
     );
 
@@ -2498,8 +2556,7 @@
       CONFIG.TEMPLATE_ROOT +
       safeTemplate +
       "/" +
-      safeFile +
-      "?v=11.0.0"
+      safeFile
     );
 
   }
@@ -3636,26 +3693,12 @@
     var actualTemplate =
       bundle.template;
 
-    /* Resolve template state BEFORE DOM rendering. */
-    state.template =
-      actualTemplate;
-
-    state.previousTemplate =
-      actualTemplate;
-
 
     /*
      * Clean previous template completely.
      */
 
     cleanupTemplate();
-
-    /* cleanupTemplate may clear template state. Re-assert it. */
-    state.template =
-      actualTemplate;
-
-    state.previousTemplate =
-      actualTemplate;
 
 
     if (
@@ -3667,6 +3710,18 @@
       return null;
 
     }
+
+
+    /*
+     * Set the resolved template BEFORE HTML rendering.
+     * Diagnostics, head assets and template initialization
+     * must never see the temporary "pending" state.
+     */
+    state.template =
+      actualTemplate;
+
+    state.previousTemplate =
+      actualTemplate;
 
 
     /*
@@ -5097,30 +5152,26 @@
      dynamically, force the first paint to a visible state.
   ======================================================= */
 
-  function waitForLayoutFrame() {
-
-    return new Promise(function (resolve) {
-
-      if (typeof window.requestAnimationFrame === "function") {
-        window.requestAnimationFrame(function () {
-          resolve();
-        });
-        return;
-      }
-
-      setTimeout(resolve, 0);
-
-    });
-
-  }
-
-
   async function recoverTemplateVisibility() {
 
-    /* Wait for two layout frames so template CSS/JS and DOM
-       mutations are committed before measuring visibility. */
-    await waitForLayoutFrame();
-    await waitForLayoutFrame();
+    /*
+     * Wait for two browser layout frames. The first frame allows
+     * the newly injected DOM/CSS to enter layout; the second frame
+     * allows template JS/reveal logic to settle before measuring.
+     */
+    var waitFrame =
+      function () {
+        return new Promise(function (resolve) {
+          if (typeof window.requestAnimationFrame === "function") {
+            window.requestAnimationFrame(resolve);
+          } else {
+            setTimeout(resolve, 16);
+          }
+        });
+      };
+
+    await waitFrame();
+    await waitFrame();
 
     var root =
       getRoot();
@@ -5280,12 +5331,46 @@
       }
     );
 
+    /*
+     * Force the final flow once more after template JS has run.
+     */
+    forceTemplateLayout(content);
+
+    /*
+     * Find the first ancestor that can collapse or hide layout.
+     * This is diagnostic only; the mount is already a direct body
+     * child, so normally there should be no problematic ancestor.
+     */
+    var ancestorDiagnostics = [];
+    var ancestor = content.parentElement;
+    var ancestorDepth = 0;
+
+    while (ancestor && ancestorDepth < 8) {
+      var ancestorStyle = window.getComputedStyle(ancestor);
+      ancestorDiagnostics.push({
+        depth: ancestorDepth,
+        tag: ancestor.tagName,
+        id: ancestor.id || "",
+        className: ancestor.className || "",
+        display: ancestorStyle.display,
+        position: ancestorStyle.position,
+        height: ancestorStyle.height,
+        minHeight: ancestorStyle.minHeight,
+        overflow: ancestorStyle.overflow,
+        visibility: ancestorStyle.visibility,
+        contentVisibility: ancestorStyle.contentVisibility,
+        contain: ancestorStyle.contain,
+        offsetHeight: ancestor.offsetHeight,
+        scrollHeight: ancestor.scrollHeight
+      });
+      ancestor = ancestor.parentElement;
+      ancestorDepth += 1;
+    }
+
     var rootRect =
       root
         ? root.getBoundingClientRect()
         : null;
-
-    forceTemplateLayout(content);
 
     var contentRect =
       content.getBoundingClientRect();
@@ -5328,7 +5413,17 @@
             content.querySelector(
               ".lux-hero-slide.active"
             )
-          )
+          ),
+        parent:
+          content.parentElement
+            ? {
+                tag: content.parentElement.tagName,
+                id: content.parentElement.id || "",
+                className: content.parentElement.className || ""
+              }
+            : null,
+        ancestors:
+          ancestorDiagnostics
       }
     );
 
