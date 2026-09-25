@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="en-IN">
 
 <head>
@@ -23,11 +23,12 @@
 
   <meta
     name="robots"
-    content="index,follow,max-image-preview:large"
+    content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
   >
 
   <!-- =====================================================
        CANONICAL
+       seo-meta.js will replace this dynamically
   ====================================================== -->
 
   <link
@@ -75,6 +76,11 @@
     content="UBnux"
   >
 
+  <meta
+    property="og:locale"
+    content="en_IN"
+  >
+
   <!-- =====================================================
        TWITTER
   ====================================================== -->
@@ -117,21 +123,20 @@
 
   <link
     rel="stylesheet"
-    href="/assets/css/style.css"
+    href="/assets/css/style.css?v=3.0.0"
   >
 
   <!-- =====================================================
-       BUSINESS PAGE CSS
-       Category Templates
+       BUSINESS TEMPLATE CSS
   ====================================================== -->
 
   <link
     rel="stylesheet"
-    href="/assets/css/business.css"
+    href="/assets/css/business.css?v=2.1.0"
   >
 
   <!-- =====================================================
-       OPTIONAL PAGE META / STRUCTURED DATA
+       THEME
   ====================================================== -->
 
   <meta
@@ -139,50 +144,120 @@
     content="#111827"
   >
 
+  <!-- =====================================================
+       BUSINESS PAGE BASE CSS
+       Keeps the shell independent from homepage layout.
+  ====================================================== -->
+
+  <style id="ubnux-business-page-base-style">
+
+    html{
+      width:100%;
+      min-height:100%;
+    }
+
+    body{
+      width:100%;
+      min-height:100vh;
+      margin:0;
+      padding:0;
+    }
+
+    /*
+     * Business controller turns this page into an
+     * independent document-flow surface.
+     */
+    body.ubnux-business-page-active{
+      display:block !important;
+      width:100% !important;
+      min-height:100vh !important;
+      height:auto !important;
+      margin:0 !important;
+      padding:0 !important;
+      overflow-x:hidden !important;
+    }
+
+    #businessPageRoot{
+      display:block;
+      position:relative;
+      width:100%;
+      min-height:100vh;
+      height:auto;
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    #businessPageRoot[hidden]{
+      display:none !important;
+    }
+
+    #businessPageContent{
+      display:block;
+      position:relative;
+      width:100%;
+      min-height:1px;
+      height:auto;
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    #businessPageContent:empty{
+      min-height:0;
+    }
+
+    #businessPageLoader[hidden],
+    #businessPageError[hidden]{
+      display:none !important;
+    }
+
+  </style>
+
 </head>
 
 
 <body>
 
   <!-- =====================================================
-       SITE HEADER
-  ====================================================== -->
+       BUSINESS PAGE ROOT
+       IMPORTANT:
+       This structure matches business-page.js v11.2+
+       ====================================================== -->
 
-  <header
-    id="siteHeader"
-    class="site-header"
-  >
-
-    <!--
-      If your main header is injected dynamically,
-      this container will be used by the existing
-      UBnux header system.
-    -->
-
-    <div id="headerContainer"></div>
-
-  </header>
-
-
-  <!-- =====================================================
-       BUSINESS PAGE
-  ====================================================== -->
-
-  <main
-    id="businessPage"
-    class="business-page"
+  <div
+    id="businessPageRoot"
+    class="business-page-root"
     hidden
+    aria-live="polite"
   >
 
     <!-- ===================================================
-         BUSINESS PAGE CONTENT
-         Template will render here
+         LOADING STATE
     ==================================================== -->
 
     <div
-      id="businessPageContent"
-      class="business-page-content"
-    ></div>
+      id="businessPageLoader"
+      class="business-page-loader"
+      hidden
+      aria-live="polite"
+      aria-busy="true"
+    >
+
+      <div class="ubnux-business-loader-inner business-loader-inner">
+
+        <div
+          class="ubnux-business-loader-spinner business-loader-spinner"
+          aria-hidden="true"
+        ></div>
+
+        <p>
+          Loading business...
+        </p>
+
+      </div>
+
+    </div>
 
 
     <!-- ===================================================
@@ -193,11 +268,15 @@
       id="businessPageError"
       class="business-error"
       hidden
+      role="alert"
     >
 
       <div class="business-error-inner">
 
-        <div class="business-error-icon">
+        <div
+          class="business-error-icon"
+          aria-hidden="true"
+        >
           !
         </div>
 
@@ -222,55 +301,33 @@
 
 
     <!-- ===================================================
-         LOADING STATE
+         BUSINESS TEMPLATE MOUNT
+
+         Keep this as a neutral DIV.
+         The controller replaces/normalizes it if necessary.
     ==================================================== -->
 
     <div
-      id="businessPageLoader"
-      class="business-page-loader"
-      hidden
-    >
+      id="businessPageContent"
+      class="ubnux-business-mount business-page-content"
+      aria-live="polite"
+    ></div>
 
-      <div class="business-loader-inner">
-
-        <div class="business-loader-spinner"></div>
-
-        <p>
-          Loading business...
-        </p>
-
-      </div>
-
-    </div>
-
-  </main>
-
-
-  <!-- =====================================================
-       FOOTER
-  ====================================================== -->
-
-  <footer
-    id="siteFooter"
-    class="site-footer"
-  >
-
-    <div id="footerContainer"></div>
-
-  </footer>
+  </div>
 
 
   <!-- =====================================================
        CORE JAVASCRIPT
   ====================================================== -->
-<script src="/assets/js/config.js"></script>
-<script src="/assets/js/api.js"></script>
 
-<script src="/assets/js/seo/seo-router.js"></script>
-<script src="/assets/js/seo/seo-meta.js"></script>
-<script src="/assets/js/seo/schema.js"></script>
+  <script src="/assets/js/config.js?v=3.0.1"></script>
+  <script src="/assets/js/api.js?v=3.0.0"></script>
 
-<script src="/assets/js/seo/business-page.js"></script>
+  <script src="/assets/js/seo/seo-router.js?v=2.2.0"></script>
+  <script src="/assets/js/seo/seo-meta.js?v=3.1.0"></script>
+  <script src="/assets/js/seo/schema.js?v=2.1.0"></script>
+
+  <script src="/assets/js/seo/business-page.js?v=11.2.0"></script>
 
 </body>
 
