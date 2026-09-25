@@ -1,0 +1,1935 @@
+/* =========================================================
+   UBnux - Business Templates
+   File:
+   assets/css/business.css
+
+   Version:
+   2.1.0
+
+   Supports:
+   - Default Business
+   - Restaurant
+   - Clothing
+   - Hotel
+   - Salon
+   - Hospital
+   - Coaching
+   - Real Estate
+   - Automobile
+   - Electronics
+   - Grocery
+   - Service
+   ========================================================= */
+
+
+/* =========================================================
+   UBNUX BUSINESS PAGE RUNTIME COMPATIBILITY
+   Version: 2.1.0
+   ---------------------------------------------------------
+   The SEO business controller mounts business templates
+   dynamically. This layer prevents the generic homepage
+   layout from collapsing the business page mount.
+
+   IMPORTANT:
+   - Does not force template sections into a new layout.
+   - Does not override template-specific design.
+   - Only establishes safe document-flow boundaries.
+   ========================================================= */
+
+/* Business SEO page becomes an independent flow surface. */
+body.ubnux-business-page-active{
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  min-height: 100vh !important;
+  height: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* The controller may move the root directly under <body>. */
+body.ubnux-business-page-active > #businessPageRoot{
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 100vh !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  float: none !important;
+  clear: both !important;
+  box-sizing: border-box !important;
+  contain: none !important;
+  content-visibility: visible !important;
+  transform: none !important;
+}
+
+/* The v11+ controller uses a neutral <div> as the mount. */
+#businessPageContent.ubnux-business-mount{
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 1px !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  float: none !important;
+  clear: both !important;
+  box-sizing: border-box !important;
+  contain: none !important;
+  content-visibility: visible !important;
+  transform: none !important;
+}
+
+/* Compatibility with older template markup. */
+#businessPageContent.business-page-content{
+  display: block !important;
+  width: 100% !important;
+  min-height: 1px;
+}
+
+/*
+ * The generic UBnux template wrapper must participate in
+ * normal document flow. Do not impose a fixed height.
+ */
+#businessPageContent > .ubx-business-template{
+  display: block;
+  position: relative;
+  width: 100%;
+  height: auto;
+  min-height: 1px;
+  box-sizing: border-box;
+}
+
+/* Avoid an empty mount producing an unnecessary viewport gap. */
+#businessPageContent:empty{
+  min-height: 0;
+}
+
+/* Dynamically injected media must never create overflow. */
+#businessPageContent img,
+#businessPageContent video,
+#businessPageContent iframe,
+#businessPageContent svg{
+  max-width: 100%;
+}
+
+/* Keep template links/buttons usable inside the mount. */
+#businessPageContent a,
+#businessPageContent button{
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * The business loader is controlled by JS. CSS only guarantees
+ * that the hidden state really hides it.
+ */
+#businessPageLoader[hidden],
+.business-page-loader[hidden]{
+  display: none !important;
+}
+
+/*
+ * Prevent the generic homepage page loader from covering an
+ * already-active business SEO page.
+ */
+body.ubnux-business-page-active #pageLoader{
+  display: none !important;
+}
+
+/* =========================================================
+   END UBNUX BUSINESS PAGE RUNTIME COMPATIBILITY
+   ========================================================= */
+
+
+/* =========================================================
+   ROOT
+   ========================================================= */
+
+.business-page {
+
+  min-height: 70vh;
+
+  background:
+    #f7f8fa;
+
+  color:
+    #172033;
+
+  font-family:
+    inherit;
+
+}
+
+
+/* =========================================================
+   PAGE CONTENT
+   ========================================================= */
+
+.business-page-content {
+
+  width:
+    100%;
+
+  display:
+    block;
+
+}
+
+
+.business-page-content > .container {
+
+  width:
+    min(1200px, calc(100% - 32px));
+
+  margin:
+    0 auto;
+
+}
+
+
+/* =========================================================
+   MAIN TEMPLATE WRAPPER
+   ========================================================= */
+
+.ubx-business-template {
+
+  width:
+    100%;
+
+  padding:
+    24px 0 70px;
+
+}
+
+
+.ubx-business-template *,
+.ubx-business-template *::before,
+.ubx-business-template *::after {
+
+  box-sizing:
+    border-box;
+
+}
+
+
+/* =========================================================
+   BREADCRUMB
+   ========================================================= */
+
+.ubx-breadcrumb {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    8px;
+
+  margin:
+    0 0 18px;
+
+  font-size:
+    13px;
+
+  color:
+    #697386;
+
+}
+
+
+.ubx-breadcrumb a {
+
+  color:
+    #536174;
+
+  text-decoration:
+    none;
+
+  transition:
+    color .2s ease;
+
+}
+
+
+.ubx-breadcrumb a:hover {
+
+  color:
+    #1769e0;
+
+}
+
+
+.ubx-breadcrumb span {
+
+  color:
+    #a1a9b5;
+
+}
+
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.ubx-hero {
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  margin-bottom:
+    28px;
+
+  border:
+    1px solid #e5e9ef;
+
+  border-radius:
+    22px;
+
+  background:
+    #ffffff;
+
+  box-shadow:
+    0 10px 35px rgba(20, 35, 60, .07);
+
+}
+
+
+.ubx-cover-wrap {
+
+  width:
+    100%;
+
+  height:
+    290px;
+
+  overflow:
+    hidden;
+
+  background:
+    #edf1f5;
+
+}
+
+
+.ubx-cover {
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  display:
+    block;
+
+  object-fit:
+    cover;
+
+}
+
+
+.ubx-profile {
+
+  position:
+    relative;
+
+  display:
+    flex;
+
+  align-items:
+    flex-end;
+
+  gap:
+    24px;
+
+  padding:
+    0 32px 30px;
+
+}
+
+
+.ubx-logo-wrap {
+
+  position:
+    relative;
+
+  flex:
+    0 0 auto;
+
+  width:
+    145px;
+
+  height:
+    145px;
+
+  margin-top:
+    -62px;
+
+  border:
+    7px solid #ffffff;
+
+  border-radius:
+    24px;
+
+  overflow:
+    hidden;
+
+  background:
+    #ffffff;
+
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, .12);
+
+}
+
+
+.ubx-logo {
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  display:
+    block;
+
+  object-fit:
+    cover;
+
+}
+
+
+.ubx-profile-main {
+
+  min-width:
+    0;
+
+  flex:
+    1;
+
+}
+
+
+.ubx-profile-main h1 {
+
+  margin:
+    6px 0 7px;
+
+  color:
+    #111827;
+
+  font-size:
+    clamp(27px, 4vw, 42px);
+
+  line-height:
+    1.12;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    -.6px;
+
+}
+
+
+.ubx-category {
+
+  margin-bottom:
+    9px;
+
+  color:
+    #536174;
+
+  font-size:
+    14px;
+
+  font-weight:
+    600;
+
+}
+
+
+.ubx-address {
+
+  margin:
+    8px 0 15px;
+
+  color:
+    #667085;
+
+  font-size:
+    14px;
+
+  line-height:
+    1.6;
+
+}
+
+
+/* =========================================================
+   BADGES
+   ========================================================= */
+
+.ubx-badges {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    7px;
+
+}
+
+
+.ubx-badge {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  min-height:
+    27px;
+
+  padding:
+    4px 10px;
+
+  border-radius:
+    999px;
+
+  font-size:
+    11px;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    .25px;
+
+}
+
+
+.ubx-badge-verified {
+
+  background:
+    #e9f8ef;
+
+  color:
+    #178044;
+
+}
+
+
+.ubx-badge-featured {
+
+  background:
+    #fff3d6;
+
+  color:
+    #a16207;
+
+}
+
+
+/* =========================================================
+   RATING
+   ========================================================= */
+
+.ubx-rating {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    6px;
+
+  margin:
+    7px 0;
+
+  font-size:
+    15px;
+
+}
+
+
+.ubx-rating-star {
+
+  color:
+    #f59e0b;
+
+  font-size:
+    18px;
+
+}
+
+
+.ubx-rating strong {
+
+  color:
+    #202938;
+
+}
+
+
+.ubx-rating-count {
+
+  color:
+    #7b8492;
+
+  font-size:
+    13px;
+
+}
+
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
+.ubx-actions {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    10px;
+
+}
+
+
+.ubx-actions-column {
+
+  flex-direction:
+    column;
+
+  align-items:
+    stretch;
+
+}
+
+
+.ubx-action {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  min-height:
+    43px;
+
+  padding:
+    10px 18px;
+
+  border:
+    1px solid transparent;
+
+  border-radius:
+    11px;
+
+  text-decoration:
+    none;
+
+  font-size:
+    13px;
+
+  font-weight:
+    700;
+
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease,
+    background .2s ease;
+
+}
+
+
+.ubx-action:hover {
+
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 7px 18px rgba(20, 35, 60, .12);
+
+}
+
+
+.ubx-action-call {
+
+  background:
+    #1769e0;
+
+  color:
+    #ffffff;
+
+}
+
+
+.ubx-action-whatsapp {
+
+  background:
+    #168a52;
+
+  color:
+    #ffffff;
+
+}
+
+
+.ubx-action-website {
+
+  background:
+    #f1f4f8;
+
+  border-color:
+    #dfe4eb;
+
+  color:
+    #263244;
+
+}
+
+
+/* =========================================================
+   LAYOUT
+   ========================================================= */
+
+.ubx-layout {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(0, 1fr) 320px;
+
+  gap:
+    26px;
+
+  align-items:
+    start;
+
+}
+
+
+.ubx-main {
+
+  min-width:
+    0;
+
+}
+
+
+.ubx-sidebar {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    18px;
+
+}
+
+
+/* =========================================================
+   SECTIONS
+   ========================================================= */
+
+.ubx-section {
+
+  margin-bottom:
+    24px;
+
+  padding:
+    28px;
+
+  border:
+    1px solid #e5e9ef;
+
+  border-radius:
+    18px;
+
+  background:
+    #ffffff;
+
+  box-shadow:
+    0 5px 22px rgba(20, 35, 60, .045);
+
+}
+
+
+.ubx-section:last-child {
+
+  margin-bottom:
+    0;
+
+}
+
+
+.ubx-section h2 {
+
+  margin:
+    0 0 17px;
+
+  color:
+    #111827;
+
+  font-size:
+    22px;
+
+  line-height:
+    1.3;
+
+  font-weight:
+    800;
+
+}
+
+
+.ubx-section h3 {
+
+  color:
+    #172033;
+
+}
+
+
+.ubx-rich-text {
+
+  color:
+    #5f6b7a;
+
+  font-size:
+    15px;
+
+  line-height:
+    1.85;
+
+}
+
+
+/* =========================================================
+   INFO GRID
+   ========================================================= */
+
+.ubx-info-grid {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap:
+    14px;
+
+}
+
+
+.ubx-info-card {
+
+  padding:
+    19px;
+
+  border:
+    1px solid #e4e8ee;
+
+  border-radius:
+    15px;
+
+  background:
+    #ffffff;
+
+}
+
+
+.ubx-info-card h3 {
+
+  margin:
+    0 0 9px;
+
+  font-size:
+    15px;
+
+  font-weight:
+    800;
+
+}
+
+
+.ubx-info-card p {
+
+  margin:
+    0;
+
+  color:
+    #5e6877;
+
+  font-size:
+    14px;
+
+  line-height:
+    1.6;
+
+}
+
+
+.ubx-info-card small {
+
+  display:
+    block;
+
+  margin-top:
+    5px;
+
+  color:
+    #8a93a1;
+
+}
+
+
+/* =========================================================
+   FEATURE CARDS
+   ========================================================= */
+
+.ubx-feature-grid {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap:
+    14px;
+
+}
+
+
+.ubx-feature-card {
+
+  min-height:
+    75px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  padding:
+    18px;
+
+  border:
+    1px solid #e3e7ed;
+
+  border-radius:
+    15px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #f7f9fb
+    );
+
+  color:
+    #253044;
+
+  font-size:
+    14px;
+
+  font-weight:
+    700;
+
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease,
+    border-color .2s ease;
+
+}
+
+
+.ubx-feature-card:hover {
+
+  transform:
+    translateY(-3px);
+
+  border-color:
+    #cfd7e2;
+
+  box-shadow:
+    0 10px 25px rgba(20, 35, 60, .08);
+
+}
+
+
+/* =========================================================
+   PLACEHOLDER
+   ========================================================= */
+
+.ubx-placeholder-card {
+
+  min-height:
+    120px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  padding:
+    25px;
+
+  border:
+    1px dashed #ccd4df;
+
+  border-radius:
+    15px;
+
+  background:
+    #fafbfc;
+
+  color:
+    #7a8493;
+
+  text-align:
+    center;
+
+  font-size:
+    14px;
+
+}
+
+
+/* =========================================================
+   LOCATION
+   ========================================================= */
+
+.ubx-location-card {
+
+  padding:
+    20px;
+
+  border:
+    1px solid #e3e8ee;
+
+  border-radius:
+    15px;
+
+  background:
+    #f8fafc;
+
+}
+
+
+.ubx-location-card p {
+
+  margin:
+    0;
+
+  color:
+    #5d6878;
+
+  font-size:
+    14px;
+
+  line-height:
+    1.7;
+
+}
+
+
+/* =========================================================
+   SOCIAL
+   ========================================================= */
+
+.ubx-social-links {
+
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    9px;
+
+}
+
+
+.ubx-social-links a {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  min-height:
+    38px;
+
+  padding:
+    8px 13px;
+
+  border:
+    1px solid #dfe4eb;
+
+  border-radius:
+    9px;
+
+  color:
+    #354052;
+
+  background:
+    #ffffff;
+
+  text-decoration:
+    none;
+
+  font-size:
+    13px;
+
+  font-weight:
+    700;
+
+  transition:
+    background .2s ease,
+    transform .2s ease;
+
+}
+
+
+.ubx-social-links a:hover {
+
+  background:
+    #f4f7fa;
+
+  transform:
+    translateY(-2px);
+
+}
+
+
+/* =========================================================
+   RESTAURANT
+   ========================================================= */
+
+.ubx-template-restaurant
+.ubx-restaurant-hero {
+
+  border-top:
+    4px solid #e28a2c;
+
+}
+
+
+.ubx-template-restaurant
+.ubx-feature-card:hover {
+
+  border-color:
+    #e8b26e;
+
+}
+
+
+/* =========================================================
+   CLOTHING
+   ========================================================= */
+
+.ubx-template-clothing
+.ubx-fashion-hero {
+
+  border-top:
+    4px solid #8b5cf6;
+
+}
+
+
+.ubx-template-clothing
+.ubx-feature-card:hover {
+
+  border-color:
+    #c4a8fa;
+
+}
+
+
+/* =========================================================
+   HOTEL
+   ========================================================= */
+
+.ubx-template-hotel
+.ubx-hotel-hero {
+
+  border-top:
+    4px solid #b18a45;
+
+}
+
+
+.ubx-template-hotel
+.ubx-feature-card:hover {
+
+  border-color:
+    #d7bf91;
+
+}
+
+
+/* =========================================================
+   SALON
+   ========================================================= */
+
+.ubx-template-salon
+.ubx-salon-hero {
+
+  border-top:
+    4px solid #d85c91;
+
+}
+
+
+.ubx-template-salon
+.ubx-feature-card:hover {
+
+  border-color:
+    #eda7c5;
+
+}
+
+
+/* =========================================================
+   HOSPITAL
+   ========================================================= */
+
+.ubx-template-hospital
+.ubx-hospital-hero {
+
+  border-top:
+    4px solid #159b8a;
+
+}
+
+
+.ubx-emergency-strip {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    20px;
+
+  margin:
+    0 0 25px;
+
+  padding:
+    18px 22px;
+
+  border:
+    1px solid #cce8e3;
+
+  border-radius:
+    15px;
+
+  background:
+    #effaf8;
+
+}
+
+
+.ubx-emergency-strip strong {
+
+  color:
+    #0f766e;
+
+  font-size:
+    15px;
+
+}
+
+
+/* =========================================================
+   COACHING
+   ========================================================= */
+
+.ubx-template-coaching
+.ubx-coaching-hero {
+
+  border-top:
+    4px solid #2563eb;
+
+}
+
+
+.ubx-template-coaching
+.ubx-feature-card:hover {
+
+  border-color:
+    #9bbcf8;
+
+}
+
+
+/* =========================================================
+   REAL ESTATE
+   ========================================================= */
+
+.ubx-template-realestate
+.ubx-property-hero {
+
+  border-top:
+    4px solid #0f766e;
+
+}
+
+
+.ubx-template-realestate
+.ubx-feature-card:hover {
+
+  border-color:
+    #82c7bf;
+
+}
+
+
+/* =========================================================
+   AUTOMOBILE
+   ========================================================= */
+
+.ubx-template-automobile
+.ubx-auto-hero {
+
+  border-top:
+    4px solid #374151;
+
+}
+
+
+.ubx-template-automobile
+.ubx-feature-card:hover {
+
+  border-color:
+    #9ca3af;
+
+}
+
+
+/* =========================================================
+   ELECTRONICS
+   ========================================================= */
+
+.ubx-template-electronics
+.ubx-electronics-hero {
+
+  border-top:
+    4px solid #2563eb;
+
+}
+
+
+.ubx-template-electronics
+.ubx-feature-card:hover {
+
+  border-color:
+    #91b5f4;
+
+}
+
+
+/* =========================================================
+   GROCERY
+   ========================================================= */
+
+.ubx-template-grocery
+.ubx-grocery-hero {
+
+  border-top:
+    4px solid #16a34a;
+
+}
+
+
+.ubx-template-grocery
+.ubx-feature-card:hover {
+
+  border-color:
+    #8ed39e;
+
+}
+
+
+/* =========================================================
+   SERVICE
+   ========================================================= */
+
+.ubx-template-service
+.ubx-service-hero {
+
+  border-top:
+    4px solid #7c3aed;
+
+}
+
+
+.ubx-template-service
+.ubx-feature-card:hover {
+
+  border-color:
+    #bda1ef;
+
+}
+
+
+/* =========================================================
+   DEFAULT
+   ========================================================= */
+
+.ubx-template-default
+.ubx-hero {
+
+  border-top:
+    4px solid #1769e0;
+
+}
+
+
+/* =========================================================
+   BUSINESS STATUS
+   ========================================================= */
+
+.business-status {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  min-height:
+    27px;
+
+  padding:
+    4px 10px;
+
+  border-radius:
+    999px;
+
+  background:
+    #eef2f7;
+
+  color:
+    #566273;
+
+  font-size:
+    11px;
+
+  font-weight:
+    800;
+
+}
+
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.business-error {
+
+  width:
+    100%;
+
+  padding:
+    60px 20px;
+
+}
+
+
+.business-error-inner {
+
+  max-width:
+    620px;
+
+  margin:
+    0 auto;
+
+  padding:
+    45px 30px;
+
+  border:
+    1px solid #e3e7ed;
+
+  border-radius:
+    20px;
+
+  background:
+    #ffffff;
+
+  text-align:
+    center;
+
+  box-shadow:
+    0 10px 35px rgba(20, 35, 60, .07);
+
+}
+
+
+.business-error-inner h2 {
+
+  margin:
+    0 0 12px;
+
+  color:
+    #1c2534;
+
+}
+
+
+.business-error-inner p {
+
+  margin:
+    0 0 22px;
+
+  color:
+    #6b7584;
+
+  line-height:
+    1.7;
+
+}
+
+
+.business-error-home {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  min-height:
+    42px;
+
+  padding:
+    9px 18px;
+
+  border-radius:
+    10px;
+
+  background:
+    #1769e0;
+
+  color:
+    #ffffff;
+
+  text-decoration:
+    none;
+
+  font-weight:
+    700;
+
+}
+
+
+/* =========================================================
+   LOADER
+   ========================================================= */
+
+.business-page-loader {
+
+  position:
+    fixed;
+
+  inset:
+    0;
+
+  z-index:
+    9999;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  background:
+    rgba(255,255,255,.92);
+
+  backdrop-filter:
+    blur(5px);
+
+}
+
+
+.business-page-loader[style*="display: none"] {
+
+  pointer-events:
+    none;
+
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (
+  max-width: 900px
+) {
+
+  .ubx-layout {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .ubx-sidebar {
+
+    display:
+      grid;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+}
+
+
+@media (
+  max-width: 700px
+) {
+
+  .business-page-content > .container {
+
+    width:
+      min(
+        1200px,
+        calc(100% - 20px)
+      );
+
+  }
+
+
+  .ubx-business-template {
+
+    padding:
+      15px 0 45px;
+
+  }
+
+
+  .ubx-hero {
+
+    border-radius:
+      17px;
+
+  }
+
+
+  .ubx-cover-wrap {
+
+    height:
+      205px;
+
+  }
+
+
+  .ubx-profile {
+
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+    gap:
+      15px;
+
+    padding:
+      0 18px 22px;
+
+  }
+
+
+  .ubx-logo-wrap {
+
+    width:
+      105px;
+
+    height:
+      105px;
+
+    margin-top:
+      -45px;
+
+    border-width:
+      5px;
+
+    border-radius:
+      18px;
+
+  }
+
+
+  .ubx-profile-main {
+
+    width:
+      100%;
+
+  }
+
+
+  .ubx-profile-main h1 {
+
+    font-size:
+      28px;
+
+  }
+
+
+  .ubx-actions {
+
+    width:
+      100%;
+
+  }
+
+
+  .ubx-action {
+
+    flex:
+      1 1 auto;
+
+  }
+
+
+  .ubx-section {
+
+    padding:
+      21px 18px;
+
+    border-radius:
+      15px;
+
+  }
+
+
+  .ubx-section h2 {
+
+    font-size:
+      19px;
+
+  }
+
+
+  .ubx-info-grid,
+  .ubx-feature-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .ubx-sidebar {
+
+    display:
+      flex;
+
+    grid-template-columns:
+      none;
+
+  }
+
+
+  .ubx-emergency-strip {
+
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+  }
+
+
+  .ubx-emergency-strip .ubx-actions {
+
+    width:
+      100%;
+
+  }
+
+}
+
+
+@media (
+  max-width: 480px
+) {
+
+  .ubx-business-template > .ubx-breadcrumb {
+
+    font-size:
+      12px;
+
+  }
+
+
+  .ubx-cover-wrap {
+
+    height:
+      175px;
+
+  }
+
+
+  .ubx-profile {
+
+    padding:
+      0 15px 18px;
+
+  }
+
+
+  .ubx-logo-wrap {
+
+    width:
+      90px;
+
+    height:
+      90px;
+
+    margin-top:
+      -38px;
+
+  }
+
+
+  .ubx-profile-main h1 {
+
+    font-size:
+      24px;
+
+  }
+
+
+  .ubx-action {
+
+    width:
+      100%;
+
+    flex:
+      1 1 100%;
+
+  }
+
+
+  .ubx-section {
+
+    margin-bottom:
+      16px;
+
+    padding:
+      18px 15px;
+
+  }
+
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+.ubx-action:focus-visible,
+.ubx-breadcrumb a:focus-visible,
+.ubx-social-links a:focus-visible,
+.business-error-home:focus-visible {
+
+  outline:
+    3px solid rgba(37,99,235,.25);
+
+  outline-offset:
+    3px;
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (
+  prefers-reduced-motion: reduce
+) {
+
+  .ubx-action,
+  .ubx-feature-card,
+  .ubx-social-links a {
+
+    transition:
+      none;
+
+  }
+
+}
