@@ -5,7 +5,7 @@
    assets/js/seo/business-page.js
 
    Version:
-   10.3.0
+   10.9.0
 
    RESPONSIBILITIES
    ---------------------------------------------------------
@@ -81,7 +81,7 @@
   var CONFIG = {
 
     VERSION:
-      "10.7.0",
+      "10.9.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -931,9 +931,20 @@
        */
 
       #businessPageRoot {
-        display: block;
-        width: 100%;
-        min-height: 100vh;
+        display: block !important;
+        position: relative !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 1px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        overflow: visible !important;
+        float: none !important;
+        clear: both !important;
+        box-sizing: border-box !important;
+        isolation: isolate !important;
       }
 
       #businessPageRoot[hidden] {
@@ -1045,21 +1056,50 @@
 
       #businessPageContent {
         display: block !important;
+        position: relative !important;
         width: 100% !important;
-        min-height: 100vh !important;
+        min-height: 1px !important;
         height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
         visibility: visible !important;
         opacity: 1 !important;
+        overflow: visible !important;
+        float: none !important;
+        clear: both !important;
+        box-sizing: border-box !important;
       }
 
       #businessPageContent > main,
-      #businessPageContent > .ubnux-template-content {
+      #businessPageContent > .ubnux-template-content,
+      #businessPageContent > .lux-business-content {
         display: block !important;
+        position: relative !important;
         width: 100% !important;
-        min-height: 100vh !important;
+        min-height: 1px !important;
         height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
         visibility: visible !important;
         opacity: 1 !important;
+        overflow: visible !important;
+        float: none !important;
+        clear: both !important;
+        box-sizing: border-box !important;
+      }
+
+      #businessPageContent > .lux-business-content > section {
+        display: block !important;
+        position: relative !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 1px !important;
+        float: none !important;
+        clear: both !important;
+      }
+
+      #businessPageContent > .lux-business-content > .lux-hero {
+        min-height: 720px !important;
       }
 
       #businessPageContent:empty {
@@ -1136,6 +1176,36 @@
       );
 
     }
+
+    /*
+     * Business pages must not inherit layout constraints from
+     * the homepage wrapper. Keep the business root directly
+     * under <body> so parent display/grid/flex rules cannot
+     * collapse the template mount.
+     */
+    if (
+      document.body &&
+      root.parentNode !== document.body
+    ) {
+      document.body.appendChild(root);
+    }
+
+    root.hidden = false;
+    root.removeAttribute("hidden");
+    root.style.setProperty("display", "block", "important");
+    root.style.setProperty("position", "relative", "important");
+    root.style.setProperty("width", "100%", "important");
+    root.style.setProperty("height", "auto", "important");
+    root.style.setProperty("min-height", "1px", "important");
+    root.style.setProperty("margin", "0", "important");
+    root.style.setProperty("padding", "0", "important");
+    root.style.setProperty("visibility", "visible", "important");
+    root.style.setProperty("opacity", "1", "important");
+    root.style.setProperty("overflow", "visible", "important");
+    root.style.setProperty("float", "none", "important");
+    root.style.setProperty("clear", "both", "important");
+    root.style.setProperty("box-sizing", "border-box", "important");
+    root.style.setProperty("isolation", "isolate", "important");
 
     return root;
 
@@ -2435,6 +2505,10 @@
           templateURL(
             template,
             "index.html"
+          ) +
+          "?v=" +
+          encodeURIComponent(
+            CONFIG.VERSION
           )
         );
 
@@ -2472,6 +2546,10 @@
           templateURL(
             CONFIG.DEFAULT_TEMPLATE,
             "index.html"
+          ) +
+          "?v=" +
+          encodeURIComponent(
+            CONFIG.VERSION
           )
         );
 
@@ -2687,6 +2765,10 @@
           templateURL(
             template,
             "style.css"
+          ) +
+          "?v=" +
+          encodeURIComponent(
+            CONFIG.VERSION
           );
 
         link.dataset
@@ -2957,37 +3039,129 @@
     content
   ) {
 
-    if (!content) return;
+    if (!content) {
+      return;
+    }
 
-    var important = function(element, property, value) {
-      if (element) element.style.setProperty(property, value, "important");
-    };
+    var important =
+      function (
+        element,
+        property,
+        value
+      ) {
 
+        if (element) {
+
+          element.style.setProperty(
+            property,
+            value,
+            "important"
+          );
+
+        }
+
+      };
+
+
+    /*
+     * Dynamic mount itself.
+     */
     important(content, "display", "block");
     important(content, "position", "relative");
     important(content, "width", "100%");
     important(content, "height", "auto");
     important(content, "min-height", "1px");
+    important(content, "margin", "0");
+    important(content, "padding", "0");
     important(content, "visibility", "visible");
     important(content, "opacity", "1");
     important(content, "overflow", "visible");
     important(content, "float", "none");
     important(content, "clear", "both");
+    important(content, "box-sizing", "border-box");
 
-    var businessContent = content.querySelector(".lux-business-content");
+
+    /*
+     * Clothing template's actual flow wrapper.
+     */
+    var businessContent =
+      content.querySelector(
+        ":scope > .lux-business-content"
+      );
+
+    if (!businessContent) {
+
+      businessContent =
+        content.querySelector(
+          ".lux-business-content"
+        );
+
+    }
+
+
     if (businessContent) {
+
       important(businessContent, "display", "block");
       important(businessContent, "position", "relative");
       important(businessContent, "width", "100%");
       important(businessContent, "height", "auto");
-      important(businessContent, "min-height", "1px");
+      important(businessContent, "min-height", "720px");
+      important(businessContent, "margin", "0");
+      important(businessContent, "padding", "0");
       important(businessContent, "visibility", "visible");
       important(businessContent, "opacity", "1");
       important(businessContent, "overflow", "visible");
+      important(businessContent, "float", "none");
+      important(businessContent, "clear", "both");
+      important(businessContent, "box-sizing", "border-box");
+
+
+      /*
+       * Every top-level business section must participate
+       * in normal document flow. This removes the exact class
+       * of "children exist but parent is 0px high" failures.
+       */
+      Array.prototype.slice.call(
+        businessContent.children || []
+      ).forEach(
+        function (child) {
+
+          var tag =
+            String(
+              child.tagName || ""
+            ).toLowerCase();
+
+          if (
+            tag === "script" ||
+            tag === "style"
+          ) {
+            return;
+          }
+
+          important(child, "display", "block");
+          important(child, "position", "relative");
+          important(child, "width", "100%");
+          important(child, "height", "auto");
+          important(child, "min-height", "1px");
+          important(child, "float", "none");
+          important(child, "clear", "both");
+
+        }
+      );
+
     }
 
-    var hero = content.querySelector(".lux-hero");
+
+    /*
+     * Hero retains the template's designed viewport height.
+     */
+    var hero =
+      content.querySelector(
+        ".lux-hero"
+      );
+
     if (hero) {
+
       important(hero, "display", "block");
       important(hero, "position", "relative");
       important(hero, "width", "100%");
@@ -2995,22 +3169,135 @@
       important(hero, "min-height", "720px");
       important(hero, "visibility", "visible");
       important(hero, "opacity", "1");
+
     }
 
-    content.querySelectorAll(".lux-loader").forEach(function(loader) {
-      loader.classList.add("is-hidden");
-      important(loader, "pointer-events", "none");
-    });
 
-    var cs = window.getComputedStyle(content);
-    var bs = businessContent ? window.getComputedStyle(businessContent) : null;
-    var hs = hero ? window.getComputedStyle(hero) : null;
+    /*
+     * Never let the template loader cover the page.
+     */
+    content
+      .querySelectorAll(
+        ".lux-loader"
+      )
+      .forEach(
+        function (loader) {
 
-    log("Template layout forced:", {
-      content: {tag: content.tagName, display: cs.display, position: cs.position, height: cs.height, minHeight: cs.minHeight, visibility: cs.visibility, overflow: cs.overflow},
-      businessContent: bs ? {display: bs.display, position: bs.position, height: bs.height, minHeight: bs.minHeight} : null,
-      hero: hs ? {display: hs.display, position: hs.position, height: hs.height, minHeight: hs.minHeight} : null
-    });
+          loader.classList.add(
+            "is-hidden"
+          );
+
+          important(loader, "display", "none");
+          important(loader, "visibility", "hidden");
+          important(loader, "opacity", "0");
+          important(loader, "pointer-events", "none");
+
+        }
+      );
+
+
+    /*
+     * Diagnostic metrics.
+     */
+    var cs =
+      window.getComputedStyle(
+        content
+      );
+
+    var bs =
+      businessContent
+        ? window.getComputedStyle(
+            businessContent
+          )
+        : null;
+
+    var hs =
+      hero
+        ? window.getComputedStyle(
+            hero
+          )
+        : null;
+
+    var contentRect =
+      content.getBoundingClientRect();
+
+    var businessRect =
+      businessContent
+        ? businessContent.getBoundingClientRect()
+        : null;
+
+    var heroRect =
+      hero
+        ? hero.getBoundingClientRect()
+        : null;
+
+    log(
+      "Template layout forced:",
+      {
+        content: {
+          tag:
+            content.tagName,
+          display:
+            cs.display,
+          position:
+            cs.position,
+          height:
+            cs.height,
+          minHeight:
+            cs.minHeight,
+          offsetHeight:
+            content.offsetHeight,
+          scrollHeight:
+            content.scrollHeight
+        },
+
+        businessContent: bs
+          ? {
+              display:
+                bs.display,
+              position:
+                bs.position,
+              height:
+                bs.height,
+              minHeight:
+                bs.minHeight,
+              offsetHeight:
+                businessContent.offsetHeight,
+              scrollHeight:
+                businessContent.scrollHeight
+            }
+          : null,
+
+        hero: hs
+          ? {
+              display:
+                hs.display,
+              position:
+                hs.position,
+              height:
+                hs.height,
+              minHeight:
+                hs.minHeight,
+              offsetHeight:
+                hero.offsetHeight
+            }
+          : null,
+
+        rects: {
+          content:
+            contentRect.height,
+          businessContent:
+            businessRect
+              ? businessRect.height
+              : 0,
+          hero:
+            heroRect
+              ? heroRect.height
+              : 0
+        }
+      }
+    );
+
   }
 
 
@@ -3135,6 +3422,10 @@
           templateURL(
             template,
             "script.js"
+          ) +
+          "?v=" +
+          encodeURIComponent(
+            CONFIG.VERSION
           );
 
         script.async =
@@ -4669,7 +4960,30 @@
      dynamically, force the first paint to a visible state.
   ======================================================= */
 
-  function recoverTemplateVisibility() {
+  async function recoverTemplateVisibility() {
+
+    if (
+      typeof window.requestAnimationFrame ===
+      "function"
+    ) {
+
+      await new Promise(
+        function (
+          resolve
+        ) {
+
+          window.requestAnimationFrame(
+            function () {
+
+              resolve();
+
+            }
+          );
+
+        }
+      );
+
+    }
 
     var root =
       getRoot();
@@ -4706,18 +5020,65 @@
     content.style.minHeight = "100vh";
     content.style.width = "100%";
 
-    var templateMain = content.querySelector(":scope > .ubnux-template-content");
-    if (!templateMain) templateMain = content.querySelector(":scope > main");
-    if (!templateMain) templateMain = content.querySelector("main");
-    if (templateMain) {
-      templateMain.hidden = false;
-      templateMain.removeAttribute("hidden");
-      templateMain.style.display = "block";
-      templateMain.style.visibility = "visible";
-      templateMain.style.opacity = "1";
-      templateMain.style.height = "auto";
-      templateMain.style.minHeight = "100vh";
-      templateMain.style.width = "100%";
+    var businessContent =
+      content.querySelector(
+        ":scope > .lux-business-content"
+      );
+
+    if (!businessContent) {
+      businessContent =
+        content.querySelector(
+          ".lux-business-content"
+        );
+    }
+
+    if (businessContent) {
+
+      businessContent.hidden = false;
+      businessContent.removeAttribute("hidden");
+
+      businessContent.style.setProperty(
+        "display",
+        "block",
+        "important"
+      );
+
+      businessContent.style.setProperty(
+        "position",
+        "relative",
+        "important"
+      );
+
+      businessContent.style.setProperty(
+        "width",
+        "100%",
+        "important"
+      );
+
+      businessContent.style.setProperty(
+        "height",
+        "auto",
+        "important"
+      );
+
+      businessContent.style.setProperty(
+        "min-height",
+        "720px",
+        "important"
+      );
+
+      businessContent.style.setProperty(
+        "visibility",
+        "visible",
+        "important"
+      );
+
+      businessContent.style.setProperty(
+        "opacity",
+        "1",
+        "important"
+      );
+
     }
 
     /*
@@ -4813,12 +5174,16 @@
           getComputedStyle(content).display,
         contentVisibility:
           getComputedStyle(content).visibility,
-        templateMainTag:
-          templateMain ? templateMain.tagName : "missing",
-        templateMainDisplay:
-          templateMain ? getComputedStyle(templateMain).display : "missing",
-        templateMainHeight:
-          templateMain ? templateMain.getBoundingClientRect().height : 0,
+        businessContentTag:
+          businessContent ? businessContent.tagName : "missing",
+        businessContentDisplay:
+          businessContent ? getComputedStyle(businessContent).display : "missing",
+        businessContentHeight:
+          businessContent ? businessContent.getBoundingClientRect().height : 0,
+        businessContentOffsetHeight:
+          businessContent ? businessContent.offsetHeight : 0,
+        businessContentScrollHeight:
+          businessContent ? businessContent.scrollHeight : 0,
         heroSlides:
           heroSlides.length,
         activeHero:
@@ -5231,7 +5596,7 @@
          VISUAL RECOVERY
       ================================================== */
 
-      recoverTemplateVisibility();
+      await recoverTemplateVisibility();
 
 
       /* ===================================================
