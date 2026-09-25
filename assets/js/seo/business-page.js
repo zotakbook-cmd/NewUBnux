@@ -81,7 +81,7 @@
   var CONFIG = {
 
     VERSION:
-      "10.6.0",
+      "10.7.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -1057,7 +1057,8 @@
         opacity: 1 !important;
       }
 
-      #businessPageContent > main {
+      #businessPageContent > main,
+      #businessPageContent > .ubnux-template-content {
         display: block !important;
         width: 100% !important;
         min-height: 100vh !important;
@@ -2881,6 +2882,82 @@
   }
 
 
+  /* =======================================================
+     NORMALIZE TEMPLATE ROOT
+     -------------------------------------------------------
+     A business template may contain a <main> wrapper.
+     The host page already owns the dynamic mount container,
+     so keeping another <main> inside it can collide with
+     global site CSS/HTML semantics. Convert only the
+     template's outer main wrapper to a neutral div.
+  ======================================================= */
+
+  function normalizeTemplateRoot(
+    templateBody
+  ) {
+
+    if (!templateBody) {
+      return;
+    }
+
+    var templateMain =
+      templateBody.querySelector(
+        ":scope > main"
+      );
+
+    if (!templateMain) {
+      templateMain =
+        templateBody.querySelector("main");
+    }
+
+    if (!templateMain) {
+      return;
+    }
+
+    var wrapper =
+      document.createElement("div");
+
+    Array.prototype.slice.call(
+      templateMain.attributes || []
+    ).forEach(function (attribute) {
+
+      wrapper.setAttribute(
+        attribute.name,
+        attribute.value
+      );
+
+    });
+
+    wrapper.classList.add(
+      "ubnux-template-content"
+    );
+
+    while (templateMain.firstChild) {
+
+      wrapper.appendChild(
+        templateMain.firstChild
+      );
+
+    }
+
+    templateMain.parentNode.replaceChild(
+      wrapper,
+      templateMain
+    );
+
+    log(
+      "Template <main> wrapper normalized to <div>.",
+      {
+        className:
+          wrapper.className,
+        childCount:
+          wrapper.children.length
+      }
+    );
+
+  }
+
+
   function renderTemplateHTML(
     html
   ) {
@@ -2915,6 +2992,10 @@
       );
 
     }
+
+    normalizeTemplateRoot(
+      templateBody
+    );
 
     /*
      * Business templates are complete HTML documents.
@@ -4567,7 +4648,8 @@
     content.style.minHeight = "100vh";
     content.style.width = "100%";
 
-    var templateMain = content.querySelector(":scope > main");
+    var templateMain = content.querySelector(":scope > .ubnux-template-content");
+    if (!templateMain) templateMain = content.querySelector(":scope > main");
     if (!templateMain) templateMain = content.querySelector("main");
     if (templateMain) {
       templateMain.hidden = false;
