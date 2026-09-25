@@ -81,7 +81,7 @@
   var CONFIG = {
 
     VERSION:
-      "10.5.0",
+      "10.6.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -1049,8 +1049,21 @@
       }
 
       #businessPageContent {
-        width: 100%;
-        min-height: 100vh;
+        display: block !important;
+        width: 100% !important;
+        min-height: 100vh !important;
+        height: auto !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+
+      #businessPageContent > main {
+        display: block !important;
+        width: 100% !important;
+        min-height: 100vh !important;
+        height: auto !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
 
       #businessPageContent:empty {
@@ -4546,9 +4559,26 @@
     }
 
     content.hidden = false;
+    content.removeAttribute("hidden");
     content.style.display = "block";
     content.style.visibility = "visible";
     content.style.opacity = "1";
+    content.style.height = "auto";
+    content.style.minHeight = "100vh";
+    content.style.width = "100%";
+
+    var templateMain = content.querySelector(":scope > main");
+    if (!templateMain) templateMain = content.querySelector("main");
+    if (templateMain) {
+      templateMain.hidden = false;
+      templateMain.removeAttribute("hidden");
+      templateMain.style.display = "block";
+      templateMain.style.visibility = "visible";
+      templateMain.style.opacity = "1";
+      templateMain.style.height = "auto";
+      templateMain.style.minHeight = "100vh";
+      templateMain.style.width = "100%";
+    }
 
     /*
      * Ensure the hero has an active slide.
@@ -4635,6 +4665,18 @@
             : 0,
         contentHeight:
           contentRect.height,
+        contentTag:
+          content.tagName,
+        contentDisplay:
+          getComputedStyle(content).display,
+        contentVisibility:
+          getComputedStyle(content).visibility,
+        templateMainTag:
+          templateMain ? templateMain.tagName : "missing",
+        templateMainDisplay:
+          templateMain ? getComputedStyle(templateMain).display : "missing",
+        templateMainHeight:
+          templateMain ? templateMain.getBoundingClientRect().height : 0,
         heroSlides:
           heroSlides.length,
         activeHero:
@@ -4782,6 +4824,8 @@
   async function initialize(
     options
   ) {
+
+    log("BusinessPage controller version:", CONFIG.VERSION);
 
     options =
       options || {};
