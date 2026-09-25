@@ -2,7 +2,7 @@
    UBNUX CLOTHING BUSINESS SITE
    PREMIUM LUXURY STYLE
    File: assets/business-sites/clothing/style.css
-   Version: 3.0.0
+   Version: 3.2.0
 ========================================================= */
 
 
@@ -3290,14 +3290,27 @@ button:focus-visible{
 
 
 /* =========================================================
-   UBNUX BUSINESS TEMPLATE LIFECYCLE
+   UBNUX BUSINESS TEMPLATE LIFECYCLE — V3.2
    ---------------------------------------------------------
-   Safe styles for business-page.js v10 template mounting.
+   Compatible with:
+   - business-page.js v11.x
+   - neutral #businessPageContent mount
+   - Clothing template v3.1+
+   ---------------------------------------------------------
+   IMPORTANT:
+   These rules prevent the template from inheriting layout
+   constraints from the UBnux homepage shell.
 ========================================================= */
 
 body.ubnux-business-page-active{
 
   margin:0;
+
+  padding:0;
+
+  min-width:0;
+
+  width:100%;
 
   overflow-x:hidden;
 
@@ -3306,32 +3319,182 @@ body.ubnux-business-page-active{
 
 body.ubnux-business-page-active #businessPageRoot{
 
-  display:block;
+  display:block !important;
 
-  width:100%;
+  position:relative;
+
+  width:100% !important;
+
+  min-width:0;
 
   min-height:100vh;
+
+  height:auto;
+
+  margin:0;
+
+  padding:0;
+
+  visibility:visible;
+
+  opacity:1;
+
+  overflow:visible;
 
 }
 
 
-.lux-hero,
-.lux-statement,
-.lux-contact,
-.lux-footer,
-.lux-gallery,
-.lux-collections,
-.lux-about{
+body.ubnux-business-page-active #businessPageContent,
+body.ubnux-business-page-active .ubnux-business-mount{
+
+  display:block !important;
+
+  position:relative;
+
+  width:100% !important;
+
+  min-width:0;
+
+  min-height:1px;
+
+  height:auto;
+
+  margin:0;
+
+  padding:0;
+
+  visibility:visible !important;
+
+  opacity:1 !important;
+
+  overflow:visible;
+
+  float:none;
+
+  clear:both;
+
+}
+
+
+body.ubnux-business-page-active
+.ubnux-business-mount > *{
 
   max-width:100%;
 
 }
 
 
+body.ubnux-business-page-active
+.lux-business-content{
+
+  display:block !important;
+
+  position:relative;
+
+  width:100%;
+
+  min-width:0;
+
+  min-height:1px;
+
+  height:auto;
+
+  margin:0;
+
+  padding:0;
+
+  visibility:visible;
+
+  opacity:1;
+
+  overflow:visible;
+
+}
+
+
+body.ubnux-business-page-active
+.lux-business-content > *{
+
+  max-width:100%;
+
+}
+
+
+body.ubnux-business-page-active
+.lux-hero{
+
+  display:block;
+
+  position:relative;
+
+  width:100%;
+
+  max-width:100%;
+
+  min-height:720px;
+
+  height:auto;
+
+  margin:0;
+
+  clear:both;
+
+  overflow:hidden;
+
+}
+
+
+body.ubnux-business-page-active
+.lux-hero-container{
+
+  position:relative;
+
+  width:100%;
+
+  max-width:100%;
+
+}
+
+
+body.ubnux-business-page-active
+.lux-statement,
+body.ubnux-business-page-active
+.lux-contact,
+body.ubnux-business-page-active
+.lux-footer,
+body.ubnux-business-page-active
+.lux-gallery,
+body.ubnux-business-page-active
+.lux-collections,
+body.ubnux-business-page-active
+.lux-about,
+body.ubnux-business-page-active
+.lux-intro,
+body.ubnux-business-page-active
+.lux-reviews,
+body.ubnux-business-page-active
+.lux-info,
+body.ubnux-business-page-active
+.lux-experience{
+
+  max-width:100%;
+
+  width:100%;
+
+  clear:both;
+
+}
+
+
+body.ubnux-business-page-active
 .lux-hero-image img,
+body.ubnux-business-page-active
 .lux-collection-image img,
+body.ubnux-business-page-active
 .lux-about-image img,
+body.ubnux-business-page-active
 .lux-contact-bg img,
+body.ubnux-business-page-active
 .lux-gallery-item img{
 
   max-width:none;
@@ -3339,15 +3502,86 @@ body.ubnux-business-page-active #businessPageRoot{
 }
 
 
-.is-empty{
+body.ubnux-business-page-active
+.lux-loader{
 
-  opacity:.55;
+  z-index:99999;
 
 }
 
 
+body.ubnux-business-page-active
+.lux-loader.is-hidden{
+
+  display:none !important;
+
+  visibility:hidden !important;
+
+  opacity:0 !important;
+
+  pointer-events:none !important;
+
+}
+
+
+body.ubnux-business-page-active
+.reveal.is-visible{
+
+  opacity:1;
+
+  visibility:visible;
+
+  transform:translateY(0);
+
+}
+
+
+body.ubnux-business-page-active
+.reveal{
+
+  will-change:opacity,transform;
+
+}
+
+
+body.ubnux-business-page-active
+.lux-hero-slide.active
+.reveal{
+
+  opacity:1;
+
+  visibility:visible;
+
+  transform:translateY(0);
+
+}
+
+
+body.ubnux-business-page-active
+.lux-hero-slide.active{
+
+  opacity:1;
+
+  visibility:visible;
+
+}
+
+
+body.ubnux-business-page-active
+.lux-floating-whatsapp,
+body.ubnux-business-page-active
+.lux-back-top{
+
+  isolation:isolate;
+
+}
+
+
+body.ubnux-business-page-active
 .lux-logo-text strong,
+body.ubnux-business-page-active
 .lux-hero-title [data-business-name],
+body.ubnux-business-page-active
 .lux-contact h2{
 
   overflow-wrap:anywhere;
@@ -3355,10 +3589,104 @@ body.ubnux-business-page-active #businessPageRoot{
 }
 
 
+body.ubnux-business-page-active
+.is-empty{
+
+  opacity:.55;
+
+}
+
+
+/* ---------------------------------------------------------
+   TEMPLATE / HOST COLLISION PROTECTION
+--------------------------------------------------------- */
+
+body.ubnux-business-page-active
+main#businessPageContent{
+
+  display:block !important;
+
+  width:100% !important;
+
+  min-height:1px;
+
+  height:auto;
+
+  margin:0;
+
+  padding:0;
+
+}
+
+
+body.ubnux-business-page-active
+[hidden]{
+
+  display:none !important;
+
+}
+
+
+/* ---------------------------------------------------------
+   FIXED TEMPLATE CONTROLS
+--------------------------------------------------------- */
+
+body.ubnux-business-page-active
 .lux-floating-whatsapp,
+body.ubnux-business-page-active
 .lux-back-top{
 
-  isolation:isolate;
+  position:fixed;
+
+  max-width:calc(100vw - 30px);
+
+}
+
+
+/* ---------------------------------------------------------
+   IMAGE SAFETY
+--------------------------------------------------------- */
+
+body.ubnux-business-page-active
+img{
+
+  max-width:100%;
+
+}
+
+
+body.ubnux-business-page-active
+.lux-hero-image img,
+body.ubnux-business-page-active
+.lux-collection-image img,
+body.ubnux-business-page-active
+.lux-about-image img,
+body.ubnux-business-page-active
+.lux-contact-bg img,
+body.ubnux-business-page-active
+.lux-gallery-item img{
+
+  max-width:none;
+
+}
+
+
+/* ---------------------------------------------------------
+   ACCESSIBILITY / REDUCED MOTION
+--------------------------------------------------------- */
+
+@media(prefers-reduced-motion:reduce){
+
+  body.ubnux-business-page-active
+  .reveal{
+
+    opacity:1 !important;
+
+    visibility:visible !important;
+
+    transform:none !important;
+
+  }
 
 }
 
@@ -4349,5 +4677,21 @@ body.ubnux-business-page-active #businessPageRoot{
     transition-duration:.01ms !important;
 
   }
+
+}
+
+/* =========================================================
+   UBNUX CLOTHING STYLE V3.2.0
+   Runtime compatibility marker
+========================================================= */
+
+body.ubnux-business-page-active[data-ubnux-template="clothing"]
+.lux-business-content,
+body.ubnux-business-page-active[data-ubnux-template="clothing"]
+.ubnux-business-mount{
+
+  width:100%;
+
+  min-height:1px;
 
 }
