@@ -602,28 +602,19 @@
 
     }
 
-    if (
-      String(content.tagName || "").toUpperCase() !==
-      "MAIN"
-    ) {
-
-      return content;
-
-    }
-
     var replacement =
       document.createElement("div");
 
-    Array.prototype.slice.call(
-      content.attributes || []
-    ).forEach(function(attribute) {
+    replacement.id =
+      "businessPageContent";
 
-      replacement.setAttribute(
-        attribute.name,
-        attribute.value
-      );
+    replacement.className =
+      "ubnux-business-mount";
 
-    });
+    replacement.setAttribute(
+      "aria-live",
+      content.getAttribute("aria-live") || "polite"
+    );
 
     content.parentNode.replaceChild(
       replacement,
@@ -631,7 +622,11 @@
     );
 
     log(
-      "Template content container normalized from <main> to <div>."
+      "Business content mount normalized to neutral <div>.",
+      {
+        previousTag: content.tagName,
+        newTag: replacement.tagName
+      }
     );
 
     return replacement;
@@ -2958,6 +2953,67 @@
   }
 
 
+  function forceTemplateLayout(
+    content
+  ) {
+
+    if (!content) return;
+
+    var important = function(element, property, value) {
+      if (element) element.style.setProperty(property, value, "important");
+    };
+
+    important(content, "display", "block");
+    important(content, "position", "relative");
+    important(content, "width", "100%");
+    important(content, "height", "auto");
+    important(content, "min-height", "1px");
+    important(content, "visibility", "visible");
+    important(content, "opacity", "1");
+    important(content, "overflow", "visible");
+    important(content, "float", "none");
+    important(content, "clear", "both");
+
+    var businessContent = content.querySelector(".lux-business-content");
+    if (businessContent) {
+      important(businessContent, "display", "block");
+      important(businessContent, "position", "relative");
+      important(businessContent, "width", "100%");
+      important(businessContent, "height", "auto");
+      important(businessContent, "min-height", "1px");
+      important(businessContent, "visibility", "visible");
+      important(businessContent, "opacity", "1");
+      important(businessContent, "overflow", "visible");
+    }
+
+    var hero = content.querySelector(".lux-hero");
+    if (hero) {
+      important(hero, "display", "block");
+      important(hero, "position", "relative");
+      important(hero, "width", "100%");
+      important(hero, "height", "auto");
+      important(hero, "min-height", "720px");
+      important(hero, "visibility", "visible");
+      important(hero, "opacity", "1");
+    }
+
+    content.querySelectorAll(".lux-loader").forEach(function(loader) {
+      loader.classList.add("is-hidden");
+      important(loader, "pointer-events", "none");
+    });
+
+    var cs = window.getComputedStyle(content);
+    var bs = businessContent ? window.getComputedStyle(businessContent) : null;
+    var hs = hero ? window.getComputedStyle(hero) : null;
+
+    log("Template layout forced:", {
+      content: {tag: content.tagName, display: cs.display, position: cs.position, height: cs.height, minHeight: cs.minHeight, visibility: cs.visibility, overflow: cs.overflow},
+      businessContent: bs ? {display: bs.display, position: bs.position, height: bs.height, minHeight: bs.minHeight} : null,
+      hero: hs ? {display: hs.display, position: hs.position, height: hs.height, minHeight: hs.minHeight} : null
+    });
+  }
+
+
   function renderTemplateHTML(
     html
   ) {
@@ -3035,6 +3091,8 @@
 
     content.style.minHeight =
       "100vh";
+
+    forceTemplateLayout(content);
 
     var renderedChildren =
       content.children.length;
@@ -4728,6 +4786,8 @@
       root
         ? root.getBoundingClientRect()
         : null;
+
+    forceTemplateLayout(content);
 
     var contentRect =
       content.getBoundingClientRect();
