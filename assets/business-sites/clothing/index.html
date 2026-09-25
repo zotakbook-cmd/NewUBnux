@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-IN" data-ubnux-template="clothing" data-ubnux-template-version="3.1.0">
 
 <head>
 
@@ -39,10 +39,84 @@
     rel="stylesheet"
   >
 
+
+  <!-- =====================================================
+       UBNUX TEMPLATE RUNTIME
+       Clothing Business Template v3.1.0
+       -----------------------------------------------------
+       The BusinessPage controller parses this document and
+       mounts the BODY contents into #businessPageContent.
+  ====================================================== -->
+
+  <meta
+    name="ubnux-template"
+    content="clothing"
+  >
+
+  <meta
+    name="ubnux-template-version"
+    content="3.1.0"
+  >
+
+
+  <style id="ubnux-clothing-template-runtime">
+
+    /*
+     * BusinessPage v11.2+ mounts this template's body content
+     * into #businessPageContent. These rules establish a normal
+     * document-flow boundary without changing the visual design.
+     */
+
+    .lux-business-content[data-ubnux-template-root="clothing"]{
+      display:block;
+      position:relative;
+      width:100%;
+      height:auto;
+      min-height:1px;
+      max-height:none;
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      overflow:visible;
+      float:none;
+      clear:both;
+      contain:none;
+      content-visibility:visible;
+    }
+
+    .lux-business-content[data-ubnux-template-root="clothing"]
+    > [data-ubnux-flow-section="true"]{
+      width:100%;
+      box-sizing:border-box;
+    }
+
+    /*
+     * The hero owns its internal absolute slider layers.
+     * The hero itself remains a normal flow section.
+     */
+    .lux-business-content[data-ubnux-template-root="clothing"]
+    > .lux-hero{
+      position:relative;
+      width:100%;
+      min-height:720px;
+      height:auto;
+      overflow:hidden;
+    }
+
+    /*
+     * Template loader is visual-only. The controller/template JS
+     * controls its lifecycle.
+     */
+    .lux-loader[aria-hidden="true"]{
+      pointer-events:none;
+    }
+
+  </style>
+
 </head>
 
 
-<body class="clothing-site">
+<body class="clothing-site" data-ubnux-business-template="clothing" data-ubnux-template-version="3.1.0">
 
 
 <!-- =====================================================
@@ -287,11 +361,16 @@
      HERO
 ====================================================== -->
 
-<div class="lux-business-content">
+<div
+  class="lux-business-content"
+  id="ubnuxBusinessTemplate"
+  data-ubnux-template-root="clothing"
+>
 
 <section
   class="lux-hero"
   id="home"
+  data-ubnux-flow-section="true"
 >
 
 
@@ -467,7 +546,7 @@
         </div>
 
         <strong data-business-rating>
-          5.0
+          —
         </strong>
 
         <span>
@@ -586,7 +665,7 @@
      INTRO / MARQUEE
 ====================================================== -->
 
-<section class="lux-intro">
+<section class="lux-intro" data-ubnux-flow-section="true">
 
   <div class="lux-intro-marquee">
 
@@ -898,7 +977,7 @@
      BRAND STATEMENT
 ====================================================== -->
 
-<section class="lux-statement">
+<section class="lux-statement" data-ubnux-flow-section="true">
 
   <div class="lux-container">
 
@@ -1037,7 +1116,7 @@
      EXPERIENCE / FEATURES
 ====================================================== -->
 
-<section class="lux-experience">
+<section class="lux-experience" data-ubnux-flow-section="true">
 
   <div class="lux-container">
 
@@ -1208,7 +1287,7 @@
      REVIEWS / SOCIAL PROOF
 ====================================================== -->
 
-<section class="lux-reviews">
+<section class="lux-reviews" data-ubnux-flow-section="true">
 
   <div class="lux-container">
 
@@ -1221,7 +1300,7 @@
       <div class="lux-big-rating">
 
         <strong data-business-rating>
-          5.0
+          —
         </strong>
 
         <div>
@@ -1276,7 +1355,7 @@
      STORE INFORMATION
 ====================================================== -->
 
-<section class="lux-section lux-info">
+<section class="lux-section lux-info" data-ubnux-flow-section="true">
 
   <div class="lux-container">
 
@@ -1702,9 +1781,7 @@
 
       <span>
         ©
-        <span id="luxYear">
-          2026
-        </span>
+        <span id="luxYear" data-current-year>2026</span>
         <span data-business-name>
           Business
         </span>
