@@ -81,7 +81,7 @@
   var CONFIG = {
 
     VERSION:
-      "11.2.0",
+      "11.3.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -596,11 +596,53 @@
     var content =
       getContent();
 
-    if (!content || !document.body) {
+    if (!content) {
 
       return content;
 
     }
+
+
+    /*
+     * IMPORTANT:
+     * Keep #businessPageContent INSIDE #businessPageRoot.
+     *
+     * The previous implementation moved the mount directly
+     * under <body>. That left an empty #businessPageRoot with
+     * min-height:100vh, creating a blank first viewport before
+     * the actual business template.
+     *
+     * The root is the business-page surface.
+     * The dynamic template must remain inside that surface.
+     */
+
+    var root =
+      getRoot();
+
+
+    if (!root) {
+
+      return content;
+
+    }
+
+
+    /*
+     * Reuse an existing neutral mount when possible.
+     */
+
+    if (
+      content.parentNode === root &&
+      content.tagName === "DIV" &&
+      content.classList.contains(
+        "ubnux-business-mount"
+      )
+    ) {
+
+      return content;
+
+    }
+
 
     var replacement =
       document.createElement("div");
@@ -616,81 +658,184 @@
       content.getAttribute("aria-live") || "polite"
     );
 
+
     content.parentNode.replaceChild(
       replacement,
       content
     );
 
+
     /*
-     * IMPORTANT: keep the dynamic business mount completely
-     * outside the homepage/business shell.  The shell is still
-     * used for loader/error state, but the actual template mount
-     * becomes a direct <body> child. This eliminates inherited
-     * grid/flex/height/contain rules from both the homepage shell
-     * and the business root.
+     * Never move the mount outside the root.
+     * Keep loader/error/mount in one business surface.
      */
-    if (replacement.parentNode !== document.body) {
-      document.body.appendChild(replacement);
-    }
 
     replacement.style.setProperty(
-      "display", "block", "important"
+      "display",
+      "block",
+      "important"
     );
+
     replacement.style.setProperty(
-      "position", "relative", "important"
+      "position",
+      "relative",
+      "important"
     );
+
     replacement.style.setProperty(
-      "width", "100%", "important"
+      "width",
+      "100%",
+      "important"
     );
+
     replacement.style.setProperty(
-      "min-height", "1px", "important"
+      "min-height",
+      "1px",
+      "important"
     );
+
     replacement.style.setProperty(
-      "height", "auto", "important"
+      "height",
+      "auto",
+      "important"
     );
+
     replacement.style.setProperty(
-      "visibility", "visible", "important"
+      "visibility",
+      "visible",
+      "important"
     );
+
     replacement.style.setProperty(
-      "opacity", "1", "important"
+      "opacity",
+      "1",
+      "important"
     );
+
     replacement.style.setProperty(
-      "overflow", "visible", "important"
+      "overflow",
+      "visible",
+      "important"
     );
+
     replacement.style.setProperty(
-      "float", "none", "important"
+      "float",
+      "none",
+      "important"
     );
+
     replacement.style.setProperty(
-      "clear", "both", "important"
+      "clear",
+      "both",
+      "important"
     );
+
     replacement.style.setProperty(
-      "contain", "none", "important"
+      "contain",
+      "none",
+      "important"
     );
+
     replacement.style.setProperty(
-      "content-visibility", "visible", "important"
+      "content-visibility",
+      "visible",
+      "important"
     );
+
     replacement.style.setProperty(
-      "transform", "none", "important"
+      "transform",
+      "none",
+      "important"
+    );
+
+
+    /*
+     * The root itself should never become an empty 100vh spacer.
+     * The template content provides the actual page height.
+     */
+
+    root.style.setProperty(
+      "min-height",
+      "0",
+      "important"
+    );
+
+    root.style.setProperty(
+      "height",
+      "auto",
+      "important"
+    );
+
+    root.style.setProperty(
+      "display",
+      "block",
+      "important"
+    );
+
+    root.style.setProperty(
+      "position",
+      "relative",
+      "important"
+    );
+
+    root.style.setProperty(
+      "margin",
+      "0",
+      "important"
+    );
+
+    root.style.setProperty(
+      "padding",
+      "0",
+      "important"
     );
 
     log(
-      "Business content mount normalized to direct <body> child.",
+      "Business root/mount layout fixed (mount stays inside root).",
       {
-        previousTag: content.tagName,
-        newTag: replacement.tagName,
-        parentTag: replacement.parentElement
-          ? replacement.parentElement.tagName
-          : "missing",
-        parentId: replacement.parentElement
-          ? replacement.parentElement.id
-          : ""
+        rootDirectParent:
+          root.parentElement
+            ? root.parentElement.tagName
+            : "missing",
+
+        mountParent:
+          replacement.parentElement
+            ? replacement.parentElement.id
+            : "missing",
+
+        rootMinHeight:
+          window.getComputedStyle(root).minHeight
       }
     );
+
+    log(
+      "Business content mount normalized inside business root.",
+      {
+        previousTag:
+          content.tagName,
+
+        newTag:
+          replacement.tagName,
+
+        parentTag:
+          replacement.parentElement
+            ? replacement.parentElement.tagName
+            : "missing",
+
+        parentId:
+          replacement.parentElement
+            ? replacement.parentElement.id
+            : "",
+
+        rootHeight:
+          root.getBoundingClientRect().height
+      }
+    );
+
 
     return replacement;
 
   }
-
 
   /* =======================================================
      ROUTE
@@ -1003,7 +1148,7 @@
         position: relative !important;
         width: 100% !important;
         height: auto !important;
-        min-height: 100vh !important;
+        min-height: 0 !important;
         max-height: none !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -1386,7 +1531,7 @@
       root.style.setProperty("position", "relative", "important");
       root.style.setProperty("width", "100%", "important");
       root.style.setProperty("height", "auto", "important");
-      root.style.setProperty("min-height", "100vh", "important");
+      root.style.setProperty("min-height", "0", "important");
       root.style.setProperty("max-height", "none", "important");
       root.style.setProperty("margin", "0", "important");
       root.style.setProperty("padding", "0", "important");
@@ -1506,7 +1651,7 @@
       content.style.visibility = "visible";
       content.style.opacity = "1";
       content.style.width = "100%";
-      content.style.minHeight = "100vh";
+      content.style.minHeight = "1px";
     }
 
   }
