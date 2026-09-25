@@ -5,7 +5,7 @@
    assets/js/seo/business-page.js
 
    Version:
-   10.9.0
+   11.1.0
 
    RESPONSIBILITIES
    ---------------------------------------------------------
@@ -81,7 +81,7 @@
   var CONFIG = {
 
     VERSION:
-      "11.0.0",
+      "11.1.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -3636,12 +3636,26 @@
     var actualTemplate =
       bundle.template;
 
+    /* Resolve template state BEFORE DOM rendering. */
+    state.template =
+      actualTemplate;
+
+    state.previousTemplate =
+      actualTemplate;
+
 
     /*
      * Clean previous template completely.
      */
 
     cleanupTemplate();
+
+    /* cleanupTemplate may clear template state. Re-assert it. */
+    state.template =
+      actualTemplate;
+
+    state.previousTemplate =
+      actualTemplate;
 
 
     if (
@@ -3713,13 +3727,6 @@
       );
 
     }
-
-
-    state.template =
-      actualTemplate;
-
-    state.previousTemplate =
-      actualTemplate;
 
 
     return actualTemplate;
@@ -5090,30 +5097,30 @@
      dynamically, force the first paint to a visible state.
   ======================================================= */
 
+  function waitForLayoutFrame() {
+
+    return new Promise(function (resolve) {
+
+      if (typeof window.requestAnimationFrame === "function") {
+        window.requestAnimationFrame(function () {
+          resolve();
+        });
+        return;
+      }
+
+      setTimeout(resolve, 0);
+
+    });
+
+  }
+
+
   async function recoverTemplateVisibility() {
 
-    if (
-      typeof window.requestAnimationFrame ===
-      "function"
-    ) {
-
-      await new Promise(
-        function (
-          resolve
-        ) {
-
-          window.requestAnimationFrame(
-            function () {
-
-              resolve();
-
-            }
-          );
-
-        }
-      );
-
-    }
+    /* Wait for two layout frames so template CSS/JS and DOM
+       mutations are committed before measuring visibility. */
+    await waitForLayoutFrame();
+    await waitForLayoutFrame();
 
     var root =
       getRoot();
