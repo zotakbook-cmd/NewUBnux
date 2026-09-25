@@ -6,10 +6,11 @@
    assets/business-sites/clothing/script.js
 
    Version:
-   3.0.0
+   3.2.0
 
    Compatible with:
-   UBnux Business Page v10
+   UBnux Business Page v11.x
+   Clothing Template v3.1
 ========================================================= */
 
 (function (window, document) {
@@ -25,7 +26,7 @@
 
     NAME: "clothing",
 
-    VERSION: "3.0.0",
+    VERSION: "3.2.0",
 
     SLIDE_INTERVAL: 5000,
 
@@ -63,6 +64,32 @@ let visibilityHandler = null;
 let heroMouseEnterHandler = null;
 
 let heroMouseLeaveHandler = null;
+
+  /*
+   * V3.2 LIFECYCLE
+   * All listeners created by this template are tracked so a business
+   * page/template can be destroyed and initialized again safely.
+   */
+  let scrollHandler = null;
+  let backTopScrollHandler = null;
+  let mobileMenuClickHandler = null;
+  let mobileMenuLinkHandlers = [];
+  let sliderNextHandler = null;
+  let sliderPrevHandler = null;
+  let sliderMouseEnterHandler = null;
+  let sliderMouseLeaveHandler = null;
+  let sliderTouchStartHandler = null;
+  let sliderTouchEndHandler = null;
+  let collectionButtonHandlers = [];
+  let smoothNavigationHandlers = [];
+  let activeNavigationScrollHandler = null;
+  let backTopClickHandler = null;
+  let heroParallaxScrollHandler = null;
+  let revealObserver = null;
+  let templateRevealStyle = null;
+  let imageErrorHandlers = [];
+  let templateRoot = null;
+  let templateMount = null;
 
 
   /* =======================================================
@@ -458,7 +485,7 @@ let heroMouseLeaveHandler = null;
           raw.Rating,
           raw.rating
         ),
-        "5.0"
+        "—"
       ),
 
       ReviewCount: text(
@@ -554,13 +581,84 @@ let heroMouseLeaveHandler = null;
 
 
   /* =======================================================
+     TEMPLATE DOM SCOPE
+  ======================================================== */
+
+  function getTemplateMount() {
+
+    if (
+      templateMount &&
+      document.documentElement.contains(templateMount)
+    ) {
+      return templateMount;
+    }
+
+    templateMount =
+      document.getElementById("businessPageContent") ||
+      getTemplateMount().querySelector(".ubnux-business-mount") ||
+      document.body;
+
+    return templateMount;
+  }
+
+
+  function getTemplateRoot() {
+
+    if (
+      templateRoot &&
+      document.documentElement.contains(templateRoot)
+    ) {
+      return templateRoot;
+    }
+
+    const mount = getTemplateMount();
+
+    templateRoot =
+      mount.querySelector(
+        '[data-ubnux-template-root="clothing"]'
+      ) ||
+      mount.querySelector(
+        "#ubnuxBusinessTemplate"
+      ) ||
+      mount.querySelector(
+        ".lux-business-content"
+      ) ||
+      mount;
+
+    return templateRoot;
+  }
+
+
+  function queryAll(selector) {
+
+    const mount = getTemplateMount();
+
+    return mount
+      ? Array.from(
+          mount.querySelectorAll(selector)
+        )
+      : [];
+  }
+
+
+  function queryOne(selector) {
+
+    const mount = getTemplateMount();
+
+    return mount
+      ? mount.querySelector(selector)
+      : null;
+  }
+
+
+  /* =======================================================
      GENERIC DATA BINDING
   ======================================================== */
 
   function bind(selector, value, options) {
 
     const elements =
-      document.querySelectorAll(selector);
+      queryAll(selector);
 
     if (!elements.length) {
       return;
@@ -617,7 +715,7 @@ let heroMouseLeaveHandler = null;
   function bindImage(selector, url, alt) {
 
     const elements =
-      document.querySelectorAll(selector);
+      queryAll(selector);
 
     if (!elements.length) {
       return;
@@ -1040,7 +1138,7 @@ let heroMouseLeaveHandler = null;
 
     slides =
       Array.from(
-        document.querySelectorAll(
+        getTemplateMount().querySelectorAll(
           ".lux-hero-slide"
         )
       );
@@ -1308,68 +1406,69 @@ let heroMouseLeaveHandler = null;
   function setupSliderControls() {
 
     const next =
-      document.getElementById(
-        "luxNext"
-      );
+      queryOne("#luxNext");
 
     const prev =
-      document.getElementById(
-        "luxPrev"
-      );
-
+      queryOne("#luxPrev");
 
     if (next) {
 
+      sliderNextHandler =
+        function () {
+          nextSlide();
+          startSlider();
+        };
+
       next.addEventListener(
         "click",
-        function () {
-
-          nextSlide();
-
-          startSlider();
-
-        }
+        sliderNextHandler
       );
-
     }
-
 
     if (prev) {
 
+      sliderPrevHandler =
+        function () {
+          previousSlide();
+          startSlider();
+        };
+
       prev.addEventListener(
         "click",
-        function () {
-
-          previousSlide();
-
-          startSlider();
-
-        }
+        sliderPrevHandler
       );
-
     }
 
-
     const slider =
-      document.getElementById(
-        "luxHeroSlider"
-      );
-
+      queryOne("#luxHeroSlider");
 
     if (!slider) {
       return;
     }
 
+    sliderMouseEnterHandler =
+      function () {
+        stopSlider();
+      };
+
+    sliderMouseLeaveHandler =
+      function () {
+        if (
+          slides.length > 1 &&
+          !document.hidden
+        ) {
+          startSlider();
+        }
+      };
 
     slider.addEventListener(
       "mouseenter",
-      stopSlider
+      sliderMouseEnterHandler
     );
-
 
     slider.addEventListener(
       "mouseleave",
-      startSlider
+      sliderMouseLeaveHandler
     );
 
   }
@@ -1382,89 +1481,69 @@ let heroMouseLeaveHandler = null;
   function setupSliderTouch() {
 
     const slider =
-      document.getElementById(
-        "luxHeroSlider"
-      );
-
+      queryOne("#luxHeroSlider");
 
     if (!slider) {
       return;
     }
 
-
-    slider.addEventListener(
-      "touchstart",
+    sliderTouchStartHandler =
       function (event) {
 
         if (
           !event.touches ||
           !event.touches.length
         ) {
-
           return;
-
         }
 
         touchStartX =
           event.touches[0].clientX;
+      };
 
-      },
-      {
-        passive:true
-      }
-    );
-
-
-    slider.addEventListener(
-      "touchend",
+    sliderTouchEndHandler =
       function (event) {
 
         if (
           !event.changedTouches ||
           !event.changedTouches.length
         ) {
-
           return;
-
         }
-
 
         touchEndX =
           event.changedTouches[0].clientX;
-
 
         const distance =
           touchStartX -
           touchEndX;
 
-
         if (
           Math.abs(distance) <
           CONFIG.SWIPE_THRESHOLD
         ) {
-
           return;
-
         }
-
 
         if (distance > 0) {
-
           nextSlide();
-
         } else {
-
           previousSlide();
-
         }
 
-
         startSlider();
+      };
 
-      },
-      {
-        passive:true
-      }
+    slider.addEventListener(
+      "touchstart",
+      sliderTouchStartHandler,
+      { passive:true }
+    );
+
+    slider.addEventListener(
+      "touchend",
+      sliderTouchEndHandler,
+      { passive:true }
     );
 
   }
@@ -1508,7 +1587,7 @@ let heroMouseLeaveHandler = null;
 
 
     const elements =
-      document.querySelectorAll(
+      getTemplateMount().querySelectorAll(
         "[data-collection-image]"
       );
 
@@ -1822,9 +1901,7 @@ let heroMouseLeaveHandler = null;
   function setupGallery() {
 
     const container =
-      document.getElementById(
-        "luxGallery"
-      );
+      queryOne("#luxGallery");
 
 
     if (!container) {
@@ -1929,15 +2006,14 @@ let heroMouseLeaveHandler = null;
 
   function setupCollectionButtons() {
 
-    document
+    getTemplateMount()
       .querySelectorAll(
         "[data-collection-button]"
       )
       .forEach(
         function (button) {
 
-          button.addEventListener(
-            "click",
+          const handler =
             function (event) {
 
               event.preventDefault();
@@ -1946,28 +2022,21 @@ let heroMouseLeaveHandler = null;
                 button.dataset.collectionButton ||
                 "collection";
 
-
               const number =
                 whatsappNumber(
                   business.WhatsApp ||
                   business.Mobile
                 );
 
-
               if (!number) {
 
-                document
-                  .getElementById(
-                    "contact"
-                  )
+                queryOne("#contact")
                   ?.scrollIntoView({
                     behavior:"smooth"
                   });
 
                 return;
-
               }
-
 
               const message =
                 encodeURIComponent(
@@ -1978,7 +2047,6 @@ let heroMouseLeaveHandler = null;
                   ". Please share more details."
                 );
 
-
               window.open(
                 "https://wa.me/" +
                 number +
@@ -1988,8 +2056,17 @@ let heroMouseLeaveHandler = null;
                 "noopener"
               );
 
-            }
+            };
+
+          button.addEventListener(
+            "click",
+            handler
           );
+
+          collectionButtonHandlers.push({
+            element: button,
+            handler: handler
+          });
 
         }
       );
@@ -2004,70 +2081,63 @@ let heroMouseLeaveHandler = null;
   function setupMobileMenu() {
 
     const button =
-      document.getElementById(
-        "luxMenuBtn"
-      );
+      queryOne("#luxMenuBtn");
 
     const menu =
-      document.getElementById(
-        "luxMobileMenu"
-      );
-
+      queryOne("#luxMobileMenu");
 
     if (!button || !menu) {
       return;
     }
 
-
-    button.addEventListener(
-      "click",
+    mobileMenuClickHandler =
       function () {
 
         const open =
-          menu.classList.toggle(
-            "open"
-          );
-
+          menu.classList.toggle("open");
 
         button.classList.toggle(
           "open",
           open
         );
 
-
         button.setAttribute(
           "aria-expanded",
           String(open)
         );
+      };
 
-      }
+    button.addEventListener(
+      "click",
+      mobileMenuClickHandler
     );
-
 
     menu
       .querySelectorAll("a")
       .forEach(
         function (link) {
 
-          link.addEventListener(
-            "click",
+          const handler =
             function () {
 
-              menu.classList.remove(
-                "open"
-              );
-
-              button.classList.remove(
-                "open"
-              );
+              menu.classList.remove("open");
+              button.classList.remove("open");
 
               button.setAttribute(
                 "aria-expanded",
                 "false"
               );
+            };
 
-            }
+          link.addEventListener(
+            "click",
+            handler
           );
+
+          mobileMenuLinkHandlers.push({
+            element: link,
+            handler: handler
+          });
 
         }
       );
@@ -2082,35 +2152,27 @@ let heroMouseLeaveHandler = null;
   function setupHeader() {
 
     const header =
-      document.getElementById(
-        "luxHeader"
-      );
-
+      queryOne("#luxHeader");
 
     if (!header) {
       return;
     }
 
+    scrollHandler =
+      function () {
 
-    function update() {
+        header.classList.toggle(
+          "scrolled",
+          window.scrollY > 45
+        );
+      };
 
-      header.classList.toggle(
-        "scrolled",
-        window.scrollY > 45
-      );
-
-    }
-
-
-    update();
-
+    scrollHandler();
 
     window.addEventListener(
       "scroll",
-      update,
-      {
-        passive:true
-      }
+      scrollHandler,
+      { passive:true }
     );
 
   }
@@ -2124,81 +2186,66 @@ let heroMouseLeaveHandler = null;
 
     const links =
       Array.from(
-        document.querySelectorAll(
+        getTemplateMount().querySelectorAll(
           ".lux-nav-link"
         )
       );
 
-
     const sections =
       Array.from(
-        document.querySelectorAll(
-          "main section[id]"
+        getTemplateMount().querySelectorAll(
+          ".lux-business-content section[id], " +
+          ".lux-hero[id], " +
+          "[data-ubnux-flow-section][id]"
         )
       );
-
 
     if (!links.length) {
       return;
     }
 
+    activeNavigationScrollHandler =
+      function () {
 
-    function update() {
+        const position =
+          window.scrollY + 180;
 
-      const position =
-        window.scrollY + 180;
+        let current =
+          "home";
 
+        sections.forEach(
+          function (section) {
 
-      let current =
-        "home";
-
-
-      sections.forEach(
-        function (section) {
-
-          if (
-            position >=
-            section.offsetTop
-          ) {
-
-            current =
-              section.id;
-
+            if (
+              position >=
+              section.offsetTop
+            ) {
+              current =
+                section.id;
+            }
           }
+        );
 
-        }
-      );
+        links.forEach(
+          function (link) {
 
+            const href =
+              link.getAttribute("href") || "";
 
-      links.forEach(
-        function (link) {
+            link.classList.toggle(
+              "active",
+              href === "#" + current
+            );
+          }
+        );
+      };
 
-          const href =
-            link.getAttribute("href") ||
-            "";
-
-
-          link.classList.toggle(
-            "active",
-            href ===
-              "#" + current
-          );
-
-        }
-      );
-
-    }
-
-
-    update();
-
+    activeNavigationScrollHandler();
 
     window.addEventListener(
       "scroll",
-      update,
-      {
-        passive:true
-      }
+      activeNavigationScrollHandler,
+      { passive:true }
     );
 
   }
@@ -2210,54 +2257,50 @@ let heroMouseLeaveHandler = null;
 
   function setupSmoothNavigation() {
 
-    document
+    getTemplateMount()
       .querySelectorAll(
         'a[href^="#"]'
       )
       .forEach(
         function (link) {
 
-          link.addEventListener(
-            "click",
+          const handler =
             function (event) {
 
               const href =
-                link.getAttribute(
-                  "href"
-                );
-
+                link.getAttribute("href");
 
               if (
                 !href ||
                 href === "#"
               ) {
-
                 return;
-
               }
 
-
               const target =
-                document.querySelector(
-                  href
-                );
-
+                queryOne(href);
 
               if (!target) {
                 return;
               }
 
-
               event.preventDefault();
-
 
               target.scrollIntoView({
                 behavior:"smooth",
                 block:"start"
               });
+            };
 
-            }
+          link.addEventListener(
+            "click",
+            handler
           );
+
+          smoothNavigationHandlers.push({
+            element: link,
+            handler: handler
+          });
 
         }
       );
@@ -2272,7 +2315,7 @@ let heroMouseLeaveHandler = null;
   function setupScrollReveal() {
 
     const elements =
-      document.querySelectorAll(
+      getTemplateMount().querySelectorAll(
         [
           ".lux-section-heading",
           ".lux-collection-card",
@@ -2286,15 +2329,9 @@ let heroMouseLeaveHandler = null;
         ].join(",")
       );
 
-
     if (!elements.length) {
       return;
     }
-
-
-    /*
-      IntersectionObserver support.
-    */
 
     if (
       !("IntersectionObserver" in window)
@@ -2302,20 +2339,14 @@ let heroMouseLeaveHandler = null;
 
       elements.forEach(
         function (element) {
-
-          element.classList.add(
-            "is-visible"
-          );
-
+          element.classList.add("is-visible");
         }
       );
 
       return;
-
     }
 
-
-    const observer =
+    revealObserver =
       new IntersectionObserver(
         function (entries, obs) {
 
@@ -2325,21 +2356,16 @@ let heroMouseLeaveHandler = null;
               if (
                 !entry.isIntersecting
               ) {
-
                 return;
-
               }
-
 
               entry.target.classList.add(
                 "is-visible"
               );
 
-
               obs.unobserve(
                 entry.target
               );
-
             }
           );
 
@@ -2350,14 +2376,9 @@ let heroMouseLeaveHandler = null;
         }
       );
 
-
     elements.forEach(
       function (element) {
-
-        observer.observe(
-          element
-        );
-
+        revealObserver.observe(element);
       }
     );
 
@@ -2463,6 +2484,12 @@ let heroMouseLeaveHandler = null;
     `;
 
 
+    if (templateRevealStyle) {
+      templateRevealStyle.remove();
+    }
+
+    templateRevealStyle = style;
+
     document.head.appendChild(
       style
     );
@@ -2477,51 +2504,42 @@ let heroMouseLeaveHandler = null;
   function setupBackToTop() {
 
     const button =
-      document.getElementById(
-        "luxBackTop"
-      );
-
+      queryOne("#luxBackTop");
 
     if (!button) {
       return;
     }
 
+    backTopScrollHandler =
+      function () {
 
-    function update() {
+        button.classList.toggle(
+          "visible",
+          window.scrollY > 500
+        );
+      };
 
-      button.classList.toggle(
-        "visible",
-        window.scrollY > 500
-      );
-
-    }
-
-
-    update();
-
+    backTopScrollHandler();
 
     window.addEventListener(
       "scroll",
-      update,
-      {
-        passive:true
-      }
+      backTopScrollHandler,
+      { passive:true }
     );
 
-
-    button.addEventListener(
-      "click",
+    backTopClickHandler =
       function () {
 
         window.scrollTo({
-
           top:0,
-
           behavior:"smooth"
-
         });
 
-      }
+      };
+
+    button.addEventListener(
+      "click",
+      backTopClickHandler
     );
 
   }
@@ -2555,9 +2573,7 @@ let heroMouseLeaveHandler = null;
   function setupYear() {
 
     const element =
-      document.getElementById(
-        "luxYear"
-      );
+      queryOne("#luxYear");
 
 
     if (element) {
@@ -2768,19 +2784,11 @@ let heroMouseLeaveHandler = null;
   function setupHeroParallax() {
 
     const hero =
-      document.querySelector(
-        ".lux-hero"
-      );
-
+      queryOne(".lux-hero");
 
     if (!hero) {
       return;
     }
-
-
-    /*
-      Disable for touch / reduced motion.
-    */
 
     if (
       window.matchMedia &&
@@ -2793,91 +2801,79 @@ let heroMouseLeaveHandler = null;
         ).matches
       )
     ) {
-
       return;
-
     }
-
 
     let ticking = false;
 
-
-    function update() {
-
-      const rect =
-        hero.getBoundingClientRect();
-
-
-      const viewport =
-        window.innerHeight;
-
-
-      if (
-        rect.bottom < 0 ||
-        rect.top > viewport
-      ) {
-
-        ticking = false;
-
-        return;
-
-      }
-
-
-      const progress =
-        Math.max(
-          -1,
-          Math.min(
-            1,
-            -rect.top / hero.offsetHeight
-          )
-        );
-
-
-      const images =
-        hero.querySelectorAll(
-          ".lux-hero-image img"
-        );
-
-
-      images.forEach(
-        function (img) {
-
-          img.style.transform =
-            "scale(1.02) translateY(" +
-            (progress * 18) +
-            "px)";
-
-        }
-      );
-
-
-      ticking = false;
-
-    }
-
-
-    window.addEventListener(
-      "scroll",
+    heroParallaxScrollHandler =
       function () {
 
         if (ticking) {
           return;
         }
 
-
         ticking = true;
 
-
         window.requestAnimationFrame(
-          update
+          function () {
+
+            const rect =
+              hero.getBoundingClientRect();
+
+            const viewport =
+              window.innerHeight;
+
+            if (
+              rect.bottom < 0 ||
+              rect.top > viewport
+            ) {
+              ticking = false;
+              return;
+            }
+
+            const height =
+              Math.max(
+                hero.offsetHeight || 1,
+                1
+              );
+
+            const progress =
+              Math.max(
+                -1,
+                Math.min(
+                  1,
+                  -rect.top / height
+                )
+              );
+
+            getTemplateMount()
+              .querySelectorAll(
+                ".lux-hero-image img"
+              )
+              .forEach(
+                function (img) {
+
+                  img.style.transform =
+                    "scale(1.02) translateY(" +
+                    (progress * 18) +
+                    "px)";
+                }
+              );
+
+            ticking = false;
+          }
         );
 
-      },
-      {
-        passive:true
-      }
+      };
+
+    window.addEventListener(
+      "scroll",
+      heroParallaxScrollHandler,
+      { passive:true }
     );
+
+    heroParallaxScrollHandler();
 
   }
 
@@ -2889,7 +2885,7 @@ let heroMouseLeaveHandler = null;
   function setupHeroHover() {
 
     const hero =
-      document.querySelector(
+      getTemplateMount().querySelector(
         ".lux-hero"
       );
 
@@ -3103,6 +3099,16 @@ let heroMouseLeaveHandler = null;
     options =
       options || {};
 
+    /*
+     * Re-resolve the current mounted template on every
+     * controller-driven initialization.
+     */
+    templateMount = null;
+    templateRoot = null;
+
+    getTemplateMount();
+    getTemplateRoot();
+
 
     /* -----------------------------------------------------
        PREVENT DUPLICATE INITIALIZATION
@@ -3143,6 +3149,23 @@ let heroMouseLeaveHandler = null;
       */
 
       normalizeBusiness();
+
+      console.debug(
+        "[UBnux Clothing] Runtime mount:",
+        {
+          version: CONFIG.VERSION,
+          mount:
+            getTemplateMount()?.id ||
+            getTemplateMount()?.className ||
+            "missing",
+          templateRoot:
+            getTemplateRoot()?.id ||
+            getTemplateRoot()?.className ||
+            "missing",
+          business:
+            business.BusinessName
+        }
+      );
 
 
       /*
@@ -3289,6 +3312,204 @@ let heroMouseLeaveHandler = null;
 
 
   /* =======================================================
+     LIFECYCLE CLEANUP
+  ======================================================== */
+
+  function cleanupEventListeners() {
+
+    const mount = getTemplateMount();
+
+    if (sliderNextHandler) {
+      const next = mount.querySelector("#luxNext");
+      if (next) next.removeEventListener("click", sliderNextHandler);
+    }
+
+    if (sliderPrevHandler) {
+      const prev = mount.querySelector("#luxPrev");
+      if (prev) prev.removeEventListener("click", sliderPrevHandler);
+    }
+
+    const slider =
+      mount.querySelector("#luxHeroSlider");
+
+    if (slider) {
+
+      if (sliderMouseEnterHandler) {
+        slider.removeEventListener(
+          "mouseenter",
+          sliderMouseEnterHandler
+        );
+      }
+
+      if (sliderMouseLeaveHandler) {
+        slider.removeEventListener(
+          "mouseleave",
+          sliderMouseLeaveHandler
+        );
+      }
+
+      if (sliderTouchStartHandler) {
+        slider.removeEventListener(
+          "touchstart",
+          sliderTouchStartHandler
+        );
+      }
+
+      if (sliderTouchEndHandler) {
+        slider.removeEventListener(
+          "touchend",
+          sliderTouchEndHandler
+        );
+      }
+    }
+
+    const menuButton =
+      mount.querySelector("#luxMenuBtn");
+
+    if (
+      menuButton &&
+      mobileMenuClickHandler
+    ) {
+      menuButton.removeEventListener(
+        "click",
+        mobileMenuClickHandler
+      );
+    }
+
+    mobileMenuLinkHandlers.forEach(
+      function (item) {
+        if (item.element) {
+          item.element.removeEventListener(
+            "click",
+            item.handler
+          );
+        }
+      }
+    );
+
+    collectionButtonHandlers.forEach(
+      function (item) {
+        if (item.element) {
+          item.element.removeEventListener(
+            "click",
+            item.handler
+          );
+        }
+      }
+    );
+
+    smoothNavigationHandlers.forEach(
+      function (item) {
+        if (item.element) {
+          item.element.removeEventListener(
+            "click",
+            item.handler
+          );
+        }
+      }
+    );
+
+    if (scrollHandler) {
+      window.removeEventListener(
+        "scroll",
+        scrollHandler
+      );
+    }
+
+    if (backTopScrollHandler) {
+      window.removeEventListener(
+        "scroll",
+        backTopScrollHandler
+      );
+    }
+
+    if (activeNavigationScrollHandler) {
+      window.removeEventListener(
+        "scroll",
+        activeNavigationScrollHandler
+      );
+    }
+
+    if (heroParallaxScrollHandler) {
+      window.removeEventListener(
+        "scroll",
+        heroParallaxScrollHandler
+      );
+    }
+
+    const backTop =
+      mount.querySelector("#luxBackTop");
+
+    if (
+      backTop &&
+      backTopClickHandler
+    ) {
+      backTop.removeEventListener(
+        "click",
+        backTopClickHandler
+      );
+    }
+
+    if (visibilityHandler) {
+      document.removeEventListener(
+        "visibilitychange",
+        visibilityHandler
+      );
+    }
+
+    const hero =
+      mount.querySelector(".lux-hero");
+
+    if (hero) {
+
+      if (heroMouseEnterHandler) {
+        hero.removeEventListener(
+          "mouseenter",
+          heroMouseEnterHandler
+        );
+      }
+
+      if (heroMouseLeaveHandler) {
+        hero.removeEventListener(
+          "mouseleave",
+          heroMouseLeaveHandler
+        );
+      }
+    }
+
+    if (revealObserver) {
+      revealObserver.disconnect();
+      revealObserver = null;
+    }
+
+    if (templateRevealStyle) {
+      templateRevealStyle.remove();
+      templateRevealStyle = null;
+    }
+
+    sliderNextHandler = null;
+    sliderPrevHandler = null;
+    sliderMouseEnterHandler = null;
+    sliderMouseLeaveHandler = null;
+    sliderTouchStartHandler = null;
+    sliderTouchEndHandler = null;
+    mobileMenuClickHandler = null;
+    mobileMenuLinkHandlers = [];
+    collectionButtonHandlers = [];
+    smoothNavigationHandlers = [];
+    scrollHandler = null;
+    backTopScrollHandler = null;
+    activeNavigationScrollHandler = null;
+    backTopClickHandler = null;
+    heroParallaxScrollHandler = null;
+    visibilityHandler = null;
+    heroMouseEnterHandler = null;
+    heroMouseLeaveHandler = null;
+    imageErrorHandlers = [];
+  }
+
+
+  /* =======================================================
      DESTROY
      -------------------------------------------------------
      Called by business-page.js before another template
@@ -3297,160 +3518,47 @@ let heroMouseLeaveHandler = null;
 
   function destroy() {
 
-    /*
-      Mark template as inactive
-      immediately.
-    */
-
-    isInitialized =
-      false;
-
-
-    /*
-      Stop hero slider if the
-      function exists.
-    */
+    isInitialized = false;
 
     try {
-
-      if (
-        typeof stopSlider ===
-        "function"
-      ) {
-
-        stopSlider();
-
-      }
-
+      stopSlider();
     } catch (error) {
-
       console.warn(
         "[UBnux Clothing] Slider cleanup error:",
         error
       );
-
     }
 
-
-    /*
-      Remove visibility listener
-      when the named handler exists.
-    */
-
     try {
-
-      if (
-        typeof visibilityHandler !==
-        "undefined" &&
-        visibilityHandler
-      ) {
-
-        document.removeEventListener(
-          "visibilitychange",
-          visibilityHandler
-        );
-
-      }
-
+      cleanupEventListeners();
     } catch (error) {
-
       console.warn(
-        "[UBnux Clothing] Visibility cleanup error:",
+        "[UBnux Clothing] Event cleanup error:",
         error
       );
-
     }
 
-
-    /*
-      Remove hero hover listeners
-      when named handlers exist.
-    */
-
     try {
-
-      const hero =
-        document.querySelector(
-          ".lux-hero"
-        );
-
-
-      if (hero) {
-
-        if (
-          typeof heroMouseEnterHandler !==
-          "undefined" &&
-          heroMouseEnterHandler
-        ) {
-
-          hero.removeEventListener(
-            "mouseenter",
-            heroMouseEnterHandler
-          );
-
-        }
-
-
-        if (
-          typeof heroMouseLeaveHandler !==
-          "undefined" &&
-          heroMouseLeaveHandler
-        ) {
-
-          hero.removeEventListener(
-            "mouseleave",
-            heroMouseLeaveHandler
-          );
-
-        }
-
-      }
-
-    } catch (error) {
-
-      console.warn(
-        "[UBnux Clothing] Hero hover cleanup error:",
-        error
-      );
-
-    }
-
-
-    /*
-      Reset lifecycle references.
-    */
-
-    visibilityHandler = null;
-    heroMouseEnterHandler = null;
-    heroMouseLeaveHandler = null;
-    documentClickHandler = null;
-    slides = [];
-    currentSlide = 0;
-    sliderTimer = null;
-
-
-    /*
-      Clear exposed clothing state.
-    */
-
-    try {
-
       if (
         window.UBNUX_CLOTHING_STATE
       ) {
-
         delete window.UBNUX_CLOTHING_STATE;
-
       }
-
     } catch (error) {
-
       console.warn(
         "[UBnux Clothing] State cleanup error:",
         error
       );
-
     }
+
+    business = null;
+    slides = [];
+    currentSlide = 0;
+    touchStartX = 0;
+    touchEndX = 0;
+    sliderTimer = null;
+    templateRoot = null;
+    templateMount = null;
 
   }
 
