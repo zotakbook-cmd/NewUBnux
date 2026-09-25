@@ -81,7 +81,7 @@
   var CONFIG = {
 
     VERSION:
-      "10.9.0",
+      "11.0.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -920,8 +920,18 @@
     style.textContent = `
 
       body.ubnux-business-page-active {
-        margin: 0;
-        padding: 0;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+        width: 100% !important;
+        min-height: 100vh !important;
+        height: auto !important;
+        overflow-x: hidden !important;
+      }
+
+      body.ubnux-business-page-active #homePage,
+      body.ubnux-business-page-active #pageLoader {
+        display: none !important;
       }
 
       /*
@@ -935,7 +945,8 @@
         position: relative !important;
         width: 100% !important;
         height: auto !important;
-        min-height: 1px !important;
+        min-height: 100vh !important;
+        max-height: none !important;
         margin: 0 !important;
         padding: 0 !important;
         visibility: visible !important;
@@ -945,6 +956,10 @@
         clear: both !important;
         box-sizing: border-box !important;
         isolation: isolate !important;
+        contain: none !important;
+        content-visibility: visible !important;
+        transform: none !important;
+        zoom: 1 !important;
       }
 
       #businessPageRoot[hidden] {
@@ -1196,7 +1211,7 @@
     root.style.setProperty("position", "relative", "important");
     root.style.setProperty("width", "100%", "important");
     root.style.setProperty("height", "auto", "important");
-    root.style.setProperty("min-height", "1px", "important");
+    root.style.setProperty("min-height", "100vh", "important");
     root.style.setProperty("margin", "0", "important");
     root.style.setProperty("padding", "0", "important");
     root.style.setProperty("visibility", "visible", "important");
@@ -1218,7 +1233,8 @@
 
   function activateBusinessMode() {
 
-    ensureShell();
+    var root =
+      ensureShell();
 
     if (document.body) {
 
@@ -1226,17 +1242,111 @@
         "ubnux-business-page-active"
       );
 
-    }
+      /*
+       * The directory homepage has its own layout system.
+       * A business SEO page must become a completely independent
+       * document-flow surface.
+       */
+      document.body.style.setProperty(
+        "display",
+        "block",
+        "important"
+      );
+      document.body.style.setProperty(
+        "width",
+        "100%",
+        "important"
+      );
+      document.body.style.setProperty(
+        "min-height",
+        "100vh",
+        "important"
+      );
+      document.body.style.setProperty(
+        "height",
+        "auto",
+        "important"
+      );
+      document.body.style.setProperty(
+        "overflow-x",
+        "hidden",
+        "important"
+      );
 
-    var root =
-      getRoot();
+      var homePage =
+        document.getElementById(
+          "homePage"
+        );
+
+      if (homePage) {
+
+        homePage.hidden = true;
+        homePage.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+        homePage.style.setProperty(
+          "display",
+          "none",
+          "important"
+        );
+      }
+
+      var pageLoader =
+        document.getElementById(
+          "pageLoader"
+        );
+
+      if (pageLoader) {
+        pageLoader.hidden = true;
+        pageLoader.style.setProperty(
+          "display",
+          "none",
+          "important"
+        );
+      }
+
+    }
 
     if (root) {
 
-      root.hidden =
-        false;
+      /*
+       * Always make the business root a direct body child.
+       * This removes every possible flex/grid/height constraint
+       * inherited from the homepage shell.
+       */
+      if (
+        document.body &&
+        root.parentNode !== document.body
+      ) {
+        document.body.appendChild(root);
+      }
+
+      root.hidden = false;
+      root.removeAttribute("hidden");
+      root.style.setProperty("display", "block", "important");
+      root.style.setProperty("position", "relative", "important");
+      root.style.setProperty("width", "100%", "important");
+      root.style.setProperty("height", "auto", "important");
+      root.style.setProperty("min-height", "100vh", "important");
+      root.style.setProperty("max-height", "none", "important");
+      root.style.setProperty("margin", "0", "important");
+      root.style.setProperty("padding", "0", "important");
+      root.style.setProperty("visibility", "visible", "important");
+      root.style.setProperty("opacity", "1", "important");
+      root.style.setProperty("overflow", "visible", "important");
+      root.style.setProperty("float", "none", "important");
+      root.style.setProperty("clear", "both", "important");
+      root.style.setProperty("box-sizing", "border-box", "important");
+      root.style.setProperty("isolation", "isolate", "important");
+      root.style.setProperty("contain", "none", "important");
+      root.style.setProperty("content-visibility", "visible", "important");
+      root.style.setProperty("transform", "none", "important");
+      root.style.setProperty("zoom", "1", "important");
 
     }
+
+    return root;
 
   }
 
@@ -2388,7 +2498,8 @@
       CONFIG.TEMPLATE_ROOT +
       safeTemplate +
       "/" +
-      safeFile
+      safeFile +
+      "?v=11.0.0"
     );
 
   }
@@ -3079,6 +3190,10 @@
     important(content, "float", "none");
     important(content, "clear", "both");
     important(content, "box-sizing", "border-box");
+    important(content, "contain", "none");
+    important(content, "content-visibility", "visible");
+    important(content, "transform", "none");
+    important(content, "zoom", "1");
 
 
     /*
@@ -3113,6 +3228,10 @@
       important(businessContent, "overflow", "visible");
       important(businessContent, "float", "none");
       important(businessContent, "clear", "both");
+      important(businessContent, "contain", "none");
+      important(businessContent, "content-visibility", "visible");
+      important(businessContent, "transform", "none");
+      important(businessContent, "zoom", "1");
       important(businessContent, "box-sizing", "border-box");
 
 
@@ -3167,6 +3286,11 @@
       important(hero, "width", "100%");
       important(hero, "height", "auto");
       important(hero, "min-height", "720px");
+      important(hero, "max-height", "none");
+      important(hero, "contain", "none");
+      important(hero, "content-visibility", "visible");
+      important(hero, "transform", "none");
+      important(hero, "zoom", "1");
       important(hero, "visibility", "visible");
       important(hero, "opacity", "1");
 
@@ -3230,6 +3354,12 @@
       hero
         ? hero.getBoundingClientRect()
         : null;
+
+    var root =
+      getRoot();
+
+    var parent =
+      content.parentElement;
 
     log(
       "Template layout forced:",
