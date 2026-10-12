@@ -969,7 +969,21 @@
         .split("/")
         .filter(Boolean);
 
+    /*
+     * IMPORTANT: One-segment public URLs are owned by Smart Search.
+     * Examples: /siwan/ /fashion/ /siwan-fashion/
+     * Permanent business URLs remain /in/state/district/category/business/.
+     */
+    var smartSearchOwnsOneSegment =
+      window.UBnuxSmartSearchRoute === true ||
+      (
+        window.UBnuxSmartSearch &&
+        typeof window.UBnuxSmartSearch.isSmartRoute === "function" &&
+        window.UBnuxSmartSearch.isSmartRoute()
+      );
+
     if (
+      !smartSearchOwnsOneSegment &&
       parts.length === 1 &&
       parts[0] &&
       ![
@@ -1090,24 +1104,23 @@
           window.UBnuxSmartSearch.isSmartRoute()
         );
 
-      /* A one-segment non-reserved URL is a short business URL. */
-      if (directParts.length === 1 && !smartSearchOwnsRoute) {
-        var reserved = [
-          "in", "business", "search", "about", "contact",
-          "privacy", "privacy-policy", "terms", "login",
-          "admin", "api", "assets", "sitemap",
-          "sitemap.xml", "robots.txt"
-        ];
-
-        if (reserved.indexOf(String(directParts[0]).toLowerCase()) === -1) {
-          return normalizeRoute({
-            type: "business",
-            isBusinessPage: true,
-            isShortURL: true,
-            businessSlug: directParts[0]
-          });
-        }
-      }
+      /*
+       * IMPORTANT:
+       *
+       * One-segment public paths are owned by Smart Search.
+       * Examples:
+       *   /siwan/
+       *   /fashion/
+       *   /green-india-siwan/
+       *
+       * Never classify these as short business URLs here. Doing so
+       * makes BusinessPage call business-short for a district/query
+       * slug and produces "Business not found".
+       *
+       * Short business sharing remains compatible through the normal
+       * Smart Search flow, which can resolve the business and then
+       * open its permanent /in/.../ canonical URL.
+       */
 
     } catch (routeSafetyError) {
       warn("Direct route safety check failed.", routeSafetyError);
