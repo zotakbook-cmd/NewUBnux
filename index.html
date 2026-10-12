@@ -123,6 +123,23 @@
     href="/assets/css/style.css?v=20260925-1"
   >
 
+  <!-- =====================================================
+       SMART SEARCH
+       -----------------------------------------------------
+       Supports:
+       /siwan/
+       /fashion/
+       /siwan/fashion/
+       /green-india-siwan/
+       /siwaan-fashon-siwan/
+       and business-name search.
+  ====================================================== -->
+
+  <link
+    rel="stylesheet"
+    href="/assets/css/smart-search.css?v=1.0.0"
+  >
+
 
   <!-- =====================================================
        PRECONNECT
@@ -823,7 +840,7 @@
        API CLIENT
   ====================================================== -->
 
-  <script src="/assets/js/api.js?v=3.0.1"></script>
+  <script src="/assets/js/api.js?v=3.1.0"></script>
 
 
   <!-- =====================================================
@@ -890,7 +907,22 @@
 
   <script src="/assets/js/businesses.js?v=4.1.1"></script>
 
-  <script src="/assets/js/app.js?v=3.3.0"></script>
+  <!-- =====================================================
+       SMART SEARCH CONTROLLER
+       -----------------------------------------------------
+       Must load before app.js so Smart Search routes are
+       recognized before normal directory initialization.
+  ====================================================== -->
+
+  <script src="/assets/js/smart-search.js?v=1.0.0"></script>
+
+  <!-- =====================================================
+       MAIN APPLICATION
+       -----------------------------------------------------
+       Smart Search aware application controller.
+  ====================================================== -->
+
+  <script src="/assets/js/app.js?v=3.4.0"></script>
 
 
 </body>
