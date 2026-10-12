@@ -361,6 +361,25 @@
      */
     var match = item.match || item.Match || {};
 
+    /*
+     * SmartSearchEngine returns the permanent business URL as `url`.
+     * Keep it on the business object so businesses.js can use the
+     * backend canonical path even when CategorySlug is absent.
+     */
+    var canonicalURL =
+      item.SEOPath ||
+      item.seoPath ||
+      item.url ||
+      item.URL ||
+      item.CanonicalURL ||
+      item.canonicalURL ||
+      item.canonicalPath ||
+      "";
+
+    if (canonicalURL && !business.SEOPath) {
+      business.SEOPath = canonicalURL;
+    }
+
     /* SmartSearchEngine versions can expose match fields either in
      * item.match or directly on the result. Normalize both forms. */
     var stateSlug =
