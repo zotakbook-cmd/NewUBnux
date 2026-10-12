@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+
+<head>
+
+  <!-- =====================================================
+       DOCUMENT
+  ====================================================== -->
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#2563eb"
+  >
+
+
+  <!-- =====================================================
+       PRIMARY SEO
+  ====================================================== -->
+
+  <title>
+    UBnux - Find Local Businesses, Shops & Services Near You
+  </title>
+
+  <meta
+    name="description"
+    content="Discover local businesses, shops, services and professionals near you. Find business details, locations, services and contact information with UBnux."
+  >
+
+  <meta
+    name="robots"
+    content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+  >
+
+  <link
+    rel="canonical"
+    href="https://ubnux.com/"
+  >
+
+
+  <!-- =====================================================
+       OPEN GRAPH
+  ====================================================== -->
+
+  <meta
+    property="og:site_name"
+    content="UBnux"
+  >
+
+  <meta
+    property="og:type"
+    content="website"
+  >
+
+  <meta
+    property="og:title"
+    content="UBnux - Find Local Businesses, Shops & Services Near You"
+  >
+
+  <meta
+    property="og:description"
+    content="Discover local businesses, shops, services and professionals near you with UBnux."
+  >
+
+  <meta
+    property="og:url"
+    content="https://ubnux.com/"
+  >
+
+  <meta
+    property="og:locale"
+    content="en_IN"
+  >
+
+  <meta
+    property="og:image"
+    content="https://ubnux.com/assets/images/default-business.jpg"
+  >
+
+  <meta
+    property="og:image:alt"
+    content="UBnux local business discovery platform"
+  >
+
+
+  <!-- =====================================================
+       TWITTER / SOCIAL
+  ====================================================== -->
+
+  <meta
+    name="twitter:card"
+    content="summary_large_image"
+  >
+
+  <meta
+    name="twitter:title"
+    content="UBnux - Find Local Businesses, Shops & Services Near You"
+  >
+
+  <meta
+    name="twitter:description"
+    content="Discover local businesses, shops, services and professionals near you with UBnux."
+  >
+
+  <meta
+    name="twitter:image"
+    content="https://ubnux.com/assets/images/default-business.jpg"
+  >
+
+
+  <!-- =====================================================
+       STYLES
+  ====================================================== -->
+
+  <link
+    rel="stylesheet"
+    href="/assets/css/style.css?v=20260925-1"
+  >
+
+  <!-- =====================================================
+       SMART SEARCH
+       -----------------------------------------------------
+       Supports:
+       /siwan/
+       /fashion/
+       /siwan/fashion/
+       /green-india-siwan/
+       /siwaan-fashon-siwan/
+       and business-name search.
+  ====================================================== -->
+
+  <link
+    rel="stylesheet"
+    href="/assets/css/smart-search.css?v=1.0.0"
+  >
+
+
+  <!-- =====================================================
+       PRECONNECT
+       Helps reduce connection latency for future assets.
+  ====================================================== -->
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  >
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
+
+<style id="ubnux-smart-search-static-css">
+.ubnux-smart-search-static{width:100%;margin:0 0 18px;padding:20px;border:1px solid rgba(37,99,235,.14);border-radius:18px;background:#fff;box-shadow:0 10px 30px rgba(15,23,42,.07);box-sizing:border-box}
+.ubnux-smart-search-static-title{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.ubnux-smart-search-static-title strong{font-size:18px;color:#111827}
+.ubnux-smart-search-static-title span{font-size:13px;color:#64748b}
+.ubnux-smart-search-form{display:flex;gap:10px;width:100%}
+.ubnux-smart-search-form input{flex:1;min-width:0;height:50px;padding:0 15px;border:1px solid #dbe3ef;border-radius:12px;background:#f8fafc;color:#111827;font:inherit;box-sizing:border-box;outline:none}
+.ubnux-smart-search-form input:focus{background:#fff;border-color:#2563eb;box-shadow:0 0 0 4px rgba(37,99,235,.1)}
+.ubnux-smart-search-form button{height:50px;padding:0 22px;border:0;border-radius:12px;background:#2563eb;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.ubnux-smart-search-hints{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.ubnux-smart-search-hints button{padding:6px 11px;border:1px solid #dbe3ef;border-radius:999px;background:#f8fafc;color:#475569;font:inherit;font-size:12px;cursor:pointer}
+.ubnux-smart-search-hints button:hover{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
+@media(max-width:600px){.ubnux-smart-search-static{padding:15px;border-radius:15px}.ubnux-smart-search-form{flex-direction:column}.ubnux-smart-search-form input,.ubnux-smart-search-form button{width:100%;height:48px}.ubnux-smart-search-hints{gap:6px}}
+</style>
+</head>
+
+
+<body>
+
+
+  <!-- =====================================================
+       GLOBAL PAGE LOADER
+       -----------------------------------------------------
+       Used by the homepage application.
+       Business pages use their own loader below.
+  ====================================================== -->
+
+  <div
+    id="pageLoader"
+    class="page-loader"
+    aria-hidden="true"
+  >
+
+    <div class="loader-box">
+
+      <div
+        class="spinner"
+        aria-hidden="true"
+      ></div>
+
+      <div
+        id="loaderText"
+        class="loader-text"
+      >
+        Loading UBnux...
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       HOMEPAGE APPLICATION
+       -----------------------------------------------------
+       Everything inside this wrapper belongs to the
+       normal UBnux directory/homepage.
+  ====================================================== -->
+
+  <div id="homePage">
+
+
+    <!-- ===================================================
+         SITE HEADER
+    ==================================================== -->
+
+    <header class="site-header">
+
+      <div class="container header-inner">
+
+
+        <!-- BRAND -->
+
+        <a
+          href="/"
+          class="brand"
+          aria-label="UBnux Home"
+        >
+
+          <span class="brand-main">
+            UBnux
+          </span>
+
+          <span class="brand-dot">
+            .com
+          </span>
+
+        </a>
+
+
+        <!-- MOBILE MENU -->
+
+        <button
+          id="mobileMenuButton"
+          class="mobile-menu-button"
+          type="button"
+          aria-label="Open menu"
+          aria-controls="mainNav"
+          aria-expanded="false"
+        >
+          ☰
+        </button>
+
+
+        <!-- NAVIGATION -->
+
+        <nav
+          id="mainNav"
+          class="main-nav"
+          aria-label="Main navigation"
+        >
+
+          <a href="#businesses">
+            Businesses
+          </a>
+
+          <a href="#categories">
+            Categories
+          </a>
+
+          <a href="#about">
+            About
+          </a>
+
+        </nav>
+
+
+      </div>
+
+    </header>
+
+
+    <!-- ===================================================
+         HOMEPAGE MAIN
+    ==================================================== -->
+
+    <main id="homeMain">
+
+
+      <!-- =================================================
+           HERO
+      ================================================== -->
+
+      <section
+        class="hero"
+        aria-labelledby="heroTitle"
+      >
+
+        <div class="container">
+
+          <div class="hero-content">
+
+
+            <span class="hero-badge">
+              Discover Local Businesses
+            </span>
+
+
+            <h1 id="heroTitle">
+
+              Find the right business
+
+              <span>
+                near you
+              </span>
+
+            </h1>
+
+
+            <p>
+              Discover local shops, services, professionals
+              and businesses with UBnux.
+            </p>
+
+
+            <!-- ===========================================
+                 LOCATION / CATEGORY SELECTOR
+            ============================================ -->
+
+                          <div class="ubnux-smart-search-static" id="ubnuxSmartSearchStatic">
+                <div class="ubnux-smart-search-static-title">
+                  <strong>Search Local Businesses</strong>
+                  <span>Search by district, category, service or business name</span>
+                </div>
+                <form id="ubnuxSmartSearchForm" class="ubnux-smart-search-form" role="search">
+                  <input id="ubnuxSmartSearchInput" data-ubnux-search="true" type="search" name="q" autocomplete="off" spellcheck="false" placeholder="Search e.g. Siwan, Fashion, Siwan Fashion..." aria-label="Search local businesses">
+                  <button type="submit">Search</button>
+                </form>
+                <div class="ubnux-smart-search-hints">
+                  <button type="button" data-smart-query="siwan">Siwan</button>
+                  <button type="button" data-smart-query="fashion">Fashion</button>
+                  <button type="button" data-smart-query="siwan fashion">Siwan Fashion</button>
+                  <button type="button" data-smart-query="restaurants">Restaurants</button>
+                </div>
+              </div>
+
+<div class="selector-card">
+
+
+              <div class="selector-title">
+
+                <strong>
+                  Find Businesses
+                </strong>
+
+                <span>
+                  Select your location and category
+                </span>
+
+              </div>
+
+
+              <div class="selector-grid">
+
+
+                <!-- =======================================
+                     STATE
+                ======================================== -->
+
+                <div class="field-group">
+
+                  <label for="stateFilter">
+                    State
+                  </label>
+
+                  <select
+                    id="stateFilter"
+                    disabled
+                    aria-label="Select State"
+                  >
+
+                    <option value="">
+                      Select Your State
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <!-- =======================================
+                     DISTRICT
+                ======================================== -->
+
+                <div class="field-group">
+
+                  <label for="districtFilter">
+                    District
+                  </label>
+
+                  <select
+                    id="districtFilter"
+                    disabled
+                    aria-label="Select District"
+                  >
+
+                    <option value="">
+                      Select Your District
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <!-- =======================================
+                     CATEGORY
+                ======================================== -->
+
+                <div class="field-group">
+
+                  <label
+                    for="categoryDropdownButton"
+                  >
+                    Business Category
+                  </label>
+
+
+                  <div
+                    id="categoryDropdown"
+                    class="category-dropdown"
+                  >
+
+
+                    <!-- CATEGORY BUTTON -->
+
+                    <button
+                      id="categoryDropdownButton"
+                      class="category-dropdown-button"
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded="false"
+                      aria-controls="categoryDropdownMenu"
+                      disabled
+                    >
+
+                      <span
+                        id="selectedCategoryIcon"
+                        class="category-selected-icon"
+                        aria-hidden="true"
+                      >
+                        🏪
+                      </span>
+
+
+                      <span
+                        id="selectedCategoryText"
+                        class="category-selected-text"
+                      >
+                        Select Business Category
+                      </span>
+
+
+                      <span
+                        class="category-arrow"
+                        aria-hidden="true"
+                      >
+                        ▼
+                      </span>
+
+                    </button>
+
+
+                    <!-- CATEGORY MENU -->
+
+                    <div
+                      id="categoryDropdownMenu"
+                      class="category-dropdown-menu"
+                      role="listbox"
+                      aria-label="Business Category"
+                      hidden
+                    >
+
+
+                      <!-- CATEGORY SEARCH -->
+
+                      <div class="category-search">
+
+                        <input
+                          id="categorySearchInput"
+                          type="search"
+                          placeholder="Search category..."
+                          autocomplete="off"
+                          aria-label="Search business category"
+                        >
+
+                      </div>
+
+
+                      <!-- CATEGORY OPTIONS -->
+
+                      <div
+                        id="categoryOptions"
+                        class="category-options"
+                      >
+                        <!-- Dynamic categories -->
+                      </div>
+
+
+                      <!-- EMPTY RESULT -->
+
+                      <div
+                        id="categoryEmptyState"
+                        class="category-empty-state"
+                        hidden
+                      >
+                        No category found.
+                      </div>
+
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+              </div>
+
+
+              <!-- SELECTION MESSAGE -->
+
+              <div
+                id="selectionMessage"
+                class="selection-message"
+                role="status"
+                aria-live="polite"
+              >
+                Please select your state to continue.
+              </div>
+
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           BUSINESS DIRECTORY
+      ================================================== -->
+
+      <section
+        id="businesses"
+        class="business-section"
+        aria-labelledby="businessSectionTitle"
+      >
+
+        <div class="container">
+
+
+          <!-- SECTION HEADER -->
+
+          <div class="section-header">
+
+            <div>
+
+              <span class="section-kicker">
+                LOCAL BUSINESSES
+              </span>
+
+              <h2 id="businessSectionTitle">
+                Businesses near you
+              </h2>
+
+              <p
+                id="businessSummary"
+                class="business-summary"
+              >
+                Select your location and category.
+              </p>
+
+            </div>
+
+
+            <!-- SORT -->
+
+            <div class="sort-wrapper">
+
+              <label for="sortFilter">
+                Sort
+              </label>
+
+              <select
+                id="sortFilter"
+                disabled
+              >
+
+                <option value="featured">
+                  Featured
+                </option>
+
+                <option value="rating">
+                  Rating
+                </option>
+
+                <option value="name">
+                  Name
+                </option>
+
+              </select>
+
+            </div>
+
+
+          </div>
+
+
+          <!-- BUSINESS GRID -->
+
+          <div
+            id="businessGrid"
+            class="business-grid"
+          ></div>
+
+
+          <!-- EMPTY STATE -->
+
+          <div
+            id="emptyState"
+            class="empty-state hidden"
+          >
+
+            <div
+              class="empty-icon"
+              aria-hidden="true"
+            >
+              🔎
+            </div>
+
+            <h3>
+              No businesses found
+            </h3>
+
+            <p>
+              We couldn't find any businesses
+              for your selected location and category.
+            </p>
+
+          </div>
+
+
+          <!-- LOAD MORE -->
+
+          <div
+            id="loadMoreWrapper"
+            class="load-more-wrapper hidden"
+          >
+
+            <button
+              id="loadMoreButton"
+              class="load-more-button"
+              type="button"
+            >
+              Load More
+            </button>
+
+          </div>
+
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           ABOUT
+      ================================================== -->
+
+      <section
+        id="about"
+        class="about-section"
+        aria-labelledby="aboutTitle"
+      >
+
+        <div class="container">
+
+          <div class="about-card">
+
+            <span class="section-kicker">
+              ABOUT UBNux
+            </span>
+
+            <h2 id="aboutTitle">
+              Your local business discovery platform
+            </h2>
+
+            <p>
+              UBnux helps users discover businesses,
+              shops, services and professionals in their
+              selected state, district and category.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+    </main>
+
+
+    <!-- ===================================================
+         SITE FOOTER
+    ==================================================== -->
+
+    <footer class="site-footer">
+
+      <div class="container footer-inner">
+
+        <div>
+
+          <strong>
+            UBnux
+          </strong>
+
+          <span>
+            - Local Business Discovery
+          </span>
+
+        </div>
+
+
+        <div>
+
+          ©
+          <span id="currentYear"></span>
+          UBnux
+
+        </div>
+
+      </div>
+
+    </footer>
+
+
+  </div>
+  <!-- /#homePage -->
+
+
+  <!-- =====================================================
+       BUSINESS SEO PAGE
+       -----------------------------------------------------
+       URL:
+       /in/{state}/{district}/{category}/{business}/
+
+       This shell is intentionally OUTSIDE #homePage.
+
+       business-page.js controls:
+       - loading
+       - error
+       - template
+       - business content
+       - SEO
+       - schema
+       - breadcrumbs
+  ====================================================== -->
+
+  <div
+    id="businessPageRoot"
+    class="business-page-root"
+    hidden
+    aria-live="polite"
+  >
+
+
+    <!-- ===================================================
+         BUSINESS PAGE LOADER
+    ==================================================== -->
+
+    <div
+      id="businessPageLoader"
+      class="business-page-loader"
+      hidden
+      aria-live="polite"
+      aria-busy="true"
+    >
+
+      <div class="business-page-loader-inner">
+
+        <div
+          class="business-page-loader-spinner"
+          aria-hidden="true"
+        ></div>
+
+        <p>
+          Loading business...
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- ===================================================
+         BUSINESS PAGE ERROR
+    ==================================================== -->
+
+    <div
+      id="businessPageError"
+      class="business-page-error"
+      hidden
+      role="alert"
+    ></div>
+
+
+    <!-- ===================================================
+         BUSINESS TEMPLATE CONTENT
+
+         Individual template HTML is injected here.
+
+         Example:
+         /assets/business-sites/clothing/index.html
+         /assets/business-sites/restaurant/index.html
+    ==================================================== -->
+
+    <main
+      id="businessPageContent"
+      class="business-page-content"
+    ></main>
+
+
+  </div>
+  <!-- /#businessPageRoot -->
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+       ===================================================== -->
+
+
+  <!-- =====================================================
+       CORE CONFIG
+  ====================================================== -->
+
+  <script src="/assets/js/config.js?v=3.0.1"></script>
+
+
+  <!-- =====================================================
+       CORE ROUTER
+  ====================================================== -->
+
+  <script src="/assets/js/router.js?v=2.3.0"></script>
+
+
+  <!-- =====================================================
+       API CLIENT
+  ====================================================== -->
+
+  <script src="/assets/js/api.js?v=3.1.0"></script>
+
+
+  <!-- =====================================================
+       SEO ROUTER
+       -----------------------------------------------------
+       Detects:
+       /in/state/district/category/business/
+  ====================================================== -->
+
+  <script src="/assets/js/seo/seo-router.js?v=2.4.0"></script>
+
+
+  <!-- =====================================================
+       SEO META
+       -----------------------------------------------------
+       Controls:
+       - title
+       - description
+       - canonical
+       - robots
+       - Open Graph
+       - Twitter
+  ====================================================== -->
+
+  <script src="/assets/js/seo/seo-meta.js?v=3.1.0"></script>
+
+
+  <!-- =====================================================
+       SEO SCHEMA
+       -----------------------------------------------------
+       Renders backend-generated JSON-LD only.
+  ====================================================== -->
+
+  <script src="/assets/js/seo/schema.js?v=2.1.0"></script>
+
+
+  <!-- =====================================================
+       BUSINESS SEO PAGE CONTROLLER
+       -----------------------------------------------------
+       Controls:
+       - business route
+       - API lookup
+       - template loading
+       - business data binding
+       - SEO
+       - breadcrumbs
+       - schema
+  ====================================================== -->
+
+  <script>
+(function(){
+  "use strict";
+  var p=(window.location.pathname||"/").split("?")[0].split("#")[0]
+    .split("/").filter(Boolean).map(function(x){return String(x).toLowerCase();});
+  var permanent = p.length === 5 && p[0] === "in" && p[1] && p[2] && p[3] && p[4];
+  if (permanent) {
+    document.write('<script src="/assets/js/seo/business-page.js?v=11.6.1"><\\/script>');
+  }
+})();
+</script>
+
+
+  <!-- =====================================================
+       HOMEPAGE / DIRECTORY SYSTEM
+  ====================================================== -->
+
+  <script src="/assets/js/storage.js?v=20260925-1"></script>
+
+  <script src="/assets/js/state.js?v=20260925-1"></script>
+
+  <script src="/assets/js/districts.js?v=20260925-1"></script>
+
+  <script src="/assets/js/categories.js?v=20260925-1"></script>
+
+  <script src="/assets/js/businesses.js?v=4.1.2"></script>
+
+  <!-- =====================================================
+       SMART SEARCH CONTROLLER
+       -----------------------------------------------------
+       Must load before app.js so Smart Search routes are
+       recognized before normal directory initialization.
+  ====================================================== -->
+
+  <script src="/assets/js/smart-search.js?v=2.0.0"></script>
+
+  <!-- =====================================================
+       MAIN APPLICATION
+       -----------------------------------------------------
+       Smart Search aware application controller.
+  ====================================================== -->
+
+  <script>
+(function(){
+  function init(){
+    var form=document.getElementById("ubnuxSmartSearchForm");
+    var input=document.getElementById("ubnuxSmartSearchInput");
+    if(!form||!input)return;
+    form.addEventListener("submit",function(e){
+      e.preventDefault();
+      var q=(input.value||"").trim();
+      if(!q)return;
+      if(window.UBnuxSmartSearch&&typeof window.UBnuxSmartSearch.search==="function"){
+        window.UBnuxSmartSearch.search(q);
+      }else{
+        window.location.href="/"+q.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")+"/";
+      }
+    });
+    document.querySelectorAll("[data-smart-query]").forEach(function(btn){
+      btn.addEventListener("click",function(){
+        input.value=btn.getAttribute("data-smart-query")||"";
+        form.requestSubmit();
+      });
+    });
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
+})();
+</script>
+<script src="/assets/js/app.js?v=3.5.0"></script>
+
+
+</body>
+
+</html>
