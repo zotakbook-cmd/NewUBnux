@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux Smart Search Frontend
    File: assets/js/smart-search.js
-   Version: 1.1.0
+   Version: 2.0.0
 
    Connects:
    Browser URL / search form
@@ -325,24 +325,63 @@
   }
 
   function navigateToSearch(query) {
-    var slug = slugify(query);
+    query = clean(query);
+    if (!query) return;
 
-    if (!slug) return;
+    /*
+     * Do not guess the route from word count. The backend resolves
+     * 01_Districts + 02_Categories first. run() will then create:
+     *   district + category -> /district/category/
+     *   district only       -> /district/
+     *   category only       -> /category/
+     *   business/global     -> /original-query/
+     */
+    run(query, {
+      noScroll: false,
+      fromSearchBox: true
+    });
+  }
 
-    var target = "/" + slug + "/";
+  function searchPathFromResponse(query, response) {
+    var intent = response && response.intent;
+    if (!intent) return "/" + slugify(query) + "/";
 
-    if (
-      window.location.pathname.replace(/\/+$/, "") !==
-      target.replace(/\/+$/, "")
-    ) {
+    var district = intent.district;
+    var category = intent.category;
+    var matchType = clean(intent.matchType);
+
+    if (matchType === "district-category" && district && category) {
+      return "/" + slugify(district.Slug || district.DistrictName) +
+        "/" + slugify(category.Slug || category.CategoryName) + "/";
+    }
+
+    if (matchType === "district" && district) {
+      return "/" + slugify(district.Slug || district.DistrictName) + "/";
+    }
+
+    if (matchType === "category" && category) {
+      return "/" + slugify(category.Slug || category.CategoryName) + "/";
+    }
+
+    return "/" + slugify(query) + "/";
+  }
+
+  function syncSearchURL(query, response) {
+    var target = searchPathFromResponse(query, response);
+    var current = (window.location.pathname || "/").replace(/\/+$/, "") || "/";
+    var next = target.replace(/\/+$/, "") || "/";
+
+    if (current === next) return;
+
+    try {
       window.history.pushState(
         { ubnuxSmartSearch: true, query: query },
         "",
         target
       );
+    } catch (error) {
+      console.warn("[UBnux Smart Search] URL update failed:", error);
     }
-
-    run(query);
   }
 
   function getResultBusiness(item) {
@@ -359,124 +398,28 @@
      * Copy those values onto the business object so the existing
      * business card renderer can build /in/.../ URLs normally.
      */
-    var match = item.match || item.Match || {};
+    var match = item.match || {};
 
-    /*
-     * SmartSearchEngine returns the permanent business URL as `url`.
-     * Keep it on the business object so businesses.js can use the
-     * backend canonical path even when CategorySlug is absent.
-     */
-    var canonicalURL =
-      item.SEOPath ||
-      item.seoPath ||
-      item.url ||
-      item.URL ||
-      item.CanonicalURL ||
-      item.canonicalURL ||
-      item.canonicalPath ||
-      "";
-
-    if (canonicalURL && !business.SEOPath) {
-      business.SEOPath = canonicalURL;
+    if (!business.StateSlug && match.state) {
+      business.StateSlug = match.state;
     }
 
-    /* SmartSearchEngine versions can expose match fields either in
-     * item.match or directly on the result. Normalize both forms. */
-    var stateSlug =
-      match.state ||
-      match.stateSlug ||
-      match.StateSlug ||
-      item.state ||
-      item.stateSlug ||
-      item.StateSlug ||
-      item.State ||
-      "";
-
-    var districtSlug =
-      match.district ||
-      match.districtSlug ||
-      match.DistrictSlug ||
-      item.district ||
-      item.districtSlug ||
-      item.DistrictSlug ||
-      item.District ||
-      "";
-
-    var categorySlug =
-      match.category ||
-      match.categorySlug ||
-      match.CategorySlug ||
-      item.category ||
-      item.categorySlug ||
-      item.CategorySlug ||
-      item.Category ||
-      "";
-
-    var businessSlug =
-      match.business ||
-      match.businessSlug ||
-      match.slug ||
-      match.Slug ||
-      item.businessSlug ||
-      item.slug ||
-      item.Slug ||
-      "";
-
-    if (!business.StateSlug && stateSlug) {
-      business.StateSlug = stateSlug;
+    if (!business.DistrictSlug && match.district) {
+      business.DistrictSlug = match.district;
     }
 
-    if (!business.DistrictSlug && districtSlug) {
-      business.DistrictSlug = districtSlug;
+    if (!business.CategorySlug && match.category) {
+      business.CategorySlug = match.category;
     }
 
-    if (!business.CategorySlug && categorySlug) {
-      business.CategorySlug = categorySlug;
-    }
-
-    if (!business.Slug && businessSlug) {
-      business.Slug = businessSlug;
+    if (!business.Slug && match.business) {
+      business.Slug = match.business;
     }
 
     return business;
   }
 
-  async function hydrateBusinessCategorySlugs(items) {
-    if (!Array.isArray(items) || !items.length) return items;
-
-    var missing = items.some(function (item) {
-      return item && !(item.CategorySlug || item.categorySlug || item.Category);
-    });
-
-    if (!missing || !window.UBnuxAPI || typeof window.UBnuxAPI.getCategories !== "function") {
-      return items;
-    }
-
-    try {
-      var response = await window.UBnuxAPI.getCategories({ cache: true });
-      var rows = Array.isArray(response && response.data) ? response.data : [];
-      var map = {};
-
-      rows.forEach(function (row) {
-        if (!row) return;
-        var id = String(row.CategoryID || row["Category ID"] || row["Category Id"] || "").trim().toLowerCase();
-        var slug = String(row.Slug || row.CategorySlug || row.CategoryName || "").trim();
-        if (id && slug) map[id] = slug;
-      });
-
-      items.forEach(function (item) {
-        if (!item || (item.CategorySlug || item.categorySlug || item.Category)) return;
-        var id = String(item.CategoryID || item["Category ID"] || item["Category Id"] || "").trim().toLowerCase();
-        if (id && map[id]) item.CategorySlug = map[id];
-      });
-    } catch (e) {
-      console.warn("UBnux Smart Search: category slug hydration failed.", e);
-    }
-
-    return items;
-  }
-
-  async function normalizeResponse(response) {
+  function normalizeResponse(response) {
     response = response || {};
 
     var raw =
@@ -496,8 +439,6 @@
     var businesses = raw
       .map(getResultBusiness)
       .filter(Boolean);
-
-    businesses = await hydrateBusinessCategorySlugs(businesses);
 
     var total =
       Number(
@@ -762,7 +703,7 @@
 
       if (requestId !== state.requestId) return;
 
-      var normalized = await normalizeResponse(response);
+      var normalized = normalizeResponse(response);
 
       state.firstResponse = response;
       state.nextCursor = normalized.nextCursor;
@@ -793,6 +734,10 @@
       );
 
       updateSEO(query, response);
+
+      if (options.fromSearchBox) {
+        syncSearchURL(query, response);
+      }
 
       var message = document.getElementById("selectionMessage");
       if (message) {
@@ -887,7 +832,7 @@
 
       if (requestId !== state.requestId) return;
 
-      var normalized = await normalizeResponse(response);
+      var normalized = normalizeResponse(response);
 
       state.nextCursor = normalized.nextCursor;
       state.hasMore = normalized.hasMore;
@@ -950,7 +895,7 @@
     var query = getRouteQuery();
 
     if (query) {
-      run(query, { noScroll: true });
+      run(query, { noScroll: true, fromSearchBox: false });
     }
   }
 
@@ -967,7 +912,7 @@
     var query = getRouteQuery();
 
     if (query) {
-      run(query, { noScroll: true });
+      run(query, { noScroll: true, fromSearchBox: false });
     }
   }
 
@@ -977,7 +922,7 @@
    * Expose a small public controller.
    */
   window.UBnuxSmartSearch = {
-    version: "1.0.0",
+    version: "2.0.0",
     state: state,
     isSmartRoute: isSmartRoute,
     getRouteQuery: getRouteQuery,
