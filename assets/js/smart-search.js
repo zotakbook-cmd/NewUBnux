@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux Smart Search Frontend
    File: assets/js/smart-search.js
-   Version: 2.0.0
+   Version: 1.2.0
 
    Connects:
    Browser URL / search form
@@ -325,63 +325,24 @@
   }
 
   function navigateToSearch(query) {
-    query = clean(query);
-    if (!query) return;
+    var slug = slugify(query);
 
-    /*
-     * Do not guess the route from word count. The backend resolves
-     * 01_Districts + 02_Categories first. run() will then create:
-     *   district + category -> /district/category/
-     *   district only       -> /district/
-     *   category only       -> /category/
-     *   business/global     -> /original-query/
-     */
-    run(query, {
-      noScroll: false,
-      fromSearchBox: true
-    });
-  }
+    if (!slug) return;
 
-  function searchPathFromResponse(query, response) {
-    var intent = response && response.intent;
-    if (!intent) return "/" + slugify(query) + "/";
+    var target = "/" + slug + "/";
 
-    var district = intent.district;
-    var category = intent.category;
-    var matchType = clean(intent.matchType);
-
-    if (matchType === "district-category" && district && category) {
-      return "/" + slugify(district.Slug || district.DistrictName) +
-        "/" + slugify(category.Slug || category.CategoryName) + "/";
-    }
-
-    if (matchType === "district" && district) {
-      return "/" + slugify(district.Slug || district.DistrictName) + "/";
-    }
-
-    if (matchType === "category" && category) {
-      return "/" + slugify(category.Slug || category.CategoryName) + "/";
-    }
-
-    return "/" + slugify(query) + "/";
-  }
-
-  function syncSearchURL(query, response) {
-    var target = searchPathFromResponse(query, response);
-    var current = (window.location.pathname || "/").replace(/\/+$/, "") || "/";
-    var next = target.replace(/\/+$/, "") || "/";
-
-    if (current === next) return;
-
-    try {
+    if (
+      window.location.pathname.replace(/\/+$/, "") !==
+      target.replace(/\/+$/, "")
+    ) {
       window.history.pushState(
         { ubnuxSmartSearch: true, query: query },
         "",
         target
       );
-    } catch (error) {
-      console.warn("[UBnux Smart Search] URL update failed:", error);
     }
+
+    run(query);
   }
 
   function getResultBusiness(item) {
@@ -440,14 +401,19 @@
       .map(getResultBusiness)
       .filter(Boolean);
 
-    var total =
-      Number(
-        response.total ||
-        (response.data && response.data.total) ||
-        businesses.length
-      );
+    var rawTotal =
+      response.total !== undefined
+        ? response.total
+        : (response.data && response.data.total !== undefined
+            ? response.data.total
+            : null);
 
-    if (!Number.isFinite(total)) total = businesses.length;
+    var total =
+      rawTotal === null || rawTotal === ""
+        ? null
+        : Number(rawTotal);
+
+    if (!Number.isFinite(total)) total = null;
 
     var hasMore =
       response.hasMore !== undefined
@@ -528,7 +494,7 @@
     businessesAPI.renderBusinesses();
   }
 
-  function setSummary(total, shown, loading) {
+  function setSummary(total, shown, loading, hasMore) {
     var el = getSummary();
     if (!el) return;
 
@@ -537,13 +503,23 @@
       return;
     }
 
-    if (!total) {
+    if (!shown) {
       el.textContent = "0 businesses found";
       return;
     }
 
-    el.textContent =
-      "Showing " + shown + " of " + total + " businesses";
+    /* Global/category search is cursor based; total is intentionally
+       not calculated by scanning every district on every request. */
+    if (total !== null && total !== undefined) {
+      el.textContent =
+        "Showing " + shown + " of " + total + " businesses";
+    } else if (hasMore) {
+      el.textContent =
+        "Showing " + shown + " businesses • More available";
+    } else {
+      el.textContent =
+        "Showing " + shown + " businesses";
+    }
   }
 
   function setLoadMore(hasMore, loading) {
@@ -720,7 +696,8 @@
       setSummary(
         normalized.total,
         normalized.businesses.length,
-        false
+        false,
+        normalized.hasMore
       );
 
       setLoadMore(
@@ -734,10 +711,6 @@
       );
 
       updateSEO(query, response);
-
-      if (options.fromSearchBox) {
-        syncSearchURL(query, response);
-      }
 
       var message = document.getElementById("selectionMessage");
       if (message) {
@@ -854,7 +827,8 @@
         businessState
           ? businessState.businesses.length
           : normalized.businesses.length,
-        false
+        false,
+        normalized.hasMore
       );
 
       setLoadMore(
@@ -895,7 +869,7 @@
     var query = getRouteQuery();
 
     if (query) {
-      run(query, { noScroll: true, fromSearchBox: false });
+      run(query, { noScroll: true });
     }
   }
 
@@ -912,7 +886,7 @@
     var query = getRouteQuery();
 
     if (query) {
-      run(query, { noScroll: true, fromSearchBox: false });
+      run(query, { noScroll: true });
     }
   }
 
@@ -922,7 +896,7 @@
    * Expose a small public controller.
    */
   window.UBnuxSmartSearch = {
-    version: "2.0.0",
+    version: "1.0.0",
     state: state,
     isSmartRoute: isSmartRoute,
     getRouteQuery: getRouteQuery,
