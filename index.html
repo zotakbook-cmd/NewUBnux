@@ -158,6 +158,208 @@
   >
 
 
+
+  <style id="smart-search-inline-css">
+    .smart-search-card{
+      width:100%;
+      margin:0 0 18px;
+      padding:20px;
+      border:1px solid rgba(37,99,235,.12);
+      border-radius:18px;
+      background:#fff;
+      box-shadow:0 10px 30px rgba(15,23,42,.07);
+      box-sizing:border-box;
+    }
+
+    .smart-search-title{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      margin-bottom:13px;
+    }
+
+    .smart-search-title strong{
+      font-size:18px;
+      line-height:1.3;
+      color:#111827;
+    }
+
+    .smart-search-title span{
+      font-size:13px;
+      line-height:1.5;
+      color:#64748b;
+    }
+
+    .smart-search-form{
+      display:flex;
+      align-items:stretch;
+      gap:10px;
+      width:100%;
+    }
+
+    .smart-search-input-wrap{
+      position:relative;
+      flex:1 1 auto;
+      min-width:0;
+    }
+
+    .smart-search-icon{
+      position:absolute;
+      left:15px;
+      top:50%;
+      transform:translateY(-50%);
+      font-size:24px;
+      line-height:1;
+      color:#64748b;
+      pointer-events:none;
+    }
+
+    #smartSearchInput{
+      width:100%;
+      height:50px;
+      padding:0 44px 0 45px;
+      border:1px solid #dbe3ef;
+      border-radius:12px;
+      outline:none;
+      background:#f8fafc;
+      color:#111827;
+      font:inherit;
+      font-size:15px;
+      box-sizing:border-box;
+      transition:border-color .2s,box-shadow .2s,background .2s;
+    }
+
+    #smartSearchInput::placeholder{
+      color:#94a3b8;
+    }
+
+    #smartSearchInput:focus{
+      background:#fff;
+      border-color:#2563eb;
+      box-shadow:0 0 0 4px rgba(37,99,235,.10);
+    }
+
+    .smart-search-clear{
+      position:absolute;
+      right:8px;
+      top:50%;
+      width:34px;
+      height:34px;
+      transform:translateY(-50%);
+      border:0;
+      border-radius:8px;
+      background:transparent;
+      color:#64748b;
+      cursor:pointer;
+      font-size:22px;
+      line-height:1;
+    }
+
+    .smart-search-clear:hover{
+      background:#e2e8f0;
+      color:#0f172a;
+    }
+
+    .smart-search-button{
+      flex:0 0 auto;
+      min-width:112px;
+      height:50px;
+      padding:0 20px;
+      border:0;
+      border-radius:12px;
+      background:#2563eb;
+      color:#fff;
+      font:inherit;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform .15s,background .2s,box-shadow .2s;
+    }
+
+    .smart-search-button:hover{
+      background:#1d4ed8;
+      box-shadow:0 8px 18px rgba(37,99,235,.22);
+    }
+
+    .smart-search-button:active{
+      transform:translateY(1px);
+    }
+
+    .smart-search-hints{
+      display:flex;
+      flex-wrap:wrap;
+      gap:7px;
+      margin-top:11px;
+    }
+
+    .smart-search-hints button{
+      min-height:31px;
+      padding:5px 11px;
+      border:1px solid #dbe3ef;
+      border-radius:999px;
+      background:#f8fafc;
+      color:#475569;
+      cursor:pointer;
+      font:inherit;
+      font-size:12px;
+    }
+
+    .smart-search-hints button:hover{
+      border-color:#93c5fd;
+      background:#eff6ff;
+      color:#1d4ed8;
+    }
+
+    .smart-search-status{
+      min-height:0;
+      margin-top:8px;
+      color:#64748b;
+      font-size:13px;
+    }
+
+    @media (max-width:640px){
+      .smart-search-card{
+        padding:15px;
+        border-radius:15px;
+      }
+
+      .smart-search-title strong{
+        font-size:17px;
+      }
+
+      .smart-search-form{
+        gap:8px;
+      }
+
+      .smart-search-button{
+        min-width:82px;
+        padding:0 14px;
+      }
+
+      #smartSearchInput{
+        height:48px;
+        font-size:14px;
+      }
+
+      .smart-search-button{
+        height:48px;
+      }
+
+      .smart-search-hints{
+        gap:6px;
+      }
+    }
+
+    @media (max-width:430px){
+      .smart-search-form{
+        flex-direction:column;
+      }
+
+      .smart-search-button{
+        width:100%;
+      }
+    }
+  </style>
+
 </head>
 
 
@@ -323,7 +525,66 @@
                  LOCATION / CATEGORY SELECTOR
             ============================================ -->
 
-            <div class="selector-card">
+            
+              <!-- =================================================
+                   SMART LOCAL SEARCH
+                   -------------------------------------------------
+                   Always visible in HTML. It does not depend on JS
+                   injection, so the search box remains visible even
+                   if Smart Search JS has not loaded yet.
+              ================================================== -->
+              <div class="smart-search-card" id="smartSearchCard">
+                <div class="smart-search-title">
+                  <strong>Search Local Businesses</strong>
+                  <span>Search by business, district, category or service</span>
+                </div>
+
+                <form class="smart-search-form" id="smartSearchForm" role="search">
+                  <div class="smart-search-input-wrap">
+                    <span class="smart-search-icon" aria-hidden="true">⌕</span>
+                    <input
+                      id="smartSearchInput"
+                      name="q"
+                      type="search"
+                      placeholder="Search e.g. Siwan, Fashion, Restaurant..."
+                      autocomplete="off"
+                      enterkeyhint="search"
+                      aria-label="Search local businesses"
+                    >
+                    <button
+                      id="smartSearchClear"
+                      class="smart-search-clear"
+                      type="button"
+                      aria-label="Clear search"
+                      hidden
+                    >×</button>
+                  </div>
+
+                  <button
+                    id="smartSearchButton"
+                    class="smart-search-button"
+                    type="submit"
+                  >
+                    Search
+                  </button>
+                </form>
+
+                <div class="smart-search-hints" aria-label="Popular searches">
+                  <button type="button" data-smart-query="siwan">Siwan</button>
+                  <button type="button" data-smart-query="fashion">Fashion</button>
+                  <button type="button" data-smart-query="siwan fashion">Siwan Fashion</button>
+                  <button type="button" data-smart-query="restaurants">Restaurants</button>
+                </div>
+
+                <div
+                  id="smartSearchStatus"
+                  class="smart-search-status"
+                  role="status"
+                  aria-live="polite"
+                ></div>
+              </div>
+
+              <div class="selector-card">
 
 
               <div class="selector-title">
@@ -915,6 +1176,109 @@
   ====================================================== -->
 
   <script src="/assets/js/smart-search.js?v=1.0.0"></script>
+
+
+  <!-- =====================================================
+       SMART SEARCH STATIC UI BINDING
+       -----------------------------------------------------
+       The visual search box is HTML-first. This small bridge
+       connects it to smart-search.js when that file is loaded.
+  ====================================================== -->
+  <script>
+    (function () {
+      "use strict";
+
+      function bootSmartSearchUI() {
+        var form = document.getElementById("smartSearchForm");
+        var input = document.getElementById("smartSearchInput");
+        var clear = document.getElementById("smartSearchClear");
+        var status = document.getElementById("smartSearchStatus");
+
+        if (!form || !input) return;
+
+        function updateClear() {
+          if (clear) clear.hidden = !input.value.trim();
+        }
+
+        input.addEventListener("input", updateClear);
+
+        if (clear) {
+          clear.addEventListener("click", function () {
+            input.value = "";
+            updateClear();
+            input.focus();
+            if (status) status.textContent = "";
+          });
+        }
+
+        document.querySelectorAll("[data-smart-query]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            input.value = button.getAttribute("data-smart-query") || "";
+            updateClear();
+            form.requestSubmit();
+          });
+        });
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          var query = input.value.trim();
+          if (!query) {
+            input.focus();
+            return;
+          }
+
+          /*
+           * Prefer the Smart Search controller if present.
+           * Different versions expose different method names,
+           * so support the common public forms without throwing.
+           */
+          var api = window.UBnuxSmartSearch || window.SmartSearch || null;
+
+          try {
+            if (api && typeof api.search === "function") {
+              api.search(query);
+              return;
+            }
+
+            if (window.UBnuxApp &&
+                typeof window.UBnuxApp.smartSearch === "function") {
+              window.UBnuxApp.smartSearch(query);
+              return;
+            }
+
+            /*
+             * URL fallback: the Smart Search route remains usable
+             * even when the controller has not loaded.
+             */
+            var slug = query
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9\u0900-\u097f]+/g, "-")
+              .replace(/^-+|-+$/g, "");
+
+            if (slug) {
+              window.location.href = "/" + encodeURIComponent(slug) + "/";
+            }
+          } catch (error) {
+            console.error("UBnux Smart Search UI error:", error);
+            if (status) {
+              status.textContent = "Unable to search right now. Please try again.";
+            }
+          }
+        });
+
+        updateClear;
+        updateClear();
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bootSmartSearchUI, { once:true });
+      } else {
+        bootSmartSearchUI();
+      }
+    })();
+  </script>
 
   <!-- =====================================================
        MAIN APPLICATION
