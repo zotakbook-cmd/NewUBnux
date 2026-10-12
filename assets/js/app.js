@@ -3264,6 +3264,33 @@
 
 
     /* =====================================================
+       SMART SEARCH ROUTE GUARD
+       -----------------------------------------------------
+       /siwan/
+       /fashion/
+       /siwan/fashion/
+       /green-india-siwan/
+       etc. are owned by smart-search.js.
+
+       Do NOT run the normal state/district/category bootstrap
+       on these routes because it would overwrite the search
+       results and browser URL.
+    ===================================================== */
+
+    if (
+      window.UBnuxSmartSearchRoute === true
+    ) {
+      console.debug(
+        "UBnux: Smart Search route detected. Listing bootstrap skipped."
+      );
+
+      releaseHomepageLoaderForBusinessPage();
+
+      return;
+    }
+
+
+    /* =====================================================
        NORMAL LISTING APP
     ===================================================== */
 
