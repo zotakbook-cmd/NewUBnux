@@ -1020,6 +1020,83 @@
   function getRoute() {
 
     /*
+     * HARD ROUTE SAFETY
+     *
+     * A category URL has exactly 4 path segments:
+     * /in/state/district/category/
+     *
+     * It is NEVER a business page. Do this check before
+     * trusting any stale/cached router implementation.
+     */
+    try {
+
+      var currentPath =
+        (window.location && window.location.pathname) || "/";
+
+      var cleanPath =
+        currentPath.split("?")[0].split("#")[0];
+
+      var directParts =
+        cleanPath.split("/").filter(function (item) {
+          return Boolean(String(item || "").trim());
+        });
+
+      if (
+        directParts.length === 4 &&
+        String(directParts[0]).toLowerCase() === "in"
+      ) {
+        return {
+          type: "category",
+          isSEOPage: true,
+          isBusinessPage: false,
+          isCategoryPage: true,
+          stateSlug: normalizeSlug(directParts[1]),
+          districtSlug: normalizeSlug(directParts[2]),
+          categorySlug: normalizeSlug(directParts[3]),
+          businessSlug: ""
+        };
+      }
+
+      /* A 5-segment /in/ URL is the only long business URL. */
+      if (
+        directParts.length === 5 &&
+        String(directParts[0]).toLowerCase() === "in"
+      ) {
+        return normalizeRoute({
+          type: "business",
+          isSEOPage: true,
+          isBusinessPage: true,
+          stateSlug: directParts[1],
+          districtSlug: directParts[2],
+          categorySlug: directParts[3],
+          businessSlug: directParts[4]
+        });
+      }
+
+      /* A one-segment non-reserved URL is a short business URL. */
+      if (directParts.length === 1) {
+        var reserved = [
+          "in", "business", "search", "about", "contact",
+          "privacy", "privacy-policy", "terms", "login",
+          "admin", "api", "assets", "sitemap",
+          "sitemap.xml", "robots.txt"
+        ];
+
+        if (reserved.indexOf(String(directParts[0]).toLowerCase()) === -1) {
+          return normalizeRoute({
+            type: "business",
+            isBusinessPage: true,
+            isShortURL: true,
+            businessSlug: directParts[0]
+          });
+        }
+      }
+
+    } catch (routeSafetyError) {
+      warn("Direct route safety check failed.", routeSafetyError);
+    }
+
+    /*
      * 1. Dedicated SEO router
      */
 
