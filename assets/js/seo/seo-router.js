@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux - Business SEO Router
    File: assets/js/seo/seo-router.js
-   Version: 2.4.0
+   Version: 2.5.0
 
    Responsibilities:
    - Read current URL
@@ -487,19 +487,19 @@
     }
 
 
-    /*
-     * SINGLE-SEGMENT PATHS BELONG TO SMART SEARCH
-     *
-     * /siwan/
-     * /fashion/
-     * /green-india-siwan/
-     *
-     * A one-segment business URL has the exact same shape as a
-     * Smart Search URL, so it cannot be safely distinguished
-     * client-side. Permanent business URLs remain /in/.../.
-     */
+    /* =======================================================
+   SHORT BUSINESS SHARE URLS DISABLED
+   -------------------------------------------------------
+   One-segment URLs are Smart Search routes:
+     /siwan/
+     /fashion/
+     /restaurants/
 
-    /*
+   Permanent business URLs are only:
+     /in/state/district/category/business/
+======================================================= */
+
+/*
      * Non-business route.
 
      * IMPORTANT:
