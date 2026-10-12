@@ -1073,8 +1073,25 @@
         });
       }
 
+      /*
+       * Smart Search owns public one-segment routes such as:
+       * /siwan/
+       * /fashion/
+       * /restaurants/
+       *
+       * Do NOT let the Business Page controller reinterpret these
+       * as short business URLs.
+       */
+      var smartSearchOwnsRoute =
+        window.UBnuxSmartSearchRoute === true ||
+        (
+          window.UBnuxSmartSearch &&
+          typeof window.UBnuxSmartSearch.isSmartRoute === "function" &&
+          window.UBnuxSmartSearch.isSmartRoute()
+        );
+
       /* A one-segment non-reserved URL is a short business URL. */
-      if (directParts.length === 1) {
+      if (directParts.length === 1 && !smartSearchOwnsRoute) {
         var reserved = [
           "in", "business", "search", "about", "contact",
           "privacy", "privacy-policy", "terms", "login",
