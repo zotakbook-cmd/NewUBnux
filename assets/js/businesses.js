@@ -56,7 +56,7 @@
 
 
   const VERSION =
-    "4.1.2";
+    "4.1.3";
 
 
   const PAGE_SIZE =
@@ -348,12 +348,13 @@
     }
 
 
-    /*
-     * BACKEND-CANONICAL URL
-     * Smart Search responses already contain SEOPath generated
-     * by the backend. Prefer it so cards never fall back to #
-     * when StateSlug/CategorySlug are absent on the client object.
-     */
+    /* =========================================================
+       BACKEND CANONICAL URL
+       ---------------------------------------------------------
+       If the API already supplies the permanent SEO path,
+       always use it first.
+    ========================================================= */
+
     const backendSEOPath =
       clean(
         business.SEOPath ||
@@ -363,25 +364,156 @@
         business.canonicalPath
       );
 
-    if (backendSEOPath) {
+
+    if (
+      backendSEOPath
+    ) {
+
       try {
-        const parsed = new URL(
-          backendSEOPath,
-          window.location.origin
-        );
+
+        const parsed =
+          new URL(
+            backendSEOPath,
+            window.location.origin
+          );
+
 
         if (
-          parsed.origin === window.location.origin &&
-          parsed.pathname.indexOf("/in/") === 0
+          parsed.origin ===
+            window.location.origin &&
+          parsed.pathname
+            .indexOf("/in/") === 0
         ) {
+
           return parsed.pathname;
+
         }
-      } catch (seoPathError) {
+
+      } catch (error) {
+
         console.warn(
-          "UBnux: Invalid backend SEOPath; using fallback URL builder.",
-          seoPathError
+          "UBnux: Invalid backend SEOPath; using selection fallback.",
+          error
         );
+
       }
+
+    }
+
+
+    /* =========================================================
+       SELECTION FALLBACK
+       ---------------------------------------------------------
+       Smart Search/API listing responses may not contain
+       StateSlug and CategorySlug on every business object.
+
+       Example API object:
+       {
+         StateSlug: "",
+         DistrictSlug: "siwan",
+         CategorySlug: "",
+         Slug: "siwan-fashion-house"
+       }
+
+       The active listing selection already contains:
+       state = BR
+       district = SIWAN
+       category = clothing-and-fashion
+
+       Use that information instead of returning '#'.
+    ========================================================= */
+
+    let selected = null;
+
+    try {
+
+      if (
+        window.UBnuxState &&
+        typeof
+          window.UBnuxState.getSelection ===
+            "function"
+      ) {
+
+        selected =
+          window.UBnuxState.getSelection();
+
+      }
+
+    } catch (error) {
+
+      selected = null;
+
+    }
+
+
+    /* =========================================================
+       STATE NAME RESOLUTION
+    ========================================================= */
+
+    let selectedStateName =
+      clean(
+        selected &&
+        (
+          selected.stateName ||
+          selected.StateName
+        )
+      );
+
+
+    if (
+      !selectedStateName &&
+      selected &&
+      selected.state
+    ) {
+
+      try {
+
+        const stateList =
+          window.UBnuxState &&
+          window.UBnuxState.state &&
+          Array.isArray(
+            window.UBnuxState.state.states
+          )
+            ? window.UBnuxState.state.states
+            : [];
+
+
+        const stateItem =
+          stateList.find(
+            function (item) {
+
+              return String(
+                item.StateCode ||
+                item.stateCode ||
+                item.Code ||
+                item.code ||
+                ""
+              ).trim().toUpperCase() ===
+              String(
+                selected.state
+              ).trim().toUpperCase();
+
+            }
+          );
+
+
+        if (
+          stateItem
+        ) {
+
+          selectedStateName =
+            clean(
+              stateItem.State ||
+              stateItem.StateName ||
+              stateItem.name
+            );
+
+        }
+
+      } catch (error) {
+        /* Keep the other fallback sources. */
+      }
+
     }
 
 
@@ -390,7 +522,8 @@
         business.StateSlug ||
         business.stateSlug ||
         business.State ||
-        business.state
+        business.state ||
+        selectedStateName
       );
 
 
@@ -399,7 +532,15 @@
         business.DistrictSlug ||
         business.districtSlug ||
         business.District ||
-        business.district
+        business.district ||
+        (
+          selected &&
+          (
+            selected.districtName ||
+            selected.DistrictName ||
+            selected.district
+          )
+        )
       );
 
 
@@ -408,16 +549,29 @@
         business.CategorySlug ||
         business.categorySlug ||
         business.Category ||
-        business.category
+        business.category ||
+        (
+          selected &&
+          (
+            selected.categorySlug ||
+            selected.category
+          )
+        )
       );
 
 
     const businessSlug =
       normalizeSlug(
         business.Slug ||
-        business.slug
+        business.slug ||
+        business.BusinessSlug ||
+        business.businessSlug
       );
 
+
+    /* =========================================================
+       FINAL VALIDATION
+    ========================================================= */
 
     if (
       !stateSlug ||
@@ -434,22 +588,24 @@
             business.businessID ||
             business.id ||
             "",
-
           StateSlug:
             stateSlug,
-
           DistrictSlug:
             districtSlug,
-
           CategorySlug:
             categorySlug,
-
           Slug:
-            businessSlug
+            businessSlug,
+          Selection:
+            selected
         }
       );
 
 
+      /*
+       * Never create a fake SEO URL.
+       * Keep '#' only when absolutely required.
+       */
       return "#";
 
     }
