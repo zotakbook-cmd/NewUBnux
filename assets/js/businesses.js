@@ -3,7 +3,7 @@
    File: assets/js/businesses.js
 
    Version:
-   4.2.0
+   4.1.0
 
    Responsibilities:
    ---------------------------------------------------------
@@ -56,7 +56,7 @@
 
 
   const VERSION =
-    "4.2.0";
+    "4.0.0";
 
 
   const PAGE_SIZE =
@@ -348,31 +348,12 @@
     }
 
 
-    /*
-     * Smart Search results may contain only the business fields plus
-     * a district/category match. Normal directory results may also
-     * omit StateSlug/CategorySlug. Build the permanent URL from the
-     * active UBnux selection as a safe frontend fallback.
-     */
-    let selection = null;
-
-    try {
-      if (
-        window.UBnuxState &&
-        typeof window.UBnuxState.getSelection === "function"
-      ) {
-        selection = window.UBnuxState.getSelection() || null;
-      }
-    } catch (e) {}
-
     const stateSlug =
       normalizeSlug(
         business.StateSlug ||
         business.stateSlug ||
         business.State ||
-        business.state ||
-        (selection && (selection.stateName || selection.state)) ||
-        ""
+        business.state
       );
 
 
@@ -381,9 +362,7 @@
         business.DistrictSlug ||
         business.districtSlug ||
         business.District ||
-        business.district ||
-        (selection && (selection.districtName || selection.district)) ||
-        ""
+        business.district
       );
 
 
@@ -392,9 +371,7 @@
         business.CategorySlug ||
         business.categorySlug ||
         business.Category ||
-        business.category ||
-        (selection && (selection.categorySlug || selection.category)) ||
-        ""
+        business.category
       );
 
 
