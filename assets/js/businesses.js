@@ -358,6 +358,8 @@
       clean(
         business.SEOPath ||
         business.seoPath ||
+        business.url ||
+        business.URL ||
         business.CanonicalURL ||
         business.canonicalURL ||
         business.canonicalPath
