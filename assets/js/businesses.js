@@ -56,7 +56,7 @@
 
 
   const VERSION =
-    "4.0.0";
+    "4.1.2";
 
 
   const PAGE_SIZE =
@@ -345,6 +345,43 @@
 
       return "#";
 
+    }
+
+
+    /*
+     * BACKEND-CANONICAL URL
+     * Smart Search responses already contain SEOPath generated
+     * by the backend. Prefer it so cards never fall back to #
+     * when StateSlug/CategorySlug are absent on the client object.
+     */
+    const backendSEOPath =
+      clean(
+        business.SEOPath ||
+        business.seoPath ||
+        business.CanonicalURL ||
+        business.canonicalURL ||
+        business.canonicalPath
+      );
+
+    if (backendSEOPath) {
+      try {
+        const parsed = new URL(
+          backendSEOPath,
+          window.location.origin
+        );
+
+        if (
+          parsed.origin === window.location.origin &&
+          parsed.pathname.indexOf("/in/") === 0
+        ) {
+          return parsed.pathname;
+        }
+      } catch (seoPathError) {
+        console.warn(
+          "UBnux: Invalid backend SEOPath; using fallback URL builder.",
+          seoPathError
+        );
+      }
     }
 
 
