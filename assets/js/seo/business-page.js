@@ -81,7 +81,7 @@
   var CONFIG = {
 
     VERSION:
-      "11.3.0",
+      "11.4.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -874,6 +874,26 @@
         route.business
       );
 
+    /* Short share URL: /business-slug/ */
+    if (
+      route.isShortURL === true &&
+      businessSlug
+    ) {
+
+      return {
+        type: "business",
+        isSEOPage: false,
+        isBusinessPage: true,
+        isShortURL: true,
+        stateSlug: "",
+        districtSlug: "",
+        categorySlug: "",
+        businessSlug: businessSlug,
+        canonicalPath: "",
+        canonicalURL: ""
+      };
+    }
+
     if (
       !stateSlug ||
       !districtSlug ||
@@ -950,9 +970,29 @@
         .filter(Boolean);
 
     if (
+      parts.length === 1 &&
+      parts[0] &&
+      ![
+        "in", "business", "search", "about", "contact",
+        "privacy", "privacy-policy", "terms", "login",
+        "admin", "api", "assets", "sitemap",
+        "sitemap.xml", "robots.txt"
+      ].includes(
+        String(parts[0]).toLowerCase()
+      )
+    ) {
+
+      return normalizeRoute({
+        type: "business",
+        isBusinessPage: true,
+        isShortURL: true,
+        businessSlug: parts[0]
+      });
+    }
+
+    if (
       parts.length !== 5 ||
-      String(parts[0])
-        .toLowerCase() !== "in"
+      String(parts[0]).toLowerCase() !== "in"
     ) {
 
       return null;
@@ -976,7 +1016,6 @@
     });
 
   }
-
 
   function getRoute() {
 
@@ -1087,10 +1126,15 @@
     return Boolean(
       route &&
       route.isBusinessPage === true &&
-      route.stateSlug &&
-      route.districtSlug &&
-      route.categorySlug &&
-      route.businessSlug
+      route.businessSlug &&
+      (
+        route.isShortURL === true ||
+        (
+          route.stateSlug &&
+          route.districtSlug &&
+          route.categorySlug
+        )
+      )
     );
 
   }
@@ -1769,6 +1813,31 @@
         "UBnux API client is not loaded."
       );
 
+    }
+
+
+    /*
+     * SHORT SHARE URL
+     * Resolve /business-slug/ through the backend.
+     * Backend returns the complete SEO business payload,
+     * including the permanent canonical URL.
+     */
+    if (route.isShortURL === true) {
+
+      if (typeof API.request === "function") {
+
+        return await API.request(
+          "business-short",
+          {
+            slug: route.businessSlug
+          }
+        );
+
+      }
+
+      throw new Error(
+        "UBnux API client does not support short business URLs."
+      );
     }
 
 
