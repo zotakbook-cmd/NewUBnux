@@ -56,12 +56,12 @@
 
 
   const VERSION =
-    "4.1.3";
+    "4.1.2";
 
 
   const PAGE_SIZE =
     Number(
-      config.BUSINESS_PAGE_SIZE || 100
+      config.BUSINESS_PAGE_SIZE || 18
     );
 
 
@@ -1903,39 +1903,6 @@
 
 
       renderBusinesses();
-
-
-      /* =====================================================
-         AUTO LOAD ALL BUSINESS PAGES
-         -----------------------------------------------------
-         Continue loading pages when the backend reports that
-         more businesses are available. This makes all matching
-         businesses appear without requiring repeated clicks.
-      ===================================================== */
-
-      if (
-        !append &&
-        state.hasMore &&
-        normalized.businesses.length > 0
-      ) {
-
-        let safety =
-          0;
-
-        while (
-          state.hasMore &&
-          safety < 100
-        ) {
-
-          safety++;
-
-          await loadBusinesses(
-            true
-          );
-
-        }
-
-      }
 
 
     } catch (error) {
