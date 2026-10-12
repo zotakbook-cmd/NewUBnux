@@ -1,0 +1,102 @@
+/* =========================================================
+   UBnux Smart Search
+========================================================= */
+
+.ubnux-smart-search {
+  width: 100%;
+  margin: 18px auto 28px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.ubnux-smart-search-inner {
+  width: min(980px, 100%);
+  margin: 0 auto;
+}
+
+.ubnux-smart-search-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 7px 8px 7px 16px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, .12);
+  border-radius: 18px;
+  box-shadow: 0 10px 35px rgba(15, 23, 42, .08);
+  box-sizing: border-box;
+}
+
+.ubnux-smart-search-icon {
+  flex: 0 0 auto;
+  font-size: 26px;
+  line-height: 1;
+  opacity: .6;
+}
+
+.ubnux-smart-search-form input {
+  min-width: 0;
+  flex: 1 1 auto;
+  height: 44px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.ubnux-smart-search-form input::placeholder {
+  color: #94a3b8;
+}
+
+.ubnux-smart-search-form button {
+  flex: 0 0 auto;
+  min-width: 112px;
+  height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 13px;
+  background: #0f172a;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+.ubnux-smart-search-form button:hover {
+  transform: translateY(-1px);
+  opacity: .92;
+}
+
+.ubnux-smart-search-hint {
+  margin: 9px 4px 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .ubnux-smart-search {
+    margin: 12px auto 20px;
+    padding: 0 12px;
+  }
+
+  .ubnux-smart-search-form {
+    min-height: 54px;
+    border-radius: 15px;
+    padding-left: 12px;
+  }
+
+  .ubnux-smart-search-form input {
+    font-size: 15px;
+  }
+
+  .ubnux-smart-search-form button {
+    min-width: 88px;
+    padding: 0 14px;
+  }
+
+  .ubnux-smart-search-hint {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
