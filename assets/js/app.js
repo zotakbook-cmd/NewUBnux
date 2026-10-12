@@ -2,7 +2,7 @@
    UBnux Main Application
    File: assets/js/app.js
 
-   Version: 3.3.0
+   Version: 3.5.0
 
    RESPONSIBILITIES
    ---------------------------------------------------------
@@ -476,25 +476,23 @@
 
   const IS_BUSINESS_PAGE =
     Boolean(
-
-      (
-        FALLBACK_ROUTE &&
-        FALLBACK_ROUTE.type ===
-          "business" &&
-        FALLBACK_ROUTE.isBusinessPage ===
-          true
-      )
-
+      (FALLBACK_ROUTE &&
+       FALLBACK_ROUTE.type === "business" &&
+       FALLBACK_ROUTE.isBusinessPage === true &&
+       FALLBACK_ROUTE.isSEOPage === true &&
+       FALLBACK_ROUTE.stateSlug &&
+       FALLBACK_ROUTE.districtSlug &&
+       FALLBACK_ROUTE.categorySlug &&
+       FALLBACK_ROUTE.businessSlug)
       ||
-
-      (
-        CURRENT_ROUTE &&
-        CURRENT_ROUTE.type ===
-          "business" &&
-        CURRENT_ROUTE.isBusinessPage ===
-          true
-      )
-
+      (CURRENT_ROUTE &&
+       CURRENT_ROUTE.type === "business" &&
+       CURRENT_ROUTE.isBusinessPage === true &&
+       CURRENT_ROUTE.isSEOPage === true &&
+       CURRENT_ROUTE.stateSlug &&
+       CURRENT_ROUTE.districtSlug &&
+       CURRENT_ROUTE.categorySlug &&
+       CURRENT_ROUTE.businessSlug)
     );
 
 
@@ -3446,7 +3444,7 @@
   window.UBnuxApp = {
 
     version:
-      "3.3.0",
+      "3.5.0",
 
 
     getRoute:
