@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux Smart Search Frontend
    File: assets/js/smart-search.js
-   Version: 1.1.0
+   Version: 1.0.0
 
    Connects:
    Browser URL / search form
@@ -359,64 +359,22 @@
      * Copy those values onto the business object so the existing
      * business card renderer can build /in/.../ URLs normally.
      */
-    var match = item.match || item.Match || {};
+    var match = item.match || {};
 
-    /* SmartSearchEngine versions can expose match fields either in
-     * item.match or directly on the result. Normalize both forms. */
-    var stateSlug =
-      match.state ||
-      match.stateSlug ||
-      match.StateSlug ||
-      item.state ||
-      item.stateSlug ||
-      item.StateSlug ||
-      item.State ||
-      "";
-
-    var districtSlug =
-      match.district ||
-      match.districtSlug ||
-      match.DistrictSlug ||
-      item.district ||
-      item.districtSlug ||
-      item.DistrictSlug ||
-      item.District ||
-      "";
-
-    var categorySlug =
-      match.category ||
-      match.categorySlug ||
-      match.CategorySlug ||
-      item.category ||
-      item.categorySlug ||
-      item.CategorySlug ||
-      item.Category ||
-      "";
-
-    var businessSlug =
-      match.business ||
-      match.businessSlug ||
-      match.slug ||
-      match.Slug ||
-      item.businessSlug ||
-      item.slug ||
-      item.Slug ||
-      "";
-
-    if (!business.StateSlug && stateSlug) {
-      business.StateSlug = stateSlug;
+    if (!business.StateSlug && match.state) {
+      business.StateSlug = match.state;
     }
 
-    if (!business.DistrictSlug && districtSlug) {
-      business.DistrictSlug = districtSlug;
+    if (!business.DistrictSlug && match.district) {
+      business.DistrictSlug = match.district;
     }
 
-    if (!business.CategorySlug && categorySlug) {
-      business.CategorySlug = categorySlug;
+    if (!business.CategorySlug && match.category) {
+      business.CategorySlug = match.category;
     }
 
-    if (!business.Slug && businessSlug) {
-      business.Slug = businessSlug;
+    if (!business.Slug && match.business) {
+      business.Slug = match.business;
     }
 
     return business;
