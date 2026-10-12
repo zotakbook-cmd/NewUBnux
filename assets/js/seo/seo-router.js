@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux - Business SEO Router
    File: assets/js/seo/seo-router.js
-   Version: 2.2.0
+   Version: 2.3.0
 
    Responsibilities:
    - Read current URL
@@ -488,6 +488,48 @@
 
 
     /*
+     * SHORT BUSINESS SHARE URL
+     * /siwan-fashion-house/
+     *
+     * This resolves the business without replacing the
+     * canonical SEO URL. Reserved top-level paths remain
+     * normal application routes.
+     */
+
+    const shortParts =
+      getSegments(
+        path
+      );
+
+    if (
+      shortParts.length === 1 &&
+      shortParts[0] &&
+      ![
+        "in", "business", "search", "about", "contact",
+        "privacy", "privacy-policy", "terms", "login",
+        "admin", "api", "assets", "sitemap",
+        "sitemap.xml", "robots.txt"
+      ].includes(
+        String(shortParts[0]).toLowerCase()
+      )
+    ) {
+
+      return {
+        type: "business",
+        isBusinessPage: true,
+        isSEOPage: false,
+        isShortURL: true,
+        stateSlug: "",
+        districtSlug: "",
+        categorySlug: "",
+        businessSlug: cleanSlug(shortParts[0]),
+        canonicalPath: "",
+        canonicalURL: ""
+      };
+    }
+
+
+    /*
      * Non-business route.
 
      * IMPORTANT:
@@ -552,13 +594,16 @@
       route.isBusinessPage ===
         true &&
 
-      route.stateSlug &&
+      route.businessSlug &&
 
-      route.districtSlug &&
-
-      route.categorySlug &&
-
-      route.businessSlug
+      (
+        route.isShortURL === true ||
+        (
+          route.stateSlug &&
+          route.districtSlug &&
+          route.categorySlug
+        )
+      )
 
     );
 
@@ -585,7 +630,7 @@
   const UBNUX_SEO_ROUTER = {
 
     version:
-      "2.2.0",
+      "2.3.0",
 
     getPath:
       getPath,
