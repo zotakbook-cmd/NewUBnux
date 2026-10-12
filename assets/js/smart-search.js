@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux Smart Search Frontend
    File: assets/js/smart-search.js
-   Version: 1.2.0
+   Version: 2.0.0
 
    Connects:
    Browser URL / search form
@@ -30,7 +30,7 @@
   "use strict";
 
   var CONFIG = {
-    PAGE_SIZE: 50,
+    PAGE_SIZE: 18,
     ROOT_ID: "ubnuxSmartSearch",
     SEARCH_IDS: [
       "searchInput",
@@ -146,10 +146,10 @@
 
     if (!parts.length) return false;
 
-    /*
-     * A one/two/multi-segment public path is treated as a smart
-     * search route. Short business URLs are excluded above.
-     */
+    /* Permanent business pages always use /in/.../.
+       All other public 1-4 segment paths are Smart Search. */
+    if (parts[0] === "in") return false;
+
     return parts.length >= 1 && parts.length <= 4;
   }
 
@@ -240,6 +240,7 @@
     if (existingInput) {
       existingInput.setAttribute("autocomplete", "off");
       existingInput.setAttribute("data-ubnux-smart-search", "true");
+      existingInput.setAttribute("data-smart-search", "true");
 
       if (!existingInput.getAttribute("placeholder")) {
         existingInput.setAttribute(
@@ -705,40 +706,6 @@
         false
       );
 
-      /*
-       * Auto-load every cursor batch.
-       * SmartSearchEngine returns results in cursor-based batches, so
-       * the first response may contain only PAGE_SIZE businesses even
-       * when many more businesses match the route/query.
-       */
-      if (
-        normalized.businesses.length > 0 &&
-        normalized.hasMore &&
-        normalized.nextCursor
-      ) {
-        var autoPages = 0;
-        while (
-          state.hasMore &&
-          state.nextCursor &&
-          !state.loading &&
-          requestId === state.requestId &&
-          autoPages < 100
-        ) {
-          autoPages++;
-          await next();
-        }
-      }
-
-      var loadedState = window.UBnuxBusinesses && window.UBnuxBusinesses.state;
-      setSummary(
-        normalized.total,
-        loadedState ? loadedState.businesses.length : normalized.businesses.length,
-        false,
-        state.hasMore
-      );
-
-      setLoadMore(state.hasMore, false);
-
       setEmpty(
         normalized.businesses.length === 0,
         "No businesses matched “" + query + "”. Try a district, category or business name."
@@ -930,7 +897,7 @@
    * Expose a small public controller.
    */
   window.UBnuxSmartSearch = {
-    version: "1.3.0",
+    version: "2.0.0",
     state: state,
     isSmartRoute: isSmartRoute,
     getRouteQuery: getRouteQuery,
