@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux
    File: assets/js/config.js
-   Version: 3.0.1
+   Version: 3.0.2
 ========================================================= */
 
 (function (window) {
@@ -15,8 +15,16 @@
        API
     ===================================================== */
 
+    /*
+     * Cloudflare Pages Function
+     *
+     * Browser → Cloudflare → Google Apps Script
+     *
+     * DO NOT put Google Apps Script URL here.
+     */
+
     API_URL:
-      "https://script.google.com/macros/s/AKfycbzZ3GtCryDG8WB5YkutJiXk-2YoHEN7KPTAeYWtmqq0mKp6oHRdV2g2WMg-BWyQSB07rg/exec",
+      "https://ubnux.com/api",
 
 
     /* =====================================================
