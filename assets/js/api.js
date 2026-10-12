@@ -3,7 +3,7 @@
    File: assets/js/api.js
 
    Version:
-   3.0.0
+   3.0.1
 
    Responsibilities:
    ---------------------------------------------------------
@@ -1269,6 +1269,253 @@
   }
 
 
+
+  /* =======================================================
+     SMART SEARCH
+
+     Supports:
+     - Natural query / slug search
+     - District + category
+     - District only
+     - Category only
+     - Fuzzy/partial backend matching
+     - Cursor based progressive loading
+     - 18 result default batches
+  ======================================================= */
+
+  async function smartSearch(
+    query,
+    options
+  ) {
+
+    options =
+      options ||
+      {};
+
+    let params = {};
+
+    if (
+      query &&
+      typeof query === "object"
+    ) {
+
+      params =
+        Object.assign(
+          {},
+          query
+        );
+
+    } else {
+
+      params.q =
+        clean(
+          query
+        );
+
+    }
+
+    const q =
+      clean(
+        params.q ||
+        params.query ||
+        params.slug ||
+        ""
+      );
+
+    if (!q) {
+
+      throw new Error(
+        "Smart search query is required."
+      );
+
+    }
+
+    let limit =
+      Number(
+        params.limit ||
+        options.limit ||
+        DEFAULTS.BUSINESS_PAGE_SIZE
+      );
+
+    if (
+      !Number.isFinite(limit) ||
+      limit < 1
+    ) {
+
+      limit =
+        DEFAULTS.BUSINESS_PAGE_SIZE;
+
+    }
+
+    limit =
+      Math.min(
+        Math.floor(limit),
+        50
+      );
+
+    const requestParams = {
+
+      q:
+        q,
+
+      limit:
+        limit
+
+    };
+
+    const cursor =
+      clean(
+        params.cursor ||
+        options.cursor ||
+        ""
+      );
+
+    if (cursor) {
+
+      requestParams.cursor =
+        cursor;
+
+    }
+
+    const district =
+      clean(
+        params.district ||
+        params.districtSlug ||
+        options.district ||
+        ""
+      );
+
+    const category =
+      clean(
+        params.category ||
+        params.categorySlug ||
+        options.category ||
+        ""
+      );
+
+    if (district) {
+
+      requestParams.district =
+        district;
+
+    }
+
+    if (category) {
+
+      requestParams.category =
+        category;
+
+    }
+
+    const sort =
+      clean(
+        params.sort ||
+        options.sort ||
+        ""
+      );
+
+    if (sort) {
+
+      requestParams.sort =
+        sort;
+
+    }
+
+    const requestOptions =
+      Object.assign(
+        {},
+        options,
+        {
+          cache:
+            options.cache === true &&
+            !cursor
+        }
+      );
+
+    return request(
+      "smart-search",
+      requestParams,
+      requestOptions
+    );
+
+  }
+
+
+  /* =======================================================
+     SMART SEARCH NEXT BATCH
+  ======================================================= */
+
+  async function smartSearchNext(
+    previousResult,
+    options
+  ) {
+
+    if (
+      !previousResult ||
+      !previousResult.nextCursor
+    ) {
+
+      return {
+
+        success:
+          true,
+
+        results:
+          [],
+
+        nextCursor:
+          null,
+
+        hasMore:
+          false
+
+      };
+
+    }
+
+    const query =
+      clean(
+        previousResult.query ||
+        previousResult.q ||
+        (
+          previousResult.search &&
+          (
+            previousResult.search.query ||
+            previousResult.search.q
+          )
+        ) ||
+        ""
+      );
+
+    if (!query) {
+
+      throw new Error(
+        "Smart search query is missing from previous result."
+      );
+
+    }
+
+    return smartSearch(
+      {
+        q:
+          query,
+
+        cursor:
+          previousResult.nextCursor,
+
+        limit:
+          (
+            options &&
+            options.limit
+          ) ||
+          DEFAULTS.BUSINESS_PAGE_SIZE
+      },
+      options
+    );
+
+  }
+
+
   /* =======================================================
      API HEALTH
   ====================================================== */
@@ -1434,6 +1681,15 @@
 
     getBusinesses:
       getBusinesses,
+
+    /*
+     * Smart Search
+     */
+    smartSearch:
+      smartSearch,
+
+    smartSearchNext:
+      smartSearchNext,
 
     getBusiness:
       getBusiness,
