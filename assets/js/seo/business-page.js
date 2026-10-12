@@ -81,7 +81,7 @@
   var CONFIG = {
 
     VERSION:
-      "11.4.0",
+      "11.3.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -874,26 +874,6 @@
         route.business
       );
 
-    /* Short share URL: /business-slug/ */
-    if (
-      route.isShortURL === true &&
-      businessSlug
-    ) {
-
-      return {
-        type: "business",
-        isSEOPage: false,
-        isBusinessPage: true,
-        isShortURL: true,
-        stateSlug: "",
-        districtSlug: "",
-        categorySlug: "",
-        businessSlug: businessSlug,
-        canonicalPath: "",
-        canonicalURL: ""
-      };
-    }
-
     if (
       !stateSlug ||
       !districtSlug ||
@@ -969,44 +949,10 @@
         .split("/")
         .filter(Boolean);
 
-    /*
-     * IMPORTANT: One-segment public URLs are owned by Smart Search.
-     * Examples: /siwan/ /fashion/ /siwan-fashion/
-     * Permanent business URLs remain /in/state/district/category/business/.
-     */
-    var smartSearchOwnsOneSegment =
-      window.UBnuxSmartSearchRoute === true ||
-      (
-        window.UBnuxSmartSearch &&
-        typeof window.UBnuxSmartSearch.isSmartRoute === "function" &&
-        window.UBnuxSmartSearch.isSmartRoute()
-      );
-
-    if (
-      !smartSearchOwnsOneSegment &&
-      parts.length === 1 &&
-      parts[0] &&
-      ![
-        "in", "business", "search", "about", "contact",
-        "privacy", "privacy-policy", "terms", "login",
-        "admin", "api", "assets", "sitemap",
-        "sitemap.xml", "robots.txt"
-      ].includes(
-        String(parts[0]).toLowerCase()
-      )
-    ) {
-
-      return normalizeRoute({
-        type: "business",
-        isBusinessPage: true,
-        isShortURL: true,
-        businessSlug: parts[0]
-      });
-    }
-
     if (
       parts.length !== 5 ||
-      String(parts[0]).toLowerCase() !== "in"
+      String(parts[0])
+        .toLowerCase() !== "in"
     ) {
 
       return null;
@@ -1031,100 +977,8 @@
 
   }
 
+
   function getRoute() {
-
-    /*
-     * HARD ROUTE SAFETY
-     *
-     * A category URL has exactly 4 path segments:
-     * /in/state/district/category/
-     *
-     * It is NEVER a business page. Do this check before
-     * trusting any stale/cached router implementation.
-     */
-    try {
-
-      var currentPath =
-        (window.location && window.location.pathname) || "/";
-
-      var cleanPath =
-        currentPath.split("?")[0].split("#")[0];
-
-      var directParts =
-        cleanPath.split("/").filter(function (item) {
-          return Boolean(String(item || "").trim());
-        });
-
-      if (
-        directParts.length === 4 &&
-        String(directParts[0]).toLowerCase() === "in"
-      ) {
-        return {
-          type: "category",
-          isSEOPage: true,
-          isBusinessPage: false,
-          isCategoryPage: true,
-          stateSlug: normalizeSlug(directParts[1]),
-          districtSlug: normalizeSlug(directParts[2]),
-          categorySlug: normalizeSlug(directParts[3]),
-          businessSlug: ""
-        };
-      }
-
-      /* A 5-segment /in/ URL is the only long business URL. */
-      if (
-        directParts.length === 5 &&
-        String(directParts[0]).toLowerCase() === "in"
-      ) {
-        return normalizeRoute({
-          type: "business",
-          isSEOPage: true,
-          isBusinessPage: true,
-          stateSlug: directParts[1],
-          districtSlug: directParts[2],
-          categorySlug: directParts[3],
-          businessSlug: directParts[4]
-        });
-      }
-
-      /*
-       * Smart Search owns public one-segment routes such as:
-       * /siwan/
-       * /fashion/
-       * /restaurants/
-       *
-       * Do NOT let the Business Page controller reinterpret these
-       * as short business URLs.
-       */
-      var smartSearchOwnsRoute =
-        window.UBnuxSmartSearchRoute === true ||
-        (
-          window.UBnuxSmartSearch &&
-          typeof window.UBnuxSmartSearch.isSmartRoute === "function" &&
-          window.UBnuxSmartSearch.isSmartRoute()
-        );
-
-      /*
-       * IMPORTANT:
-       *
-       * One-segment public paths are owned by Smart Search.
-       * Examples:
-       *   /siwan/
-       *   /fashion/
-       *   /green-india-siwan/
-       *
-       * Never classify these as short business URLs here. Doing so
-       * makes BusinessPage call business-short for a district/query
-       * slug and produces "Business not found".
-       *
-       * Short business sharing remains compatible through the normal
-       * Smart Search flow, which can resolve the business and then
-       * open its permanent /in/.../ canonical URL.
-       */
-
-    } catch (routeSafetyError) {
-      warn("Direct route safety check failed.", routeSafetyError);
-    }
 
     /*
      * 1. Dedicated SEO router
@@ -1233,15 +1087,10 @@
     return Boolean(
       route &&
       route.isBusinessPage === true &&
-      route.businessSlug &&
-      (
-        route.isShortURL === true ||
-        (
-          route.stateSlug &&
-          route.districtSlug &&
-          route.categorySlug
-        )
-      )
+      route.stateSlug &&
+      route.districtSlug &&
+      route.categorySlug &&
+      route.businessSlug
     );
 
   }
@@ -1920,31 +1769,6 @@
         "UBnux API client is not loaded."
       );
 
-    }
-
-
-    /*
-     * SHORT SHARE URL
-     * Resolve /business-slug/ through the backend.
-     * Backend returns the complete SEO business payload,
-     * including the permanent canonical URL.
-     */
-    if (route.isShortURL === true) {
-
-      if (typeof API.request === "function") {
-
-        return await API.request(
-          "business-short",
-          {
-            slug: route.businessSlug
-          }
-        );
-
-      }
-
-      throw new Error(
-        "UBnux API client does not support short business URLs."
-      );
     }
 
 
