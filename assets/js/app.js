@@ -2733,6 +2733,22 @@
     saveSelection();
 
 
+    /* =====================================================
+       SMART SEARCH DROPDOWN MODE
+       -----------------------------------------------------
+       District selection itself is a valid search. Resolve the
+       district from 01_Districts through Smart Search and show
+       all businesses from that district in 18-item batches.
+    ===================================================== */
+    if (
+      window.UBnuxSmartSearch &&
+      typeof window.UBnuxSmartSearch.search === "function"
+    ) {
+      await window.UBnuxSmartSearch.search(districtName);
+      return;
+    }
+
+
     setMessage(
       "Now select your business category."
     );
@@ -2906,16 +2922,32 @@
     );
 
 
+    /* =====================================================
+       SMART SEARCH DROPDOWN MODE
+       -----------------------------------------------------
+       District + category is resolved from the master sheets,
+       then the district sheet is used as the authoritative
+       business source.
+    ===================================================== */
     if (
+      window.UBnuxSmartSearch &&
+      typeof window.UBnuxSmartSearch.search === "function"
+    ) {
+      var selectedDistrictName =
+        window.UBnuxState.state.selected.districtName ||
+        window.UBnuxState.state.selected.district ||
+        "";
+
+      var smartQuery =
+        selectedDistrictName + " " + categoryName;
+
+      await window.UBnuxSmartSearch.search(
+        smartQuery.trim()
+      );
+    } else if (
       window.UBnuxBusinesses
     ) {
-
-      await window
-        .UBnuxBusinesses
-        .loadBusinesses(
-          false
-        );
-
+      await window.UBnuxBusinesses.loadBusinesses(false);
     }
 
 
