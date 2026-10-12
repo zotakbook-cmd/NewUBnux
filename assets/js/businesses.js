@@ -61,7 +61,7 @@
 
   const PAGE_SIZE =
     Number(
-      config.BUSINESS_PAGE_SIZE || 18
+      config.BUSINESS_PAGE_SIZE || 100
     );
 
 
@@ -348,13 +348,12 @@
     }
 
 
-    /* =========================================================
-       BACKEND CANONICAL URL
-       ---------------------------------------------------------
-       If the API already supplies the permanent SEO path,
-       always use it first.
-    ========================================================= */
-
+    /*
+     * BACKEND-CANONICAL URL
+     * Smart Search responses already contain SEOPath generated
+     * by the backend. Prefer it so cards never fall back to #
+     * when StateSlug/CategorySlug are absent on the client object.
+     */
     const backendSEOPath =
       clean(
         business.SEOPath ||
@@ -364,156 +363,25 @@
         business.canonicalPath
       );
 
-
-    if (
-      backendSEOPath
-    ) {
-
+    if (backendSEOPath) {
       try {
-
-        const parsed =
-          new URL(
-            backendSEOPath,
-            window.location.origin
-          );
-
-
-        if (
-          parsed.origin ===
-            window.location.origin &&
-          parsed.pathname
-            .indexOf("/in/") === 0
-        ) {
-
-          return parsed.pathname;
-
-        }
-
-      } catch (error) {
-
-        console.warn(
-          "UBnux: Invalid backend SEOPath; using selection fallback.",
-          error
+        const parsed = new URL(
+          backendSEOPath,
+          window.location.origin
         );
 
-      }
-
-    }
-
-
-    /* =========================================================
-       SELECTION FALLBACK
-       ---------------------------------------------------------
-       Smart Search/API listing responses may not contain
-       StateSlug and CategorySlug on every business object.
-
-       Example API object:
-       {
-         StateSlug: "",
-         DistrictSlug: "siwan",
-         CategorySlug: "",
-         Slug: "siwan-fashion-house"
-       }
-
-       The active listing selection already contains:
-       state = BR
-       district = SIWAN
-       category = clothing-and-fashion
-
-       Use that information instead of returning '#'.
-    ========================================================= */
-
-    let selected = null;
-
-    try {
-
-      if (
-        window.UBnuxState &&
-        typeof
-          window.UBnuxState.getSelection ===
-            "function"
-      ) {
-
-        selected =
-          window.UBnuxState.getSelection();
-
-      }
-
-    } catch (error) {
-
-      selected = null;
-
-    }
-
-
-    /* =========================================================
-       STATE NAME RESOLUTION
-    ========================================================= */
-
-    let selectedStateName =
-      clean(
-        selected &&
-        (
-          selected.stateName ||
-          selected.StateName
-        )
-      );
-
-
-    if (
-      !selectedStateName &&
-      selected &&
-      selected.state
-    ) {
-
-      try {
-
-        const stateList =
-          window.UBnuxState &&
-          window.UBnuxState.state &&
-          Array.isArray(
-            window.UBnuxState.state.states
-          )
-            ? window.UBnuxState.state.states
-            : [];
-
-
-        const stateItem =
-          stateList.find(
-            function (item) {
-
-              return String(
-                item.StateCode ||
-                item.stateCode ||
-                item.Code ||
-                item.code ||
-                ""
-              ).trim().toUpperCase() ===
-              String(
-                selected.state
-              ).trim().toUpperCase();
-
-            }
-          );
-
-
         if (
-          stateItem
+          parsed.origin === window.location.origin &&
+          parsed.pathname.indexOf("/in/") === 0
         ) {
-
-          selectedStateName =
-            clean(
-              stateItem.State ||
-              stateItem.StateName ||
-              stateItem.name
-            );
-
+          return parsed.pathname;
         }
-
-      } catch (error) {
-        /* Keep the other fallback sources. */
+      } catch (seoPathError) {
+        console.warn(
+          "UBnux: Invalid backend SEOPath; using fallback URL builder.",
+          seoPathError
+        );
       }
-
     }
 
 
@@ -522,8 +390,7 @@
         business.StateSlug ||
         business.stateSlug ||
         business.State ||
-        business.state ||
-        selectedStateName
+        business.state
       );
 
 
@@ -532,15 +399,7 @@
         business.DistrictSlug ||
         business.districtSlug ||
         business.District ||
-        business.district ||
-        (
-          selected &&
-          (
-            selected.districtName ||
-            selected.DistrictName ||
-            selected.district
-          )
-        )
+        business.district
       );
 
 
@@ -549,29 +408,16 @@
         business.CategorySlug ||
         business.categorySlug ||
         business.Category ||
-        business.category ||
-        (
-          selected &&
-          (
-            selected.categorySlug ||
-            selected.category
-          )
-        )
+        business.category
       );
 
 
     const businessSlug =
       normalizeSlug(
         business.Slug ||
-        business.slug ||
-        business.BusinessSlug ||
-        business.businessSlug
+        business.slug
       );
 
-
-    /* =========================================================
-       FINAL VALIDATION
-    ========================================================= */
 
     if (
       !stateSlug ||
@@ -588,24 +434,22 @@
             business.businessID ||
             business.id ||
             "",
+
           StateSlug:
             stateSlug,
+
           DistrictSlug:
             districtSlug,
+
           CategorySlug:
             categorySlug,
+
           Slug:
-            businessSlug,
-          Selection:
-            selected
+            businessSlug
         }
       );
 
 
-      /*
-       * Never create a fake SEO URL.
-       * Keep '#' only when absolutely required.
-       */
       return "#";
 
     }
@@ -2059,6 +1903,39 @@
 
 
       renderBusinesses();
+
+
+      /* =====================================================
+         AUTO LOAD ALL BUSINESS PAGES
+         -----------------------------------------------------
+         Continue loading pages when the backend reports that
+         more businesses are available. This makes all matching
+         businesses appear without requiring repeated clicks.
+      ===================================================== */
+
+      if (
+        !append &&
+        state.hasMore &&
+        normalized.businesses.length > 0
+      ) {
+
+        let safety =
+          0;
+
+        while (
+          state.hasMore &&
+          safety < 100
+        ) {
+
+          safety++;
+
+          await loadBusinesses(
+            true
+          );
+
+        }
+
+      }
 
 
     } catch (error) {
