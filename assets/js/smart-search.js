@@ -30,7 +30,7 @@
   "use strict";
 
   var CONFIG = {
-    PAGE_SIZE: 18,
+    PAGE_SIZE: 50,
     ROOT_ID: "ubnuxSmartSearch",
     SEARCH_IDS: [
       "searchInput",
@@ -705,6 +705,40 @@
         false
       );
 
+      /*
+       * Auto-load every cursor batch.
+       * SmartSearchEngine returns results in cursor-based batches, so
+       * the first response may contain only PAGE_SIZE businesses even
+       * when many more businesses match the route/query.
+       */
+      if (
+        normalized.businesses.length > 0 &&
+        normalized.hasMore &&
+        normalized.nextCursor
+      ) {
+        var autoPages = 0;
+        while (
+          state.hasMore &&
+          state.nextCursor &&
+          !state.loading &&
+          requestId === state.requestId &&
+          autoPages < 100
+        ) {
+          autoPages++;
+          await next();
+        }
+      }
+
+      var loadedState = window.UBnuxBusinesses && window.UBnuxBusinesses.state;
+      setSummary(
+        normalized.total,
+        loadedState ? loadedState.businesses.length : normalized.businesses.length,
+        false,
+        state.hasMore
+      );
+
+      setLoadMore(state.hasMore, false);
+
       setEmpty(
         normalized.businesses.length === 0,
         "No businesses matched “" + query + "”. Try a district, category or business name."
@@ -896,7 +930,7 @@
    * Expose a small public controller.
    */
   window.UBnuxSmartSearch = {
-    version: "1.0.0",
+    version: "1.3.0",
     state: state,
     isSmartRoute: isSmartRoute,
     getRouteQuery: getRouteQuery,
