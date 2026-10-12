@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux - Business SEO Router
    File: assets/js/seo/seo-router.js
-   Version: 2.3.0
+   Version: 2.4.0
 
    Responsibilities:
    - Read current URL
@@ -488,16 +488,15 @@
 
 
     /*
-     * SMART SEARCH TOP-LEVEL ROUTES
-     * --------------------------------
-     * One-segment paths such as:
-     *   /siwan/
-     *   /fashion/
-     *   /green-india-siwan/
-     * are Smart Search routes, NOT short business pages.
+     * SINGLE-SEGMENT PATHS BELONG TO SMART SEARCH
      *
-     * Permanent business pages use /in/state/district/category/business/.
-     * Therefore no one-segment path is classified as a business here.
+     * /siwan/
+     * /fashion/
+     * /green-india-siwan/
+     *
+     * A one-segment business URL has the exact same shape as a
+     * Smart Search URL, so it cannot be safely distinguished
+     * client-side. Permanent business URLs remain /in/.../.
      */
 
     /*
