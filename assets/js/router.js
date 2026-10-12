@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux - SEO Router
    File: assets/js/router.js
-   Version: 2.2.0
+   Version: 2.3.0
 
    Responsibilities:
    - Parse UBnux SEO URLs
@@ -411,6 +411,9 @@
       isBusinessPage:
         false,
 
+      isShortURL:
+        false,
+
       isStatePage:
         false,
 
@@ -622,6 +625,54 @@
       route.isStaticPage =
         true;
 
+
+      return route;
+
+    }
+
+
+    /* =====================================================
+       SHORT BUSINESS URL
+       -----------------------------------------------------
+       /siwan-fashion-house/
+
+       A single non-reserved top-level slug is a business
+       route. It must never fall through to UNKNOWN, because
+       the main application router may then treat it as a
+       category/static route and rewrite the URL.
+
+       The short URL is intentionally kept in the browser
+       address bar. BusinessPage/SEO Router resolves the
+       business internally and the SEO canonical remains the
+       permanent long business URL.
+     ===================================================== */
+
+    if (
+      segments.length === 1 &&
+      !isSEOPath(segments) &&
+      !RESERVED_PATHS[segments[0]] &&
+      segments[0] !== ""
+    ) {
+
+      route.type =
+        "business";
+
+      route.isBusinessPage =
+        true;
+
+      route.isShortURL =
+        true;
+
+      route.businessSlug =
+        segments[0];
+
+      route.canonicalPath =
+        path;
+
+      route.canonicalURL =
+        joinURL(
+          path
+        );
 
       return route;
 
@@ -1261,6 +1312,33 @@
   }
 
 
+  function isShortBusinessPage(
+    pathname
+  ) {
+
+    var route =
+      parseRoute(
+        pathname
+      );
+
+    return (
+      route.type ===
+        "business" &&
+
+      route.isBusinessPage ===
+        true &&
+
+      route.isShortURL ===
+        true &&
+
+      Boolean(
+        route.businessSlug
+      )
+    );
+
+  }
+
+
   /* =======================================================
      PUBLIC API
   ======================================================= */
@@ -1294,6 +1372,9 @@
     isBusinessPage:
       isBusinessPage,
 
+    isShortBusinessPage:
+      isShortBusinessPage,
+
     isSEOPage:
       isSEOPage,
 
@@ -1321,6 +1402,10 @@
 
   App.getCurrentRoute =
     getCurrentRoute;
+
+
+  App.isShortBusinessPage =
+    isShortBusinessPage;
 
 
   App.buildBusinessURL =
@@ -1366,7 +1451,7 @@
   ) {
 
     window.console.debug(
-      "UBnux SEO Router 2.2.0 initialized."
+      "UBnux SEO Router 2.3.0 initialized."
     );
 
   }
