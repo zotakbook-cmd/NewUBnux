@@ -488,46 +488,17 @@
 
 
     /*
-     * SHORT BUSINESS SHARE URL
-     * /siwan-fashion-house/
+     * SMART SEARCH TOP-LEVEL ROUTES
+     * --------------------------------
+     * One-segment paths such as:
+     *   /siwan/
+     *   /fashion/
+     *   /green-india-siwan/
+     * are Smart Search routes, NOT short business pages.
      *
-     * This resolves the business without replacing the
-     * canonical SEO URL. Reserved top-level paths remain
-     * normal application routes.
+     * Permanent business pages use /in/state/district/category/business/.
+     * Therefore no one-segment path is classified as a business here.
      */
-
-    const shortParts =
-      getSegments(
-        path
-      );
-
-    if (
-      shortParts.length === 1 &&
-      shortParts[0] &&
-      ![
-        "in", "business", "search", "about", "contact",
-        "privacy", "privacy-policy", "terms", "login",
-        "admin", "api", "assets", "sitemap",
-        "sitemap.xml", "robots.txt"
-      ].includes(
-        String(shortParts[0]).toLowerCase()
-      )
-    ) {
-
-      return {
-        type: "business",
-        isBusinessPage: true,
-        isSEOPage: false,
-        isShortURL: true,
-        stateSlug: "",
-        districtSlug: "",
-        categorySlug: "",
-        businessSlug: cleanSlug(shortParts[0]),
-        canonicalPath: "",
-        canonicalURL: ""
-      };
-    }
-
 
     /*
      * Non-business route.
