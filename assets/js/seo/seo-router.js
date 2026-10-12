@@ -600,7 +600,7 @@
   const UBNUX_SEO_ROUTER = {
 
     version:
-      "2.3.0",
+      "2.5.0",
 
     getPath:
       getPath,
