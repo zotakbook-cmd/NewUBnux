@@ -1369,6 +1369,12 @@
     isSEOPage:
       isSEOPage,
 
+    isSmartSearch:
+      function (pathname) {
+        var route = parseRoute(pathname);
+        return !!(route && route.type === "smart-search" && route.isSmartSearch === true);
+      },
+
     buildHomeURL:
       buildHomeURL,
 
