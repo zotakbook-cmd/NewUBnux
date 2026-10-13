@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux Smart Search Frontend
    File: assets/js/smart-search.js
-   Version: 2.0.0
+   Version: 2.0.1
 
    Connects:
    Browser URL / search form
@@ -429,10 +429,40 @@
             response.data.hasMore
           );
 
+    var pagination =
+      response.pagination ||
+      (response.data && response.data.pagination) ||
+      {};
+
+    var rawTotal =
+      response.total !== undefined
+        ? response.total
+        : (pagination.total !== undefined
+            ? pagination.total
+            : (response.data && response.data.total !== undefined
+                ? response.data.total
+                : null));
+
+    if (total === null && rawTotal !== null && rawTotal !== "") {
+      var parsedTotal = Number(rawTotal);
+      if (Number.isFinite(parsedTotal)) total = parsedTotal;
+    }
+
+    var nestedHasMore =
+      pagination.hasMore !== undefined
+        ? Boolean(pagination.hasMore)
+        : false;
+
+    if (!hasMore && nestedHasMore) {
+      hasMore = true;
+    }
+
     var nextCursor =
       clean(
         response.nextCursor ||
-        (response.data && response.data.nextCursor)
+        pagination.nextCursor ||
+        (response.data && response.data.nextCursor) ||
+        (response.data && response.data.pagination && response.data.pagination.nextCursor)
       );
 
     /* A cursor is enough evidence that another batch exists. */
