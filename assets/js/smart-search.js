@@ -362,6 +362,11 @@
      */
     var match = item.match || {};
 
+    /* Smart Search result carries the canonical SEO path separately. */
+    if (!business.SEOPath && item.url) {
+      business.SEOPath = item.url;
+    }
+
     if (!business.StateSlug && match.state) {
       business.StateSlug = match.state;
     }
@@ -429,6 +434,11 @@
         response.nextCursor ||
         (response.data && response.data.nextCursor)
       );
+
+    /* A cursor is enough evidence that another batch exists. */
+    if (nextCursor) {
+      hasMore = true;
+    }
 
     return {
       businesses: businesses,
