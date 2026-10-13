@@ -2,7 +2,7 @@
    UBnux Main Application
    File: assets/js/app.js
 
-   Version: 3.5.0
+   Version: 3.5.1
 
    RESPONSIBILITIES
    ---------------------------------------------------------
