@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="en-IN">
 
 <head>
@@ -26,9 +26,10 @@
     content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
   >
 
+
   <!-- =====================================================
        CANONICAL
-       seo-meta.js will replace this dynamically
+       seo-meta.js / business-page.js will update this
   ====================================================== -->
 
   <link
@@ -36,6 +37,7 @@
     href="https://ubnux.com/"
     id="canonicalURL"
   >
+
 
   <!-- =====================================================
        OPEN GRAPH
@@ -81,6 +83,7 @@
     content="en_IN"
   >
 
+
   <!-- =====================================================
        TWITTER
   ====================================================== -->
@@ -108,6 +111,7 @@
     id="twitterImage"
   >
 
+
   <!-- =====================================================
        FAVICON
   ====================================================== -->
@@ -117,23 +121,26 @@
     href="/assets/images/favicon.ico"
   >
 
+
   <!-- =====================================================
        MAIN SITE CSS
   ====================================================== -->
 
   <link
     rel="stylesheet"
-    href="/assets/css/style.css?v=3.0.0"
+    href="/assets/css/style.css?v=3.0.1"
   >
 
+
   <!-- =====================================================
-       BUSINESS TEMPLATE CSS
+       BUSINESS PAGE CSS
   ====================================================== -->
 
   <link
     rel="stylesheet"
     href="/assets/css/business.css?v=2.1.0"
   >
+
 
   <!-- =====================================================
        THEME
@@ -144,72 +151,148 @@
     content="#111827"
   >
 
+
   <!-- =====================================================
-       BUSINESS PAGE BASE CSS
-       Keeps the shell independent from homepage layout.
+       BUSINESS PAGE BASE
   ====================================================== -->
 
   <style id="ubnux-business-page-base-style">
 
+    *,
+    *::before,
+    *::after{
+      box-sizing:border-box;
+    }
+
+
     html{
       width:100%;
       min-height:100%;
-    }
-
-    body{
-      width:100%;
-      min-height:100vh;
       margin:0;
       padding:0;
     }
 
+
+    body{
+      width:100%;
+      min-width:0;
+      min-height:100vh;
+      margin:0;
+      padding:0;
+      overflow-x:hidden;
+    }
+
+
     /*
-     * Business controller turns this page into an
-     * independent document-flow surface.
+     * Business page must remain independent
+     * from homepage flex/grid layout.
      */
+
     body.ubnux-business-page-active{
       display:block !important;
       width:100% !important;
+      min-width:0 !important;
       min-height:100vh !important;
       height:auto !important;
       margin:0 !important;
       padding:0 !important;
       overflow-x:hidden !important;
+      overflow-y:auto !important;
     }
+
+
+    /*
+     * Main business page wrapper
+     */
 
     #businessPageRoot{
       display:block;
       position:relative;
       width:100%;
+      max-width:100%;
+      min-width:0;
       min-height:100vh;
       height:auto;
       margin:0;
       padding:0;
       box-sizing:border-box;
+      overflow:visible;
     }
+
 
     #businessPageRoot[hidden]{
       display:none !important;
     }
 
+
+    /*
+     * Loading state
+     */
+
+    #businessPageLoader{
+      width:100%;
+      min-height:240px;
+    }
+
+
+    #businessPageLoader[hidden]{
+      display:none !important;
+    }
+
+
+    /*
+     * Error state
+     */
+
+    #businessPageError{
+      width:100%;
+      min-height:50vh;
+    }
+
+
+    #businessPageError[hidden]{
+      display:none !important;
+    }
+
+
+    /*
+     * Template mount
+     */
+
     #businessPageContent{
       display:block;
       position:relative;
       width:100%;
+      max-width:100%;
+      min-width:0;
       min-height:1px;
       height:auto;
       margin:0;
       padding:0;
       box-sizing:border-box;
+      overflow:visible;
     }
+
 
     #businessPageContent:empty{
       min-height:0;
     }
 
-    #businessPageLoader[hidden],
-    #businessPageError[hidden]{
-      display:none !important;
+
+    /*
+     * Prevent template content from creating
+     * accidental horizontal page overflow.
+     */
+
+    #businessPageContent img,
+    #businessPageContent video,
+    #businessPageContent iframe{
+      max-width:100%;
+    }
+
+
+    #businessPageContent table{
+      max-width:100%;
     }
 
   </style>
@@ -221,9 +304,7 @@
 
   <!-- =====================================================
        BUSINESS PAGE ROOT
-       IMPORTANT:
-       This structure matches business-page.js v11.2+
-       ====================================================== -->
+  ====================================================== -->
 
   <div
     id="businessPageRoot"
@@ -232,8 +313,9 @@
     aria-live="polite"
   >
 
+
     <!-- ===================================================
-         LOADING STATE
+         LOADING
     ==================================================== -->
 
     <div
@@ -244,7 +326,9 @@
       aria-busy="true"
     >
 
-      <div class="ubnux-business-loader-inner business-loader-inner">
+      <div
+        class="ubnux-business-loader-inner business-loader-inner"
+      >
 
         <div
           class="ubnux-business-loader-spinner business-loader-spinner"
@@ -261,7 +345,7 @@
 
 
     <!-- ===================================================
-         ERROR STATE
+         ERROR
     ==================================================== -->
 
     <section
@@ -303,31 +387,61 @@
     <!-- ===================================================
          BUSINESS TEMPLATE MOUNT
 
-         Keep this as a neutral DIV.
-         The controller replaces/normalizes it if necessary.
+         business-page.js injects the selected
+         BusinessTemplate here.
     ==================================================== -->
 
-    <div
+    <main
       id="businessPageContent"
       class="ubnux-business-mount business-page-content"
       aria-live="polite"
-    ></div>
+    ></main>
 
   </div>
 
 
   <!-- =====================================================
-       CORE JAVASCRIPT
+       CORE CONFIG
   ====================================================== -->
 
   <script src="/assets/js/config.js?v=3.0.1"></script>
+
+
+  <!-- =====================================================
+       API
+       Must load before business-page.js
+  ====================================================== -->
+
   <script src="/assets/js/api.js?v=3.0.0"></script>
 
+
+  <!-- =====================================================
+       SEO ROUTER
+  ====================================================== -->
+
   <script src="/assets/js/seo/seo-router.js?v=2.2.0"></script>
+
+
+  <!-- =====================================================
+       SEO META
+  ====================================================== -->
+
   <script src="/assets/js/seo/seo-meta.js?v=3.1.0"></script>
+
+
+  <!-- =====================================================
+       JSON-LD / SCHEMA
+  ====================================================== -->
+
   <script src="/assets/js/seo/schema.js?v=2.1.0"></script>
 
-  <script src="/assets/js/seo/business-page.js?v=11.2.0"></script>
+
+  <!-- =====================================================
+       BUSINESS PAGE CONTROLLER
+       IMPORTANT: current fixed version
+  ====================================================== -->
+
+  <script src="/assets/js/seo/business-page.js?v=11.3.0"></script>
 
 </body>
 
