@@ -2,731 +2,231 @@
    UBnux District Manager
    File: assets/js/districts.js
    Version: 3.1.0
-========================================================= */
 
+   Responsibilities
+   ---------------------------------------------------------
+   - Load districts by state
+   - Support DistrictCode / DistrictID / DistrictName / Slug
+   - Keep dropdown value compatible with existing app flow
+   - Expose district lookup helpers globally
+   - Safe API response normalization
+   ========================================================= */
 (function (window, document) {
-
   "use strict";
 
-
-  /* =========================================================
-     STATE
-  ========================================================= */
-
-  const UBnuxState =
-    window.UBnuxState ||
-    {};
-
-  const state =
-    UBnuxState.state ||
-    {};
-
-
-  /* =========================================================
-     ELEMENTS
-  ========================================================= */
-
-  const stateFilter =
-    document.getElementById(
-      "stateFilter"
-    );
-
-
-  const districtFilter =
-    document.getElementById(
-      "districtFilter"
-    );
-
-
-  /* =========================================================
-     SAFE HELPERS
-  ========================================================= */
+  var VERSION = "3.1.0";
+  var config = window.UBNUX_CONFIG || {};
+  var districtFilter = document.getElementById("districtFilter");
+  var stateFilter = document.getElementById("stateFilter");
+  var cache = new Map();
+  var districts = [];
 
   function clean(value) {
-
-    return String(
-      value == null
-        ? ""
-        : value
-    ).trim();
-
+    return value === null || value === undefined ? "" : String(value).trim();
   }
 
-
-  function normalize(value) {
-
+  function slugify(value) {
     return clean(value)
       .toLowerCase()
-      .replace(
-        /[\s_-]+/g,
-        ""
-      );
-
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   }
 
-
-  function normalizeSlug(value) {
-
-    return clean(value)
-      .toLowerCase()
-      .replace(
-        /[^a-z0-9]+/g,
-        "-"
-      )
-      .replace(
-        /^-+|-+$/g,
-        ""
-      );
-
+  function identity(value) {
+    return clean(value).toLowerCase().replace(/[\s_-]+/g, "");
   }
 
+  function getDistrictCode(item) {
+    return clean(item && (
+      item.DistrictCode || item.districtCode || item.Code || item.code
+    ));
+  }
 
-  /* =========================================================
-     CLEAR DISTRICTS
-  ========================================================= */
+  function getDistrictID(item) {
+    return clean(item && (
+      item.DistrictID || item.districtID || item.id
+    ));
+  }
+
+  function getDistrictName(item) {
+    return clean(item && (
+      item.DistrictName || item.districtName || item.Name || item.name
+    ));
+  }
+
+  function getDistrictSlug(item) {
+    return slugify(item && (
+      item.Slug || item.DistrictSlug || item.districtSlug || getDistrictName(item)
+    ));
+  }
+
+  function normalizeItem(item) {
+    item = item || {};
+    return Object.assign({}, item, {
+      DistrictID: getDistrictID(item),
+      DistrictName: getDistrictName(item),
+      DistrictCode: getDistrictCode(item),
+      Slug: getDistrictSlug(item),
+      DistrictSlug: getDistrictSlug(item),
+      StateCode: clean(item.StateCode || item.stateCode || "").toUpperCase(),
+      State: clean(item.State || item.StateName || item.state || "")
+    });
+  }
+
+  function extractRows(response) {
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.data)) return response.data;
+    if (response && response.data && Array.isArray(response.data.districts)) return response.data.districts;
+    if (response && Array.isArray(response.districts)) return response.districts;
+    return [];
+  }
+
+  function isSameState(item, stateInput) {
+    var target = clean(stateInput);
+    if (!target) return true;
+    var candidates = [item.StateCode, item.State, item.StateName, item.StateSlug];
+    return candidates.some(function (candidate) {
+      return clean(candidate) && (
+        slugify(candidate) === slugify(target) ||
+        identity(candidate) === identity(target)
+      );
+    });
+  }
+
+  function findDistrict(input) {
+    var target = clean(input);
+    if (!target) return null;
+    var targetSlug = slugify(target);
+    var targetIdentity = identity(target);
+
+    return districts.find(function (item) {
+      var candidates = [
+        getDistrictCode(item),
+        getDistrictID(item),
+        getDistrictName(item),
+        getDistrictSlug(item),
+        item.DistrictSlug,
+        item.Code,
+        item.Name
+      ];
+      return candidates.some(function (candidate) {
+        return clean(candidate) && (
+          slugify(candidate) === targetSlug ||
+          identity(candidate) === targetIdentity
+        );
+      });
+    }) || null;
+  }
+
+  function render(list, stateCode) {
+    if (!districtFilter) return;
+    var current = clean(districtFilter.value);
+    districtFilter.innerHTML = "";
+
+    var placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select District";
+    districtFilter.appendChild(placeholder);
+
+    list.forEach(function (raw) {
+      var item = normalizeItem(raw);
+      var option = document.createElement("option");
+      option.value = getDistrictCode(item) || getDistrictID(item) || getDistrictSlug(item);
+      option.textContent = getDistrictName(item) || getDistrictCode(item);
+      option.dataset.districtCode = getDistrictCode(item);
+      option.dataset.districtId = getDistrictID(item);
+      option.dataset.districtName = getDistrictName(item);
+      option.dataset.slug = getDistrictSlug(item);
+      option.dataset.stateCode = clean(item.StateCode || stateCode).toUpperCase();
+      districtFilter.appendChild(option);
+    });
+
+    if (current) {
+      var match = findDistrict(current);
+      if (match) districtFilter.value = getDistrictCode(match) || getDistrictID(match) || getDistrictSlug(match);
+    }
+
+    districtFilter.disabled = list.length === 0;
+  }
+
+  async function loadDistricts(stateCode) {
+    var key = identity(stateCode);
+    if (!key) {
+      clearDistricts();
+      return [];
+    }
+
+    if (cache.has(key)) {
+      districts = cache.get(key).slice();
+      render(districts, stateCode);
+      return districts.slice();
+    }
+
+    if (!window.UBnuxAPI || typeof window.UBnuxAPI.getDistricts !== "function") {
+      throw new Error("UBnux API district method is not available.");
+    }
+
+    var response = await window.UBnuxAPI.getDistricts(stateCode);
+    var rows = extractRows(response)
+      .map(normalizeItem)
+      .filter(function (item) { return isSameState(item, stateCode); });
+
+    rows.sort(function (a, b) {
+      var ao = Number(a.SortOrder || 999999);
+      var bo = Number(b.SortOrder || 999999);
+      if (ao !== bo) return ao - bo;
+      return getDistrictName(a).localeCompare(getDistrictName(b));
+    });
+
+    districts = rows;
+    cache.set(key, rows.slice());
+    render(rows, stateCode);
+    return rows.slice();
+  }
 
   function clearDistricts() {
-
-    if (!districtFilter) {
-      return;
-    }
-
-
-    districtFilter.innerHTML =
-      '<option value="">Select Your District</option>';
-
-
-    districtFilter.disabled =
-      true;
-
-
-    state.districts =
-      [];
-
+    districts = [];
+    if (!districtFilter) return;
+    districtFilter.innerHTML = "<option value=\"\">Select District</option>";
+    districtFilter.value = "";
+    districtFilter.disabled = true;
   }
-
-
-  /* =========================================================
-     RENDER STATES
-  ========================================================= */
-
-  function renderStates(
-    states
-  ) {
-
-    if (!stateFilter) {
-      return;
-    }
-
-
-    state.states =
-      Array.isArray(states)
-        ? states
-        : [];
-
-
-    stateFilter.innerHTML =
-      '<option value="">Select Your State</option>';
-
-
-    state.states
-      .forEach(function (item) {
-
-        if (!item) {
-          return;
-        }
-
-
-        const option =
-          document.createElement(
-            "option"
-          );
-
-
-        const stateCode =
-          clean(
-            item.StateCode ||
-            item.stateCode ||
-            item.Code
-          );
-
-
-        const stateName =
-          clean(
-            item.State ||
-            item.StateName ||
-            item.Name
-          );
-
-
-        const stateSlug =
-          clean(
-            item.StateSlug ||
-            item.Slug ||
-            item.slug
-          );
-
-
-        /*
-         * Keep StateCode as the primary value.
-         * Backend already supports StateCode.
-         */
-
-        option.value =
-          stateCode;
-
-
-        /*
-         * Extra metadata for future use.
-         */
-
-        if (stateSlug) {
-
-          option.dataset.slug =
-            stateSlug;
-
-        }
-
-
-        if (stateName) {
-
-          option.dataset.name =
-            stateName;
-
-        }
-
-
-        option.textContent =
-          stateName ||
-          stateCode;
-
-
-        stateFilter.appendChild(
-          option
-        );
-
-      });
-
-
-    stateFilter.disabled =
-      state.states.length === 0;
-
-  }
-
-
-  /* =========================================================
-     LOAD DISTRICTS
-  ========================================================= */
-
-  async function loadDistricts(
-    stateCode
-  ) {
-
-    clearDistricts();
-
-
-    state.selectedState =
-      clean(stateCode);
-
-
-    if (!stateCode) {
-      return;
-    }
-
-
-    if (!districtFilter) {
-      return;
-    }
-
-
-    districtFilter.innerHTML =
-      '<option value="">Loading districts...</option>';
-
-
-    districtFilter.disabled =
-      true;
-
-
-    try {
-
-      if (
-        !window.UBnuxAPI ||
-        typeof window.UBnuxAPI.getDistricts !==
-          "function"
-      ) {
-
-        throw new Error(
-          "UBnuxAPI.getDistricts is not available"
-        );
-
-      }
-
-
-      const response =
-        await window.UBnuxAPI
-          .getDistricts(
-            stateCode
-          );
-
-
-      /*
-       * Support all known API response formats.
-       */
-
-      let districts = [];
-
-
-      if (
-        response &&
-        Array.isArray(
-          response.data
-        )
-      ) {
-
-        districts =
-          response.data;
-
-      } else if (
-        response &&
-        response.data &&
-        Array.isArray(
-          response.data.data
-        )
-      ) {
-
-        districts =
-          response.data.data;
-
-      } else if (
-        response &&
-        Array.isArray(
-          response.districts
-        )
-      ) {
-
-        districts =
-          response.districts;
-
-      }
-
-
-      state.districts =
-        districts;
-
-
-      districtFilter.innerHTML =
-        '<option value="">Select Your District</option>';
-
-
-      state.districts
-        .forEach(function (item) {
-
-          if (!item) {
-            return;
-          }
-
-
-          const option =
-            document.createElement(
-              "option"
-            );
-
-
-          const districtCode =
-            clean(
-              item.DistrictCode ||
-              item.districtCode
-            );
-
-
-          const districtName =
-            clean(
-              item.DistrictName ||
-              item.districtName ||
-              item.Name
-            );
-
-
-          const districtSlug =
-            clean(
-              item.Slug ||
-              item.DistrictSlug ||
-              item.slug ||
-              normalizeSlug(
-                districtName
-              )
-            );
-
-
-          const districtID =
-            clean(
-              item.DistrictID ||
-              item.districtID ||
-              item.ID
-            );
-
-
-          /*
-           * Primary value remains DistrictCode
-           * because existing app flow uses it.
-           */
-
-          option.value =
-            districtCode ||
-            districtSlug ||
-            districtID;
-
-
-          /*
-           * Store every useful identity.
-           */
-
-          option.dataset.code =
-            districtCode;
-
-
-          option.dataset.slug =
-            districtSlug;
-
-
-          option.dataset.id =
-            districtID;
-
-
-          option.dataset.name =
-            districtName;
-
-
-          option.textContent =
-            districtName ||
-            districtCode ||
-            districtSlug;
-
-
-          districtFilter.appendChild(
-            option
-          );
-
-        });
-
-
-      districtFilter.disabled =
-        state.districts.length === 0;
-
-
-    } catch (error) {
-
-      console.error(
-        "District loading error:",
-        error
-      );
-
-
-      state.districts =
-        [];
-
-
-      districtFilter.innerHTML =
-        '<option value="">Unable to load districts</option>';
-
-
-      districtFilter.disabled =
-        true;
-
-    }
-
-  }
-
-
-  /* =========================================================
-     GET DISTRICT
-  ========================================================= */
-
-  function findDistrict(
-    value
-  ) {
-
-    const target =
-      clean(value);
-
-
-    if (!target) {
-      return null;
-    }
-
-
-    const targetNormalized =
-      normalize(target);
-
-
-    const targetSlug =
-      normalizeSlug(target);
-
-
-    return (
-      state.districts || []
-    ).find(function (district) {
-
-      if (!district) {
-        return false;
-      }
-
-
-      const values = [
-
-        district.DistrictCode,
-
-        district.DistrictName,
-
-        district.DistrictID,
-
-        district.Slug,
-
-        district.DistrictSlug,
-
-        district.Code,
-
-        district.Name
-
-      ];
-
-
-      return values.some(
-        function (candidate) {
-
-          if (!candidate) {
-            return false;
-          }
-
-
-          const valueNormalized =
-            normalize(candidate);
-
-
-          const valueSlug =
-            normalizeSlug(candidate);
-
-
-          return (
-            valueNormalized ===
-              targetNormalized ||
-
-            valueSlug ===
-              targetSlug
-          );
-
-        }
-      );
-
-    }) || null;
-
-  }
-
-
-  /* =========================================================
-     GET DISTRICT NAME
-  ========================================================= */
-
-  function getDistrictName(
-    code
-  ) {
-
-    const item =
-      findDistrict(
-        code
-      );
-
-
-    return item
-      ? clean(
-          item.DistrictName ||
-          item.districtName ||
-          item.Name
-        )
-      : "";
-
-  }
-
-
-  /* =========================================================
-     GET DISTRICT OBJECT
-  ========================================================= */
-
-  function getDistrict(
-    value
-  ) {
-
-    return findDistrict(
-      value
-    );
-
-  }
-
-
-  /* =========================================================
-     GET DISTRICT SLUG
-  ========================================================= */
-
-  function getDistrictSlug(
-    value
-  ) {
-
-    const item =
-      findDistrict(
-        value
-      );
-
-
-    if (!item) {
-      return "";
-    }
-
-
-    return clean(
-      item.Slug ||
-      item.DistrictSlug ||
-      normalizeSlug(
-        item.DistrictName
-      )
-    );
-
-  }
-
-
-  /* =========================================================
-     GET DISTRICT CODE
-  ========================================================= */
-
-  function getDistrictCode(
-    value
-  ) {
-
-    const item =
-      findDistrict(
-        value
-      );
-
-
-    if (!item) {
-      return "";
-    }
-
-
-    return clean(
-      item.DistrictCode ||
-      item.districtCode
-    );
-
-  }
-
-
-  /* =========================================================
-     GET SELECTED DISTRICT
-  ========================================================= */
 
   function getSelectedDistrict() {
-
-    if (
-      !districtFilter ||
-      !districtFilter.value
-    ) {
-
-      return null;
-
-    }
-
-
-    return findDistrict(
-      districtFilter.value
-    );
-
+    if (!districtFilter) return null;
+    return findDistrict(districtFilter.value);
   }
-
-
-  /* =========================================================
-     GET SELECTED STATE
-  ========================================================= */
 
   function getSelectedState() {
-
-    if (
-      !stateFilter ||
-      !stateFilter.value
-    ) {
-
-      return null;
-
-    }
-
-
-    const target =
-      normalize(
-        stateFilter.value
-      );
-
-
-    return (
-      state.states || []
-    ).find(function (item) {
-
-      if (!item) {
-        return false;
-      }
-
-
-      return [
-
-        item.StateCode,
-
-        item.State,
-
-        item.StateName,
-
-        item.StateSlug,
-
-        item.Slug
-
-      ].some(function (value) {
-
-        return (
-          normalize(value) ===
-          target
-        );
-
-      });
-
-    }) || null;
-
+    return stateFilter ? clean(stateFilter.value) : "";
   }
 
-
-  /* =========================================================
-     PUBLIC API
-  ========================================================= */
-
   window.UBnuxDistricts = {
-
-    renderStates,
-
-    loadDistricts,
-
-    getDistrictName,
-
-    getDistrict,
-
-    getDistrictSlug,
-
-    getDistrictCode,
-
-    getSelectedDistrict,
-
-    getSelectedState,
-
-    clearDistricts,
-
-    findDistrict
-
+    VERSION: VERSION,
+    state: { get districts() { return districts.slice(); } },
+    loadDistricts: loadDistricts,
+    clearDistricts: clearDistricts,
+    findDistrict: findDistrict,
+    getDistrict: findDistrict,
+    getDistrictCode: function (input) {
+      var item = typeof input === "object" ? input : findDistrict(input);
+      return item ? getDistrictCode(item) : "";
+    },
+    getDistrictID: function (input) {
+      var item = typeof input === "object" ? input : findDistrict(input);
+      return item ? getDistrictID(item) : "";
+    },
+    getDistrictName: function (input) {
+      var item = typeof input === "object" ? input : findDistrict(input);
+      return item ? getDistrictName(item) : "";
+    },
+    getDistrictSlug: function (input) {
+      var item = typeof input === "object" ? input : findDistrict(input);
+      return item ? getDistrictSlug(item) : "";
+    },
+    getSelectedDistrict: getSelectedDistrict,
+    getSelectedState: getSelectedState,
+    getAll: function () { return districts.slice(); }
   };
-
-
 })(window, document);
