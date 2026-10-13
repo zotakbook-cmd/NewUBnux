@@ -2,7 +2,7 @@
    UBnux Main Application
    File: assets/js/app.js
 
-   Version: 3.5.1
+   Version: 3.5.2
 
    RESPONSIBILITIES
    ---------------------------------------------------------
@@ -3311,11 +3311,30 @@
       window.UBnuxSmartSearchRoute === true
     ) {
       console.debug(
-        "UBnux: Smart Search route detected. Listing bootstrap skipped."
+        "UBnux: Smart Search route detected. Keeping global selectors active; normal business listing bootstrap skipped."
       );
 
-      releaseHomepageLoaderForBusinessPage();
+      /*
+       * SMART SEARCH OWNS THE CURRENT RESULT LIST,
+       * BUT THE STATE / DISTRICT / CATEGORY SELECTORS
+       * MUST REMAIN GLOBAL AND USABLE AT ALL TIMES.
+       *
+       * Therefore we initialize only the selector system here.
+       * We do NOT call the normal business loader, so Smart
+       * Search results are not overwritten.
+       */
+      try {
+        setupEvents();
+        await initializeBaseData();
+        setInitialFilterState();
+      } catch (error) {
+        console.error(
+          "UBnux: Global selector initialization failed on Smart Search route:",
+          error
+        );
+      }
 
+      releaseHomepageLoaderForBusinessPage();
       return;
     }
 
