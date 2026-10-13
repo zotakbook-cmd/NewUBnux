@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux Smart Search Frontend
    File: assets/js/smart-search.js
-   Version: 2.0.1
+   Version: 2.0.2
 
    Connects:
    Browser URL / search form
@@ -407,28 +407,6 @@
       .map(getResultBusiness)
       .filter(Boolean);
 
-    var rawTotal =
-      response.total !== undefined
-        ? response.total
-        : (response.data && response.data.total !== undefined
-            ? response.data.total
-            : null);
-
-    var total =
-      rawTotal === null || rawTotal === ""
-        ? null
-        : Number(rawTotal);
-
-    if (!Number.isFinite(total)) total = null;
-
-    var hasMore =
-      response.hasMore !== undefined
-        ? Boolean(response.hasMore)
-        : Boolean(
-            response.data &&
-            response.data.hasMore
-          );
-
     var pagination =
       response.pagination ||
       (response.data && response.data.pagination) ||
@@ -443,26 +421,30 @@
                 ? response.data.total
                 : null));
 
-    if (total === null && rawTotal !== null && rawTotal !== "") {
-      var parsedTotal = Number(rawTotal);
-      if (Number.isFinite(parsedTotal)) total = parsedTotal;
-    }
+    var total =
+      rawTotal === null || rawTotal === ""
+        ? null
+        : Number(rawTotal);
 
-    var nestedHasMore =
-      pagination.hasMore !== undefined
-        ? Boolean(pagination.hasMore)
-        : false;
+    if (!Number.isFinite(total)) total = null;
 
-    if (!hasMore && nestedHasMore) {
-      hasMore = true;
-    }
+    var hasMore =
+      response.hasMore !== undefined
+        ? Boolean(response.hasMore)
+        : pagination.hasMore !== undefined
+          ? Boolean(pagination.hasMore)
+          : Boolean(
+              response.data &&
+              response.data.hasMore
+            );
 
     var nextCursor =
       clean(
         response.nextCursor ||
         pagination.nextCursor ||
         (response.data && response.data.nextCursor) ||
-        (response.data && response.data.pagination && response.data.pagination.nextCursor)
+        (response.data && response.data.pagination &&
+          response.data.pagination.nextCursor)
       );
 
     /* A cursor is enough evidence that another batch exists. */
