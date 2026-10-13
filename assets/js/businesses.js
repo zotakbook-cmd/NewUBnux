@@ -1338,65 +1338,51 @@
       );
 
 
+    const pagination =
+      response.pagination ||
+      (response.data && response.data.pagination) ||
+      {};
+
     const total =
       safeNumber(
-        response.total ||
-        (
-          response.data &&
-          response.data.total
-        ),
+        response.total !== undefined
+          ? response.total
+          : pagination.total !== undefined
+            ? pagination.total
+            : (response.data && response.data.total !== undefined
+                ? response.data.total
+                : businesses.length),
         businesses.length
       );
 
-
     let hasMore;
 
-
-    if (
-      response.hasMore !== undefined
-    ) {
-
-      hasMore =
-        Boolean(
-          response.hasMore
-        );
-
-    } else if (
-      response.data &&
-      response.data.hasMore !==
-        undefined
-    ) {
-
-      hasMore =
-        Boolean(
-          response.data.hasMore
-        );
-
+    if (response.hasMore !== undefined) {
+      hasMore = Boolean(response.hasMore);
+    } else if (pagination.hasMore !== undefined) {
+      hasMore = Boolean(pagination.hasMore);
+    } else if (response.data && response.data.hasMore !== undefined) {
+      hasMore = Boolean(response.data.hasMore);
     } else {
-
-      hasMore =
-        (
-          page * PAGE_SIZE
-        ) < total;
-
+      hasMore = (page * PAGE_SIZE) < total;
     }
 
+    const nextCursor = String(
+      response.nextCursor ||
+      pagination.nextCursor ||
+      (response.data && response.data.nextCursor) ||
+      (response.data && response.data.pagination && response.data.pagination.nextCursor) ||
+      ""
+    ).trim();
+
+    if (nextCursor) hasMore = true;
 
     return {
-
-      businesses:
-        Array.isArray(
-          businesses
-        )
-          ? businesses
-          : [],
-
+      businesses: Array.isArray(businesses) ? businesses : [],
       page,
-
       total,
-
-      hasMore
-
+      hasMore,
+      nextCursor
     };
 
   }
