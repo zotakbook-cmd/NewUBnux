@@ -2,7 +2,7 @@
    UBnux Main Application
    File: assets/js/app.js
 
-   Version: 3.5.2
+   Version: 3.5.3
 
    RESPONSIBILITIES
    ---------------------------------------------------------
@@ -1442,11 +1442,52 @@
     }
 
 
-    window
-      .UBnuxDistricts
-      .renderStates(
-        statesData
-      );
+    /* =====================================================
+       STATE SELECTOR RENDER
+       -----------------------------------------------------
+       Some older districts.js builds do not expose
+       renderStates(). The global selector must still work.
+    ===================================================== */
+    if (
+      typeof window.UBnuxDistricts.renderStates === "function"
+    ) {
+      window.UBnuxDistricts.renderStates(statesData);
+    } else if (stateFilter) {
+      var currentStateValue = clean(stateFilter.value);
+
+      stateFilter.innerHTML =
+        '<option value="">Select State</option>';
+
+      statesData.forEach(function(item) {
+        var code = clean(
+          item.StateCode ||
+          item.stateCode ||
+          item.StateID ||
+          item.Code ||
+          item.code
+        );
+
+        var name = clean(
+          item.State ||
+          item.StateName ||
+          item.Name ||
+          item.name
+        );
+
+        if (!code || !name) return;
+
+        var option = document.createElement("option");
+        option.value = code;
+        option.textContent = name;
+        option.dataset.stateCode = code;
+        option.dataset.stateName = name;
+        stateFilter.appendChild(option);
+      });
+
+      if (currentStateValue) {
+        stateFilter.value = currentStateValue;
+      }
+    }
 
 
     window
