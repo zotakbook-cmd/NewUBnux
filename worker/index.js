@@ -174,11 +174,13 @@ function bridgeScript() {
 }
 
 async function serveBusinessShell(request, businessKey) {
-  const response = await fetch(originURL("/business.html"), {
-    method: request.method,
-    headers: request.headers
-  });
+const originHeaders = new Headers(request.headers);
+originHeaders.delete("host");
 
+const response = await fetch(originURL("/business.html"), {
+  method: request.method,
+  headers: originHeaders
+});
   if (!response.ok) {
     return withHeaders(response, {
       "X-UBnux-BusinessKey": businessKey,
@@ -248,10 +250,16 @@ export default {
     );
 
     if (isStatic) {
-      const response = await fetch(
-        originURL(url.pathname, url.search),
-        request
-      );
+const originHeaders = new Headers(request.headers);
+originHeaders.delete("host");
+
+const response = await fetch(
+  originURL(url.pathname, url.search),
+  {
+    method: request.method,
+    headers: originHeaders
+  }
+);
 
       return withHeaders(response, {
         "X-UBnux-BusinessKey": businessKey,
