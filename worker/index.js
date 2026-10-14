@@ -1,6 +1,6 @@
 /**
  * UBnux BusinessKey Wildcard Worker
- * Version: 3.0.0
+ * Version: 3.1.0
  *
  * Architecture:
  *
@@ -171,21 +171,31 @@ function makeOriginRequest(
   /*
    * VERY IMPORTANT
    *
-   * Do not forward:
+   * Do not forward the BusinessKey hostname
+   * or browser Origin to the Pages origin.
    *
-   * Host: mk.ubnux.com
+   * Host:
+   *   mukesh.ubnux.com
    *
-   * to:
+   * must NOT be sent to:
+   *   newubnux.pages.dev
    *
-   * newubnux.pages.dev
+   * Origin:
+   *   https://mukesh.ubnux.com
+   *
+   * is also removed for the internal Pages/API
+   * request. The Worker adds the correct CORS
+   * headers on the response.
    */
 
   headers.delete("host");
+  headers.delete("origin");
 
 
   /*
    * Content-Length belongs to the
-   * original request.
+   * original request and may become
+   * invalid after request rewriting.
    */
 
   headers.delete(
@@ -193,17 +203,35 @@ function makeOriginRequest(
   );
 
 
+  const init = {
+    method:
+      request.method,
+
+    headers,
+
+    redirect:
+      "follow"
+  };
+
+
+  /*
+   * Preserve request body for POST/PUT/PATCH.
+   */
+
+  if (
+    request.method !== "GET" &&
+    request.method !== "HEAD"
+  ) {
+
+    init.body =
+      request.body;
+
+  }
+
+
   return new Request(
     targetURL,
-    {
-      method:
-        request.method,
-
-      headers,
-
-      redirect:
-        "follow"
-    }
+    init
   );
 }
 
@@ -976,6 +1004,11 @@ async function serveBusinessShell(
     "pages"
   );
 
+  headers.set(
+    "X-UBnux-API",
+    "worker-proxy"
+  );
+
 
   return new Response(
     html,
@@ -988,6 +1021,238 @@ async function serveBusinessShell(
 
       headers
     }
+  );
+
+}
+
+
+/* =========================================================
+   API PROXY
+========================================================= */
+
+/*
+ * BusinessKey pages use:
+ *
+ *   https://business-key.ubnux.com/api
+ *
+ * instead of directly calling:
+ *
+ *   https://ubnux.com/api
+ *
+ * The Worker proxies that request to the existing
+ * Cloudflare Pages Function at:
+ *
+ *   https://newubnux.pages.dev/api
+ *
+ * This keeps the existing Apps Script backend unchanged
+ * while allowing every BusinessKey subdomain to use the
+ * same API endpoint.
+ */
+
+
+function getRequestOrigin(request) {
+
+  const origin =
+    request.headers.get("Origin");
+
+  if (
+    origin &&
+    /^https:\/\/[a-z0-9-]+\.ubnux\.com$/i.test(origin)
+  ) {
+
+    return origin;
+
+  }
+
+
+  /*
+   * Main UBnux origins are also accepted.
+   */
+
+  if (
+    origin === "https://ubnux.com" ||
+    origin === "https://www.ubnux.com"
+  ) {
+
+    return origin;
+
+  }
+
+
+  return "";
+
+}
+
+
+function apiCorsHeaders(request) {
+
+  const origin =
+    getRequestOrigin(request);
+
+
+  const headers = {
+
+    "Access-Control-Allow-Methods":
+      "GET, HEAD, POST, OPTIONS",
+
+    "Access-Control-Allow-Headers":
+      "Accept, Content-Type, Authorization",
+
+    "Access-Control-Max-Age":
+      "86400",
+
+    "Vary":
+      "Origin"
+
+  };
+
+
+  if (origin) {
+
+    headers[
+      "Access-Control-Allow-Origin"
+    ] = origin;
+
+  }
+
+
+  return headers;
+
+}
+
+
+function handleAPIOptions(request) {
+
+  const headers =
+    apiCorsHeaders(request);
+
+
+  return new Response(
+    null,
+    {
+      status:
+        204,
+
+      headers
+    }
+  );
+
+}
+
+
+async function proxyAPI(
+  request,
+  url
+) {
+
+  /*
+   * Only the path/query changes.
+   *
+   * Example:
+   *
+   * https://mukesh.ubnux.com/api?action=business-key&key=mukesh
+   *
+   * becomes:
+   *
+   * https://newubnux.pages.dev/api?action=business-key&key=mukesh
+   */
+
+  const target =
+    pagesURL(
+      url.pathname,
+      url.search
+    );
+
+
+  const originRequest =
+    makeOriginRequest(
+      request,
+      target
+    );
+
+
+  const response =
+    await fetch(
+      originRequest
+    );
+
+
+  /*
+   * Copy the Pages Function response,
+   * then replace CORS headers so the
+   * browser accepts the BusinessKey origin.
+   */
+
+  const headers =
+    new Headers(
+      response.headers
+    );
+
+
+  const cors =
+    apiCorsHeaders(request);
+
+
+  for (
+    const [
+      key,
+      value
+    ] of Object.entries(cors)
+  ) {
+
+    headers.set(
+      key,
+      value
+    );
+
+  }
+
+
+  /*
+   * Never expose the Pages Function's
+   * original CORS origin to the browser.
+   */
+
+  headers.delete(
+    "Access-Control-Allow-Credentials"
+  );
+
+
+  headers.set(
+    "X-UBnux-API-Proxy",
+    "business-key-worker"
+  );
+
+
+  headers.set(
+    "X-UBnux-Origin",
+    "pages-function"
+  );
+
+
+  return new Response(
+    response.body,
+    {
+      status:
+        response.status,
+
+      statusText:
+        response.statusText,
+
+      headers
+    }
+  );
+
+}
+
+
+function isAPIPath(
+  pathname
+) {
+
+  return (
+    pathname === "/api" ||
+    pathname.startsWith("/api/")
   );
 
 }
@@ -1057,6 +1322,128 @@ export default {
       getBusinessKey(
         host
       );
+
+
+    /* =====================================================
+       API
+    ===================================================== */
+
+    /*
+     * IMPORTANT:
+     *
+     * /api is a PATH on the current hostname.
+     *
+     * It is NOT the reserved api.ubnux.com
+     * hostname.
+     *
+     * BusinessKey API request:
+     *
+     *   https://mukesh.ubnux.com/api
+     *
+     * is proxied to:
+     *
+     *   https://newubnux.pages.dev/api
+     */
+
+    if (
+      isAPIPath(
+        url.pathname
+      )
+    ) {
+
+      if (
+        request.method ===
+        "OPTIONS"
+      ) {
+
+        return handleAPIOptions(
+          request
+        );
+
+      }
+
+
+      if (
+        request.method !== "GET" &&
+        request.method !== "HEAD" &&
+        request.method !== "POST"
+      ) {
+
+        return new Response(
+          "Method Not Allowed",
+          {
+            status:
+              405,
+
+            headers: {
+              "Allow":
+                "GET, HEAD, POST, OPTIONS",
+
+              "Cache-Control":
+                "no-store"
+            }
+          }
+        );
+
+      }
+
+
+      try {
+
+        return await proxyAPI(
+          request,
+          url
+        );
+
+      } catch (
+        error
+      ) {
+
+        const headers =
+          new Headers(
+            apiCorsHeaders(request)
+          );
+
+
+        headers.set(
+          "Content-Type",
+          "application/json; charset=UTF-8"
+        );
+
+        headers.set(
+          "Cache-Control",
+          "no-store"
+        );
+
+
+        return new Response(
+          JSON.stringify({
+            success:
+              false,
+
+            error:
+              "UBnux API proxy error",
+
+            message:
+              String(
+                (
+                  error &&
+                  error.message
+                ) ||
+                error
+              )
+          }),
+          {
+            status:
+              502,
+
+            headers
+          }
+        );
+
+      }
+
+    }
 
 
     /* =====================================================
