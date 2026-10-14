@@ -1,26 +1,44 @@
 /**
  * UBnux BusinessKey Wildcard Worker
- * Version: 2.0.0
+ * Version: 3.0.0
  *
- * One Worker handles ALL BusinessKey subdomains:
+ * Architecture:
+ *
  *   mk.ubnux.com
- *   siwan-fashion-house.ubnux.com
- *   abc-business.ubnux.com
+ *          ↓
+ *   *.ubnux.com/* Worker Route
+ *          ↓
+ *   BusinessKey = "mk"
+ *          ↓
+ *   newubnux.pages.dev/business.html
+ *          ↓
+ *   injected BusinessKey bridge
+ *          ↓
+ *   existing UBnux API
+ *          ↓
+ *   Google Apps Script
  *
- * No per-business DNS records are required.
- *
- * The Worker:
- *  1. Detects <BusinessKey>.ubnux.com
- *  2. Serves the existing UBnux business.html shell from the apex site
- *  3. Injects a small bridge BEFORE business-page.js
- *  4. The bridge makes the existing frontend treat the hostname as a
- *     BusinessKey route and calls the existing `business-key` API
- *  5. Existing SEO/business template pipeline remains authoritative
+ * IMPORTANT:
+ * Do NOT use https://ubnux.com as the Worker origin.
+ * This Worker itself handles *.ubnux.com/*.
  */
 
-const ORIGIN = "https://ubnux.com";
+const PAGES_ORIGIN = "https://newubnux.pages.dev";
+
 const HOST_SUFFIX = ".ubnux.com";
-const BUSINESS_KEY_RE = /^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])?$/;
+
+/*
+ * 3–50 characters.
+ * Lowercase letters, numbers and hyphen.
+ * Cannot start/end with hyphen.
+ */
+const BUSINESS_KEY_RE =
+  /^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])?$/;
+
+
+/* =========================================================
+   RESERVED SUBDOMAINS
+========================================================= */
 
 const RESERVED_HOSTS = new Set([
   "www",
@@ -40,233 +58,1279 @@ const RESERVED_HOSTS = new Set([
   "verify"
 ]);
 
+
+/* =========================================================
+   BUSINESS KEY FROM HOSTNAME
+========================================================= */
+
 function getBusinessKey(hostname) {
-  const host = String(hostname || "").toLowerCase().trim();
 
-  if (!host.endsWith(HOST_SUFFIX)) return "";
+  const host =
+    String(hostname || "")
+      .toLowerCase()
+      .trim();
 
-  const subdomain = host.slice(0, -HOST_SUFFIX.length);
 
-  // Only one hostname label is accepted.
-  if (!subdomain || subdomain.includes(".")) return "";
-  if (RESERVED_HOSTS.has(subdomain)) return "";
-  if (!BUSINESS_KEY_RE.test(subdomain)) return "";
+  if (!host.endsWith(HOST_SUFFIX)) {
+    return "";
+  }
+
+
+  /*
+   * Example:
+   *
+   * mk.ubnux.com
+   *
+   * becomes:
+   *
+   * mk
+   */
+
+  const subdomain =
+    host.slice(
+      0,
+      -HOST_SUFFIX.length
+    );
+
+
+  /*
+   * Only one hostname label is allowed.
+   *
+   * Valid:
+   * mk.ubnux.com
+   *
+   * Invalid:
+   * abc.mk.ubnux.com
+   */
+
+  if (
+    !subdomain ||
+    subdomain.includes(".")
+  ) {
+    return "";
+  }
+
+
+  if (
+    RESERVED_HOSTS.has(subdomain)
+  ) {
+    return "";
+  }
+
+
+  if (
+    !BUSINESS_KEY_RE.test(subdomain)
+  ) {
+    return "";
+  }
+
 
   return subdomain;
 }
 
-function originURL(pathname, search = "") {
-  return ORIGIN + pathname + search;
+
+/* =========================================================
+   PAGES URL
+========================================================= */
+
+function pagesURL(
+  pathname,
+  search = ""
+) {
+
+  const safePath =
+    pathname &&
+    pathname.startsWith("/")
+      ? pathname
+      : "/" + String(pathname || "");
+
+
+  return (
+    PAGES_ORIGIN +
+    safePath +
+    search
+  );
 }
 
-function withHeaders(response, extra = {}) {
-  const headers = new Headers(response.headers);
-  for (const [key, value] of Object.entries(extra)) {
-    headers.set(key, value);
+
+/* =========================================================
+   CREATE REQUEST FOR PAGES ORIGIN
+========================================================= */
+
+function makeOriginRequest(
+  request,
+  targetURL
+) {
+
+  const headers =
+    new Headers(
+      request.headers
+    );
+
+
+  /*
+   * VERY IMPORTANT
+   *
+   * Do not forward:
+   *
+   * Host: mk.ubnux.com
+   *
+   * to:
+   *
+   * newubnux.pages.dev
+   */
+
+  headers.delete("host");
+
+
+  /*
+   * Content-Length belongs to the
+   * original request.
+   */
+
+  headers.delete(
+    "content-length"
+  );
+
+
+  return new Request(
+    targetURL,
+    {
+      method:
+        request.method,
+
+      headers,
+
+      redirect:
+        "follow"
+    }
+  );
+}
+
+
+/* =========================================================
+   COPY RESPONSE
+========================================================= */
+
+function copyResponse(
+  response,
+  extraHeaders = {}
+) {
+
+  const headers =
+    new Headers(
+      response.headers
+    );
+
+
+  for (
+    const [
+      key,
+      value
+    ] of Object.entries(
+      extraHeaders
+    )
+  ) {
+
+    headers.set(
+      key,
+      value
+    );
+
   }
 
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers
-  });
+
+  return new Response(
+    response.body,
+    {
+      status:
+        response.status,
+
+      statusText:
+        response.statusText,
+
+      headers
+    }
+  );
 }
 
-function bridgeScript() {
-  // This script executes after config/api/seo-router/schema have loaded,
-  // but BEFORE the existing business-page.js controller.
+
+/* =========================================================
+   BUSINESS ROUTE OBJECT
+========================================================= */
+
+function createBusinessRoute(
+  businessKey
+) {
+
+  return {
+
+    type:
+      "business",
+
+    isBusinessPage:
+      true,
+
+    isSEOPage:
+      false,
+
+    isBusinessKeyPage:
+      true,
+
+    /*
+     * Sentinel values.
+     *
+     * business-page.js only needs
+     * these values to be non-empty.
+     */
+
+    stateSlug:
+      "business-key",
+
+    districtSlug:
+      "business-key",
+
+    categorySlug:
+      "business-key",
+
+    businessSlug:
+      businessKey,
+
+    canonicalPath:
+      "/"
+
+  };
+}
+
+
+/* =========================================================
+   BUSINESS KEY BRIDGE
+========================================================= */
+
+function bridgeScript(
+  businessKey
+) {
+
+  /*
+   * JSON.stringify makes the value
+   * safe to inject into JavaScript.
+   */
+
+  const safeKey =
+    JSON.stringify(
+      businessKey
+    );
+
+
   return `
 <script>
 (function () {
+
   "use strict";
 
-  var host = String(window.location.hostname || "").toLowerCase();
-  var suffix = ".ubnux.com";
-  if (!host.endsWith(suffix)) return;
 
-  var key = host.slice(0, -suffix.length);
-  if (!key || key.indexOf(".") !== -1) return;
-  if (!/^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])?$/.test(key)) return;
+  /* =======================================================
+     BUSINESS KEY
+  ======================================================= */
 
-  var reserved = {
-    www:1, api:1, admin:1, mail:1, smtp:1, imap:1, pop:1,
-    ftp:1, cdn:1, static:1, assets:1, status:1, app:1,
-    login:1, verify:1
-  };
-  if (reserved[key]) return;
+  var key =
+    ${safeKey};
 
-  window.UBNUX_BUSINESS_KEY_HOST = key;
-  window.UBNUX_BUSINESS_KEY_ROUTE = true;
 
-  var SENTINEL = "business-key";
+  var SENTINEL =
+    "business-key";
 
-  /* ---------------------------------------------------------
-     SEO router bridge
-     --------------------------------------------------------- */
-  var router = window.UBNUX_SEO_ROUTER || window.UBnuxSEORouter;
-  if (router) {
-    var originalGetCurrentRoute = router.getCurrentRoute;
-    var originalIsBusinessPage = router.isBusinessPage;
 
-    router.getCurrentRoute = function () {
-      return {
-        type: "business",
-        isBusinessPage: true,
-        isSEOPage: false,
-        isBusinessKeyPage: true,
-        stateSlug: SENTINEL,
-        districtSlug: SENTINEL,
-        categorySlug: SENTINEL,
-        businessSlug: key,
-        canonicalPath: "/"
-      };
+  window.UBNUX_BUSINESS_KEY_HOST =
+    key;
+
+
+  window.UBNUX_BUSINESS_KEY =
+    key;
+
+
+  window.UBNUX_BUSINESS_KEY_ROUTE =
+    true;
+
+
+  /* =======================================================
+     ROUTE OBJECT
+  ======================================================= */
+
+  function routeObject() {
+
+    return {
+
+      type:
+        "business",
+
+      isBusinessPage:
+        true,
+
+      isSEOPage:
+        false,
+
+      isBusinessKeyPage:
+        true,
+
+      stateSlug:
+        SENTINEL,
+
+      districtSlug:
+        SENTINEL,
+
+      categorySlug:
+        SENTINEL,
+
+      businessSlug:
+        key,
+
+      canonicalPath:
+        "/"
+
     };
 
-    router.isBusinessPage = function () {
-      return true;
-    };
-
-    // Keep parse() unchanged for normal apex-site routes.
-    router.__ubnuxBusinessKeyPatched = true;
-    router.__ubnuxBusinessKeyOriginalGetCurrentRoute = originalGetCurrentRoute;
-    router.__ubnuxBusinessKeyOriginalIsBusinessPage = originalIsBusinessPage;
   }
 
-  /* ---------------------------------------------------------
-     API bridge
-     --------------------------------------------------------- */
-  var api = window.UBnuxAPI || window.ZilaBizAPI;
-  if (api && typeof api.getBusiness === "function" && !api.__ubnuxBusinessKeyPatched) {
-    var originalGetBusiness = api.getBusiness;
 
-    api.getBusiness = async function (input, options) {
-      if (input && typeof input === "object") {
-        var state = String(input.state || input.stateSlug || "").toLowerCase();
-        var district = String(input.district || input.districtSlug || "").toLowerCase();
-        var category = String(input.category || input.categorySlug || "").toLowerCase();
-        var slug = String(input.slug || input.businessSlug || "").toLowerCase();
+  /* =======================================================
+     SEO ROUTER PATCH
+  ======================================================= */
 
-        if (state === SENTINEL && district === SENTINEL && category === SENTINEL && slug === key) {
-          if (typeof api.request !== "function") {
-            throw new Error("UBnux API request() is unavailable.");
-          }
+  function patchRouter(
+    router
+  ) {
 
-          return api.request(
-            "business-key",
-            { key: key },
-            Object.assign({}, options || {}, { cache: false })
-          );
-        }
+    if (
+      !router ||
+      router.__ubnuxBusinessKeyPatched
+    ) {
+
+      return;
+
+    }
+
+
+    router.__ubnuxBusinessKeyPatched =
+      true;
+
+
+    /*
+     * BusinessKey URL is always
+     * treated as a business page.
+     */
+
+    router.getCurrentRoute =
+      function () {
+
+        return routeObject();
+
+      };
+
+
+    router.isBusinessPage =
+      function () {
+
+        return true;
+
+      };
+
+
+    router.parse =
+      function () {
+
+        return routeObject();
+
+      };
+
+  }
+
+
+  /*
+   * Current UBnux SEO router.
+   */
+
+  patchRouter(
+    window.UBNUX_SEO_ROUTER
+  );
+
+
+  patchRouter(
+    window.UBnuxSEORouter
+  );
+
+
+  /*
+   * Compatibility namespace.
+   */
+
+  if (
+    window.App &&
+    window.App.seoRouter
+  ) {
+
+    patchRouter(
+      window.App.seoRouter
+    );
+
+  }
+
+
+  /* =======================================================
+     API PATCH
+  ======================================================= */
+
+  var api =
+    window.UBnuxAPI ||
+    window.ZilaBizAPI;
+
+
+  if (
+    api &&
+    !api.__ubnuxBusinessKeyPatched
+  ) {
+
+    api.__ubnuxBusinessKeyPatched =
+      true;
+
+
+    /*
+     * Save original functions.
+     */
+
+    var originalGetBusiness =
+      api.getBusiness;
+
+
+    var originalGetBusinessBySEO =
+      api.getBusinessBySEO;
+
+
+    var originalGetBusinessBySlug =
+      api.getBusinessBySlug;
+
+
+    /* =====================================================
+       DETECT BUSINESS KEY PARAMETERS
+    ===================================================== */
+
+    function isBusinessKeyParams(
+      input
+    ) {
+
+      if (
+        !input ||
+        typeof input !== "object"
+      ) {
+
+        return false;
+
       }
 
-      return originalGetBusiness.call(api, input, options);
-    };
 
-    api.__ubnuxBusinessKeyPatched = true;
+      var state =
+        String(
+          input.state ||
+          input.stateSlug ||
+          ""
+        ).toLowerCase();
+
+
+      var district =
+        String(
+          input.district ||
+          input.districtSlug ||
+          ""
+        ).toLowerCase();
+
+
+      var category =
+        String(
+          input.category ||
+          input.categorySlug ||
+          ""
+        ).toLowerCase();
+
+
+      var slug =
+        String(
+          input.slug ||
+          input.businessSlug ||
+          ""
+        ).toLowerCase();
+
+
+      return (
+
+        state ===
+          SENTINEL &&
+
+        district ===
+          SENTINEL &&
+
+        category ===
+          SENTINEL &&
+
+        slug ===
+          key
+
+      );
+
+    }
+
+
+    /* =====================================================
+       BUSINESS KEY API REQUEST
+    ===================================================== */
+
+    function requestBusinessKey(
+      options
+    ) {
+
+      if (
+        !api ||
+        typeof api.request !==
+          "function"
+      ) {
+
+        return Promise.reject(
+          new Error(
+            "UBnux API request() is unavailable."
+          )
+        );
+
+      }
+
+
+      return api.request(
+
+        "business-key",
+
+        {
+          key:
+            key
+        },
+
+        Object.assign(
+          {},
+          options || {},
+          {
+            cache:
+              false
+          }
+        )
+
+      );
+
+    }
+
+
+    /* =====================================================
+       getBusiness()
+    ===================================================== */
+
+    api.getBusiness =
+      async function (
+        input,
+        options
+      ) {
+
+        /*
+         * BusinessKey request.
+         */
+
+        if (
+          isBusinessKeyParams(
+            input
+          )
+        ) {
+
+          return requestBusinessKey(
+            options
+          );
+
+        }
+
+
+        /*
+         * Normal UBnux business
+         * request remains unchanged.
+         */
+
+        return originalGetBusiness.call(
+          api,
+          input,
+          options
+        );
+
+      };
+
+
+    /* =====================================================
+       getBusinessBySEO()
+    ===================================================== */
+
+    if (
+      typeof originalGetBusinessBySEO ===
+      "function"
+    ) {
+
+      api.getBusinessBySEO =
+        async function (
+          input,
+          options
+        ) {
+
+          if (
+            isBusinessKeyParams(
+              input
+            )
+          ) {
+
+            return requestBusinessKey(
+              options
+            );
+
+          }
+
+
+          return originalGetBusinessBySEO.call(
+            api,
+            input,
+            options
+          );
+
+        };
+
+    }
+
+
+    /* =====================================================
+       getBusinessBySlug()
+    ===================================================== */
+
+    if (
+      typeof originalGetBusinessBySlug ===
+      "function"
+    ) {
+
+      api.getBusinessBySlug =
+        async function () {
+
+          var args =
+            Array.prototype.slice.call(
+              arguments
+            );
+
+
+          /*
+           * Object format:
+           *
+           * getBusinessBySlug({
+           *   state: "business-key",
+           *   district: "business-key",
+           *   category: "business-key",
+           *   slug: "mk"
+           * })
+           */
+
+          if (
+            args.length === 1 &&
+            isBusinessKeyParams(
+              args[0]
+            )
+          ) {
+
+            return requestBusinessKey(
+              args[1]
+            );
+
+          }
+
+
+          return originalGetBusinessBySlug.apply(
+            api,
+            args
+          );
+
+        };
+
+    }
+
   }
 
-  window.dispatchEvent(new CustomEvent("ubnux:business-key-ready", {
-    detail: { businessKey: key }
-  }));
+
+  /* =======================================================
+     READY EVENT
+  ======================================================= */
+
+  window.dispatchEvent(
+
+    new CustomEvent(
+      "ubnux:business-key-ready",
+      {
+        detail: {
+          businessKey:
+            key
+        }
+      }
+    )
+
+  );
+
+
 })();
 </script>
 `;
+
 }
 
-async function serveBusinessShell(request, businessKey) {
-const originHeaders = new Headers(request.headers);
-originHeaders.delete("host");
 
-const response = await fetch(originURL("/business.html"), {
-  method: request.method,
-  headers: originHeaders
-});
-  if (!response.ok) {
-    return withHeaders(response, {
-      "X-UBnux-BusinessKey": businessKey,
-      "X-UBnux-Subdomain": "1"
-    });
-  }
+/* =========================================================
+   FETCH FROM CLOUDFLARE PAGES
+========================================================= */
 
-  const contentType = response.headers.get("content-type") || "";
-  if (!contentType.toLowerCase().includes("text/html")) {
-    return withHeaders(response, {
-      "X-UBnux-BusinessKey": businessKey,
-      "X-UBnux-Subdomain": "1"
-    });
-  }
+async function fetchPages(
+  request,
+  pathname,
+  search = ""
+) {
 
-  let html = await response.text();
-
-  const scriptMarker = /<script[^>]+assets\/js\/seo\/business-page\.js[^>]*><\/script>/i;
-  const injected = bridgeScript();
-
-  if (scriptMarker.test(html)) {
-    html = html.replace(scriptMarker, injected + "\n" + "$&");
-  } else {
-    // Fail-safe: insert before </body> if the script filename changes later.
-    html = html.replace(/<\/body>/i, injected + "\n</body>");
-  }
-
-  const headers = new Headers(response.headers);
-  headers.set("Content-Type", "text/html; charset=UTF-8");
-  headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
-  headers.set("X-UBnux-BusinessKey", businessKey);
-  headers.set("X-UBnux-Subdomain", "1");
-
-  return new Response(html, {
-    status: response.status,
-    statusText: response.statusText,
-    headers
-  });
-}
-
-export default {
-  async fetch(request) {
-    const url = new URL(request.url);
-    const businessKey = getBusinessKey(url.hostname);
-
-    // Apex + reserved hosts continue to use the existing deployment.
-    if (!businessKey) {
-      return fetch(request);
-    }
-
-    if (request.method !== "GET" && request.method !== "HEAD") {
-      return new Response("Method Not Allowed", {
-        status: 405,
-        headers: { Allow: "GET, HEAD" }
-      });
-    }
-
-    const staticPrefixes = [
-      "/assets/",
-      "/favicon.ico",
-      "/robots.txt",
-      "/sitemap.xml"
-    ];
-
-    const isStatic = staticPrefixes.some(prefix =>
-      url.pathname === prefix || url.pathname.startsWith(prefix)
+  const target =
+    pagesURL(
+      pathname,
+      search
     );
 
-    if (isStatic) {
-const originHeaders = new Headers(request.headers);
-originHeaders.delete("host");
 
-const response = await fetch(
-  originURL(url.pathname, url.search),
-  {
-    method: request.method,
-    headers: originHeaders
+  const originRequest =
+    makeOriginRequest(
+      request,
+      target
+    );
+
+
+  return fetch(
+    originRequest
+  );
+}
+
+
+/* =========================================================
+   BUSINESS HTML SHELL
+========================================================= */
+
+async function serveBusinessShell(
+  request,
+  businessKey
+) {
+
+  const response =
+    await fetchPages(
+      request,
+      "/business.html"
+    );
+
+
+  /*
+   * If Pages origin fails,
+   * return the original error.
+   */
+
+  if (
+    !response.ok
+  ) {
+
+    return copyResponse(
+      response,
+      {
+        "X-UBnux-BusinessKey":
+          businessKey,
+
+        "X-UBnux-Subdomain":
+          "1",
+
+        "X-UBnux-Origin":
+          "pages"
+      }
+    );
+
   }
-);
 
-      return withHeaders(response, {
-        "X-UBnux-BusinessKey": businessKey,
-        "X-UBnux-Subdomain": "1"
-      });
+
+  const contentType =
+    response.headers.get(
+      "content-type"
+    ) || "";
+
+
+  if (
+    !contentType
+      .toLowerCase()
+      .includes("text/html")
+  ) {
+
+    return copyResponse(
+      response,
+      {
+        "X-UBnux-BusinessKey":
+          businessKey,
+
+        "X-UBnux-Subdomain":
+          "1",
+
+        "X-UBnux-Origin":
+          "pages"
+      }
+    );
+
+  }
+
+
+  let html =
+    await response.text();
+
+
+  const injected =
+    bridgeScript(
+      businessKey
+    );
+
+
+  /* =======================================================
+     INJECT BEFORE business-page.js
+  ======================================================= */
+
+  const scriptMarker =
+    /<script[^>]+assets\/js\/seo\/business-page\.js[^>]*><\/script>/i;
+
+
+  if (
+    scriptMarker.test(
+      html
+    )
+  ) {
+
+    html =
+      html.replace(
+        scriptMarker,
+        injected +
+          "\n" +
+          "$&"
+      );
+
+  } else {
+
+    /*
+     * Fail-safe if the filename
+     * changes in future.
+     */
+
+    html =
+      html.replace(
+        /<\/body>/i,
+        injected +
+          "\n</body>"
+      );
+
+  }
+
+
+  const headers =
+    new Headers(
+      response.headers
+    );
+
+
+  headers.set(
+    "Content-Type",
+    "text/html; charset=UTF-8"
+  );
+
+
+  /*
+   * Do not cache the generated
+   * BusinessKey HTML shell.
+   */
+
+  headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate"
+  );
+
+
+  headers.set(
+    "X-UBnux-BusinessKey",
+    businessKey
+  );
+
+
+  headers.set(
+    "X-UBnux-Subdomain",
+    "1"
+  );
+
+
+  headers.set(
+    "X-UBnux-Origin",
+    "pages"
+  );
+
+
+  return new Response(
+    html,
+    {
+      status:
+        response.status,
+
+      statusText:
+        response.statusText,
+
+      headers
+    }
+  );
+
+}
+
+
+/* =========================================================
+   STATIC FILES
+========================================================= */
+
+const STATIC_PREFIXES = [
+
+  "/assets/",
+
+  "/favicon.ico",
+
+  "/robots.txt",
+
+  "/sitemap.xml"
+
+];
+
+
+function isStaticPath(
+  pathname
+) {
+
+  return STATIC_PREFIXES.some(
+    function (
+      prefix
+    ) {
+
+      return (
+        pathname === prefix ||
+        pathname.startsWith(
+          prefix
+        )
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   WORKER
+========================================================= */
+
+export default {
+
+  async fetch(
+    request
+  ) {
+
+    const url =
+      new URL(
+        request.url
+      );
+
+
+    const host =
+      url.hostname
+        .toLowerCase();
+
+
+    const businessKey =
+      getBusinessKey(
+        host
+      );
+
+
+    /* =====================================================
+       RESERVED / INVALID HOST
+    ===================================================== */
+
+    if (
+      !businessKey
+    ) {
+
+      /*
+       * www.ubnux.com is allowed
+       * to continue using Pages.
+       *
+       * IMPORTANT:
+       * We do NOT use fetch(request)
+       * here because that can target
+       * this same Worker route again.
+       */
+
+      if (
+        host ===
+        "www.ubnux.com"
+      ) {
+
+        try {
+
+          return await fetchPages(
+            request,
+            url.pathname,
+            url.search
+          );
+
+        } catch (
+          error
+        ) {
+
+          return new Response(
+            "UBnux www origin error",
+            {
+              status:
+                502,
+
+              headers: {
+                "Content-Type":
+                  "text/plain; charset=UTF-8",
+
+                "Cache-Control":
+                  "no-store"
+              }
+            }
+          );
+
+        }
+
+      }
+
+
+      /*
+       * Unknown / reserved
+       * subdomain.
+       */
+
+      return new Response(
+        "UBnux hostname not configured",
+        {
+          status:
+            404,
+
+          headers: {
+            "Content-Type":
+              "text/plain; charset=UTF-8",
+
+            "Cache-Control":
+              "no-store"
+          }
+        }
+      );
+
     }
 
-    return serveBusinessShell(request, businessKey);
+
+    /* =====================================================
+       METHODS
+    ===================================================== */
+
+    if (
+      request.method !== "GET" &&
+      request.method !== "HEAD"
+    ) {
+
+      return new Response(
+        "Method Not Allowed",
+        {
+          status:
+            405,
+
+          headers: {
+            Allow:
+              "GET, HEAD",
+
+            "Cache-Control":
+              "no-store"
+          }
+        }
+      );
+
+    }
+
+
+    /* =====================================================
+       HEAD
+    ===================================================== */
+
+    if (
+      request.method ===
+      "HEAD"
+    ) {
+
+      try {
+
+        const response =
+          await fetchPages(
+            request,
+            "/business.html"
+          );
+
+
+        return copyResponse(
+          response,
+          {
+            "X-UBnux-BusinessKey":
+              businessKey,
+
+            "X-UBnux-Subdomain":
+              "1",
+
+            "X-UBnux-Origin":
+              "pages"
+          }
+        );
+
+      } catch (
+        error
+      ) {
+
+        return new Response(
+          null,
+          {
+            status:
+              502,
+
+            headers: {
+              "Cache-Control":
+                "no-store",
+
+              "X-UBnux-BusinessKey":
+                businessKey
+            }
+          }
+        );
+
+      }
+
+    }
+
+
+    /* =====================================================
+       STATIC ASSETS
+    ===================================================== */
+
+    if (
+      isStaticPath(
+        url.pathname
+      )
+    ) {
+
+      try {
+
+        const response =
+          await fetchPages(
+            request,
+            url.pathname,
+            url.search
+          );
+
+
+        return copyResponse(
+          response,
+          {
+            "X-UBnux-BusinessKey":
+              businessKey,
+
+            "X-UBnux-Subdomain":
+              "1",
+
+            "X-UBnux-Origin":
+              "pages"
+          }
+        );
+
+      } catch (
+        error
+      ) {
+
+        return new Response(
+          "Static asset origin error",
+          {
+            status:
+              502,
+
+            headers: {
+              "Content-Type":
+                "text/plain; charset=UTF-8",
+
+              "Cache-Control":
+                "no-store",
+
+              "X-UBnux-BusinessKey":
+                businessKey
+            }
+          }
+        );
+
+      }
+
+    }
+
+
+    /* =====================================================
+       BUSINESS PAGE
+    ===================================================== */
+
+    try {
+
+      return await serveBusinessShell(
+        request,
+        businessKey
+      );
+
+    } catch (
+      error
+    ) {
+
+      return new Response(
+        "UBnux BusinessKey Worker origin error",
+        {
+          status:
+            502,
+
+          headers: {
+            "Content-Type":
+              "text/plain; charset=UTF-8",
+
+            "Cache-Control":
+              "no-store",
+
+            "X-UBnux-BusinessKey":
+              businessKey,
+
+            "X-UBnux-Error":
+              String(
+                (
+                  error &&
+                  error.message
+                ) ||
+                error
+              )
+          }
+        }
+      );
+
+    }
+
   }
+
 };
