@@ -1,139 +1,123 @@
-# UBnux BusinessKey Wildcard Subdomain
+# UBnux BusinessKey Subdomain Router v2
 
-## Target
+This version is designed for the existing UBnux architecture:
 
-10,000+ businesses without 10,000 Cloudflare DNS records.
+- GitHub repository: `zotakbook-cmd/NewUBnux`
+- Cloudflare Pages serves `https://ubnux.com`
+- Existing Google Apps Script API remains behind `https://ubnux.com/api`
+- BusinessKey API is already available as `action=business-key`
 
-Examples:
+## What this does
 
-- https://mk.ubnux.com/
-- https://siwan-fashion-house.ubnux.com/
-- https://another-business.ubnux.com/
+One Cloudflare Worker handles all BusinessKey subdomains:
 
-All use one wildcard DNS record + one Worker.
+- `https://mk.ubnux.com/`
+- `https://siwan-fashion-house.ubnux.com/`
+- `https://abc-business.ubnux.com/`
 
-## Architecture
+No DNS record is created per business.
 
-Browser
-  |
-  v
-*.ubnux.com
-  |
-  v
-Cloudflare Worker
-  |
-  +--> /assets/* -> existing UBnux Pages
-  |
-  +--> other paths -> /business.html from existing UBnux Pages
-                                  |
-                                  v
-                         business-page.js
-                                  |
-                          BusinessKey from
-                             hostname
-                                  |
-                                  v
-                     /api?action=business-key
-                                  |
-                                  v
-                         Google Apps Script
-                                  |
-                                  v
-                         existing SEO data
-                                  |
-                                  v
-                         existing template
+The Worker fetches the existing `business.html` from `https://ubnux.com`, injects a tiny bridge before the existing `business-page.js`, and lets the existing Business Template/SEO pipeline render the business returned by the `business-key` API.
+
+## Why no frontend replacement is needed
+
+The current `business.html` already loads:
+
+1. config.js
+2. api.js
+3. seo-router.js
+4. seo-meta.js
+5. schema.js
+6. business-page.js
+
+The Worker injects the BusinessKey bridge between step 5 and step 6. Therefore the existing business page controller remains untouched.
 
 ## Cloudflare setup
 
-### 1. DNS
+### 1. Put this folder in the GitHub repository
 
-Cloudflare -> ubnux.com -> DNS -> Records -> Add:
+Copy:
 
-Type:
-  A
+```text
+worker/index.js
+worker/wrangler.json
+```
 
-Name:
-  *
+into the root of `NewUBnux`.
 
-IPv4:
-  192.0.2.0
+### 2. Create a Worker from the GitHub repository
 
-Proxy:
-  Proxied (orange cloud)
+In Cloudflare:
 
-This is a placeholder origin. The Worker is the actual request handler.
+`Workers & Pages` → `Create` → `Worker` → connect the GitHub repository.
 
-### 2. Worker
+For the Worker build configuration, use:
 
-Create Worker:
-  ubnux-businesskey-router
+- Root directory: `/worker`
+- Build command: none
+- Deploy command: `npx wrangler deploy`
 
-Upload:
-  src/index.js
-  wrangler.json
+If Cloudflare asks for the config file, use `worker/wrangler.json`.
 
-Or deploy with Wrangler.
+### 3. Add wildcard DNS
 
-### 3. Route
+In Cloudflare DNS for `ubnux.com`, create ONE record:
 
-The Worker route must be:
+```text
+Type: CNAME
+Name: *
+Target: ubnux.com
+Proxy status: Proxied
+```
 
-  *.ubnux.com/*
+Do NOT create records for `mk`, `abc`, `siwan-fashion-house`, etc.
 
-Do NOT create one route per business.
+### 4. Add the Worker route
 
-### 4. Existing apex site
+Create this route for the zone:
 
-Keep:
-  https://ubnux.com/
+```text
+*.ubnux.com/*
+```
 
-as it is.
+Attach it to:
 
-The wildcard route only catches subdomains.
+```text
+ubnux-businesskey-router
+```
 
-If you have special subdomains such as www, keep an explicit higher-priority route/origin for them if required.
+The apex `ubnux.com` is not matched by this wildcard route, so the existing website remains unchanged.
 
-## Frontend changes
+### 5. Keep existing reserved hosts
 
-Apply:
-  api-businesskey.patch.txt
-  business-page-businesskey.patch.txt
+The Worker intentionally does not treat these as BusinessKeys:
 
-to the existing GitHub repository.
+`www`, `api`, `admin`, `mail`, `smtp`, `imap`, `pop`, `ftp`, `cdn`, `static`, `assets`, `status`, `app`, `login`, `verify`.
 
-The backend BusinessKey endpoint is already working.
+Those hosts continue through the existing deployment.
 
-## Test order
+## Test
 
-1. Deploy frontend changes.
-2. Deploy Worker.
-3. Add wildcard DNS.
-4. Open:
+Use a BusinessKey that already exists in Google Sheets/API, for example:
 
-   https://mk.ubnux.com/
+```text
+https://mk.ubnux.com/
+```
 
-5. Browser console should show the normal BusinessPage loading flow.
-6. The API call should be:
+The browser should stay on `mk.ubnux.com` while the page loads the exact business through:
 
-   action=business-key
-   key=mk
+```text
+action=business-key&key=mk
+```
 
-7. The business template should render.
-8. Canonical should remain the permanent SEO URL, not the subdomain.
-
-For the current demo record, the canonical URL is:
-
-https://ubnux.com/in/bihar/siwan/clothing-and-fashion/siwan-fashion-house/
-
-The subdomain is an alternate business entry point, not the canonical SEO URL.
+The SEO canonical should remain the permanent `/in/bihar/.../<slug>/` URL returned by the backend, not the BusinessKey subdomain.
 
 ## Important
 
-Do not add DNS records like:
+Do not change `_redirects` for the wildcard subdomain setup.
 
-  mk -> ...
-  abc -> ...
-  xyz -> ...
+Do not create 10,000 DNS records.
 
-The whole point of this architecture is that one wildcard handles all BusinessKeys.
+Do not move the Google Apps Script API.
+
+Do not replace the existing `business-page.js` unless a later test proves it is necessary.
