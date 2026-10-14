@@ -1,12 +1,35 @@
 /* =========================================================
    UBnux
    File: assets/js/config.js
-   Version: 3.0.2
+   Version: 3.0.3
 ========================================================= */
 
 (function (window) {
 
   "use strict";
+
+
+  /* =====================================================
+     CURRENT ORIGIN
+  ===================================================== */
+
+  /*
+   * API अब current domain/origin से चलेगी.
+   *
+   * Main site:
+   * https://ubnux.com/api
+   *
+   * BusinessKey site:
+   * https://siwan-fashion-house.ubnux.com/api
+   *
+   * https://mukesh.ubnux.com/api
+   *
+   * इससे BusinessKey subdomain पर CORS problem नहीं होगी,
+   * क्योंकि request उसी hostname के /api endpoint पर जाएगी.
+   */
+
+  var CURRENT_ORIGIN =
+    window.location.origin;
 
 
   window.UBNUX_CONFIG = {
@@ -16,15 +39,22 @@
     ===================================================== */
 
     /*
-     * Cloudflare Pages Function
+     * Cloudflare Pages / Worker API proxy
      *
-     * Browser → Cloudflare → Google Apps Script
+     * Browser
+     *    ↓
+     * Current Origin /api
+     *    ↓
+     * Cloudflare Worker / Pages Function
+     *    ↓
+     * Google Apps Script
      *
-     * DO NOT put Google Apps Script URL here.
+     * IMPORTANT:
+     * Google Apps Script URL यहाँ नहीं डालना है.
      */
 
     API_URL:
-      "https://ubnux.com/api",
+      CURRENT_ORIGIN + "/api",
 
 
     /* =====================================================
@@ -33,6 +63,13 @@
 
     SITE_NAME:
       "UBnux",
+
+    /*
+     * Main canonical website origin.
+     *
+     * BusinessKey subdomains भी इसी main website
+     * को canonical SEO origin के रूप में use करेंगे.
+     */
 
     SITE_URL:
       "https://ubnux.com",
@@ -98,6 +135,10 @@
 
       DEFAULT_ROBOTS:
         "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
+
+      /*
+       * Default image remains on main UBnux domain.
+       */
 
       DEFAULT_IMAGE:
         "https://ubnux.com/assets/images/default-business.jpg"
