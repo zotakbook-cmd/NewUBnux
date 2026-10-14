@@ -1,6 +1,6 @@
 /**
  * UBnux BusinessKey Wildcard Worker
- * Version: 3.1.0
+ * Version: 3.2.0
  *
  * Architecture:
  *
@@ -24,6 +24,17 @@
  */
 
 const PAGES_ORIGIN = "https://newubnux.pages.dev";
+
+/*
+ * Direct API backend.
+ *
+ * BusinessKey subdomain API requests are sent directly from
+ * the Worker to Google Apps Script. This removes one extra
+ * hop through the Pages Function and avoids the API timeout
+ * currently occurring on the BusinessKey hostname.
+ */
+const APPS_SCRIPT_API =
+  "https://script.google.com/macros/s/AKfycbzZ3GtCryDG8WB5YkutJiXk-2YoHEN7KPTAeYWtmqq0mKp6oHRdV2g2WMg-BWyQSB07rg/exec";
 
 const HOST_SUFFIX = ".ubnux.com";
 
@@ -1146,7 +1157,8 @@ async function proxyAPI(
 ) {
 
   /*
-   * Only the path/query changes.
+   * Build the Google Apps Script URL using the same
+   * query string that the frontend sent.
    *
    * Example:
    *
@@ -1154,14 +1166,13 @@ async function proxyAPI(
    *
    * becomes:
    *
-   * https://newubnux.pages.dev/api?action=business-key&key=mukesh
+   * https://script.google.com/macros/s/.../exec
+   *   ?action=business-key&key=mukesh
    */
 
   const target =
-    pagesURL(
-      url.pathname,
-      url.search
-    );
+    APPS_SCRIPT_API +
+    url.search;
 
 
   const originRequest =
@@ -1178,9 +1189,7 @@ async function proxyAPI(
 
 
   /*
-   * Copy the Pages Function response,
-   * then replace CORS headers so the
-   * browser accepts the BusinessKey origin.
+   * Copy Apps Script response.
    */
 
   const headers =
@@ -1188,6 +1197,11 @@ async function proxyAPI(
       response.headers
     );
 
+
+  /*
+   * Browser CORS belongs to the public
+   * BusinessKey hostname, not Apps Script.
+   */
 
   const cors =
     apiCorsHeaders(request);
@@ -1208,25 +1222,30 @@ async function proxyAPI(
   }
 
 
-  /*
-   * Never expose the Pages Function's
-   * original CORS origin to the browser.
-   */
-
   headers.delete(
     "Access-Control-Allow-Credentials"
   );
 
 
+  /*
+   * Remove upstream headers that can expose
+   * the Apps Script backend unnecessarily.
+   */
+
+  headers.delete(
+    "Location"
+  );
+
+
   headers.set(
     "X-UBnux-API-Proxy",
-    "business-key-worker"
+    "business-key-worker-direct"
   );
 
 
   headers.set(
     "X-UBnux-Origin",
-    "pages-function"
+    "google-apps-script"
   );
 
 
