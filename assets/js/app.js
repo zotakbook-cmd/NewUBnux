@@ -2,7 +2,7 @@
    UBnux Main Application
    File: assets/js/app.js
 
-   Version: 3.5.3
+   Version: 4.0.0
 
    RESPONSIBILITIES
    ---------------------------------------------------------
@@ -1356,153 +1356,210 @@
      INITIAL BASE DATA
   ========================================================= */
 
-  async function initializeBaseData() {
+  /* =========================================================
+     STATIC MASTER DATA
+     ---------------------------------------------------------
+     Homepage/index MUST NOT call Apps Script/API.
 
-    showLoader(
-      "Loading UBnux..."
-    );
+     Static sources:
+       /assets/data/states.json
+       /assets/data/categories.json
 
+     Districts are loaded by districts.js from static JSON
+     when the user selects a state.
 
-    if (
-      !window.UBnuxAPI
-    ) {
+     Businesses are NEVER loaded here.
+  ========================================================= */
 
+  async function fetchStaticJSON(url) {
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "force-cache",
+      headers: {
+        Accept: "application/json"
+      }
+    });
+
+    if (!response.ok) {
       throw new Error(
-        "UBnux API is not available."
+        "Static data request failed: " +
+        response.status
       );
-
     }
 
+    return response.json();
+  }
+
+  function normalizeStaticRows(payload) {
+    if (Array.isArray(payload)) {
+      return payload;
+    }
 
     if (
-      !window.UBnuxDistricts
+      payload &&
+      Array.isArray(payload.data)
     ) {
+      return payload.data;
+    }
 
+    if (
+      payload &&
+      Array.isArray(payload.rows)
+    ) {
+      return payload.rows;
+    }
+
+    return [];
+  }
+
+  function renderStaticStates(statesData) {
+    if (
+      window.UBnuxState &&
+      window.UBnuxState.state
+    ) {
+      if (
+        typeof window.UBnuxState.setStates ===
+        "function"
+      ) {
+        window.UBnuxState.setStates(statesData);
+      } else {
+        window.UBnuxState.state.states =
+          statesData;
+      }
+    }
+
+    if (
+      window.UBnuxDistricts &&
+      typeof window.UBnuxDistricts.renderStates ===
+      "function"
+    ) {
+      window.UBnuxDistricts.renderStates(
+        statesData
+      );
+      return;
+    }
+
+    if (!stateFilter) {
+      return;
+    }
+
+    const currentStateValue =
+      clean(stateFilter.value);
+
+    stateFilter.innerHTML =
+      '<option value="">Select State</option>';
+
+    statesData.forEach(function (item) {
+      const code = clean(
+        item.StateCode ||
+        item.stateCode ||
+        item.StateID ||
+        item.Code ||
+        item.code
+      );
+
+      const name = clean(
+        item.State ||
+        item.StateName ||
+        item.Name ||
+        item.name
+      );
+
+      if (!code || !name) {
+        return;
+      }
+
+      const option =
+        document.createElement("option");
+
+      option.value = code;
+      option.textContent = name;
+      option.dataset.stateCode = code;
+      option.dataset.stateName = name;
+
+      stateFilter.appendChild(option);
+    });
+
+    if (currentStateValue) {
+      stateFilter.value =
+        currentStateValue;
+    }
+  }
+
+  async function initializeBaseData(options) {
+    options = options || {};
+
+    if (options.showLoader !== false) {
+      showLoader("Loading UBnux...");
+    }
+
+    if (!window.UBnuxDistricts) {
       throw new Error(
         "UBnux District module is not available."
       );
-
     }
 
-
-    if (
-      !window.UBnuxCategories
-    ) {
-
+    if (!window.UBnuxCategories) {
       throw new Error(
         "UBnux Category module is not available."
       );
-
     }
 
+    /*
+     * STATES — STATIC ONLY
+     */
+    const statesURL =
+      config.STATES_JSON_URL ||
+      "/assets/data/states.json";
 
-    const results =
-      await Promise.all([
-
-        window
-          .UBnuxAPI
-          .getStates(),
-
-        window
-          .UBnuxAPI
-          .getCategories()
-
-      ]);
-
+    const statesPayload =
+      await fetchStaticJSON(statesURL);
 
     const statesData =
-      Array.isArray(
-        results[0] &&
-        results[0].data
-      )
-        ? results[0].data
-        : [];
+      normalizeStaticRows(statesPayload);
 
+    renderStaticStates(statesData);
+
+    /*
+     * CATEGORIES — STATIC ONLY
+     */
+    const categoriesURL =
+      config.CATEGORIES_JSON_URL ||
+      "/assets/data/categories.json";
+
+    const categoriesPayload =
+      await fetchStaticJSON(categoriesURL);
 
     const categoriesData =
-      Array.isArray(
-        results[1] &&
-        results[1].data
-      )
-        ? results[1].data
-        : [];
-
+      normalizeStaticRows(categoriesPayload);
 
     if (
       window.UBnuxState &&
       window.UBnuxState.state
     ) {
-
-      window
-        .UBnuxState
-        .state
-        .states =
-        statesData;
-
-    }
-
-
-    /* =====================================================
-       STATE SELECTOR RENDER
-       -----------------------------------------------------
-       Some older districts.js builds do not expose
-       renderStates(). The global selector must still work.
-    ===================================================== */
-    if (
-      typeof window.UBnuxDistricts.renderStates === "function"
-    ) {
-      window.UBnuxDistricts.renderStates(statesData);
-    } else if (stateFilter) {
-      var currentStateValue = clean(stateFilter.value);
-
-      stateFilter.innerHTML =
-        '<option value="">Select State</option>';
-
-      statesData.forEach(function(item) {
-        var code = clean(
-          item.StateCode ||
-          item.stateCode ||
-          item.StateID ||
-          item.Code ||
-          item.code
+      if (
+        typeof window.UBnuxState.setCategories ===
+        "function"
+      ) {
+        window.UBnuxState.setCategories(
+          categoriesData
         );
-
-        var name = clean(
-          item.State ||
-          item.StateName ||
-          item.Name ||
-          item.name
-        );
-
-        if (!code || !name) return;
-
-        var option = document.createElement("option");
-        option.value = code;
-        option.textContent = name;
-        option.dataset.stateCode = code;
-        option.dataset.stateName = name;
-        stateFilter.appendChild(option);
-      });
-
-      if (currentStateValue) {
-        stateFilter.value = currentStateValue;
+      } else {
+        window.UBnuxState.state.categories =
+          categoriesData;
       }
     }
 
+    window.UBnuxCategories.renderCategories(
+      categoriesData
+    );
 
-    window
-      .UBnuxCategories
-      .renderCategories(
-        categoriesData
-      );
-
-
-    window
-      .UBnuxCategories
-      .setEnabled(
-        false
-      );
-
+    /*
+     * Category UI is enabled after district selection.
+     * This is a UI dependency, not an API dependency.
+     */
+    window.UBnuxCategories.setEnabled(false);
   }
 
 
@@ -2252,20 +2309,12 @@
       );
 
 
-      if (
-        window.UBnuxBusinesses
-      ) {
-
-        await window
-          .UBnuxBusinesses
-          .loadBusinesses(
-            false
-          );
-
-      }
-
-
-      updateURL();
+      /*
+       * STATIC-FIRST:
+       * Restoring saved filters is UI-only.
+       * Do NOT fetch businesses during homepage boot.
+       */
+updateURL();
 
       return;
 
@@ -3366,7 +3415,9 @@
        */
       try {
         setupEvents();
-        await initializeBaseData();
+        await initializeBaseData({
+          showLoader: false
+        });
         setInitialFilterState();
       } catch (error) {
         console.error(
@@ -3501,10 +3552,17 @@
      PUBLIC DEBUG API
   ========================================================= */
 
+  /*
+   * Static-first diagnostic flag.
+   * On "/" no Apps Script/API request should occur until
+   * an explicit user search/filter action.
+   */
+  window.UBnuxAppStaticFirst = true;
+
   window.UBnuxApp = {
 
     version:
-      "3.5.0",
+      "4.0.0",
 
 
     getRoute:
