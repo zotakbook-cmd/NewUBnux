@@ -1,32 +1,21 @@
 /* =========================================================
-   UBnux Schema Renderer
-   File: assets/js/seo/schema.js
+   UBnux SEO Meta Manager
+   File: assets/js/seo/seo-meta.js
 
    Version:
-   2.1.0
+   3.1.0
 
    Responsibilities:
-   ---------------------------------------------------------
-   - Render backend-generated JSON-LD
-   - Remove previous UBnux schema
-   - Prevent duplicate UBnux schema
-   - Support @graph
-   - Support BusinessSEO response.schema
-   - Support seo.schema compatibility
-   - Validate basic schema structure
-   - No fake schema generation
-   - No frontend rating generation
-   - No frontend review generation
-
-   IMPORTANT:
-   Schema generation is handled by:
-
-   SchemaEngine.gs
-        ↓
-   BusinessSEO.gs
-        ↓
-   response.schema
-
+   - Document title
+   - Meta description
+   - Robots
+   - Canonical
+   - OpenGraph
+   - Twitter Card
+   - Social image
+   - Duplicate prevention
+   - Safe SEO value handling
+   - Business SEO compatibility
 ========================================================= */
 
 (function (
@@ -44,16 +33,25 @@
   const CONFIG = {
 
     VERSION:
-      "2.1.0",
+      "3.1.0",
 
-    SCRIPT_ATTRIBUTE:
-      "data-ubnux-schema",
+    SITE_NAME:
+      "UBnux",
 
-    JSON_TYPE:
-      "application/ld+json",
+    SITE_URL:
+      "https://ubnux.com",
 
-    CONTEXT:
-      "https://schema.org"
+    DEFAULT_IMAGE:
+      "https://ubnux.com/assets/images/default-business.jpg",
+
+    DEFAULT_ROBOTS:
+      "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
+
+    DEFAULT_NOINDEX:
+      "noindex,follow",
+
+    DEFAULT_LOCALE:
+      "en_IN"
 
   };
 
@@ -84,390 +82,1218 @@
 
 
   /* =======================================================
-     IS OBJECT
+     BOOLEAN
   ====================================================== */
 
-  function isObject(
+  function isFalse(
     value
   ) {
 
     return (
-      value !== null &&
-      typeof value === "object" &&
-      !Array.isArray(value)
+      value === false ||
+      clean(value).toLowerCase() ===
+        "false"
     );
 
   }
 
 
   /* =======================================================
-     REMOVE EXISTING UBNUX SCHEMA
+     CSS ESCAPE
   ====================================================== */
 
-  function removeExisting() {
-
-    const scripts =
-      document.querySelectorAll(
-        `script[type="${CONFIG.JSON_TYPE}"][${CONFIG.SCRIPT_ATTRIBUTE}]`
-      );
-
-
-    scripts.forEach(
-      function (
-        script
-      ) {
-
-        script.remove();
-
-      }
-    );
-
-
-    return scripts.length;
-
-  }
-
-
-  /* =======================================================
-     NORMALIZE SCHEMA
-  ====================================================== */
-
-  function normalizeSchema(
-    schema
+  function escapeSelector(
+    value
   ) {
 
+    value =
+      clean(value);
+
+
     if (
-      !schema
+      window.CSS &&
+      typeof window.CSS.escape ===
+        "function"
     ) {
 
-      return null;
+      return window.CSS.escape(
+        value
+      );
 
     }
 
 
     /*
-     * BusinessSEO compatibility:
-     *
-     * {
-     *   schema: {...}
-     * }
+     * Fallback for older browsers.
      */
 
-    if (
-      isObject(schema) &&
-      schema.schema
-    ) {
+    return value.replace(
+      /([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g,
+      "\\$1"
+    );
 
-      schema =
-        schema.schema;
+  }
+
+
+  /* =======================================================
+     NORMALIZE URL
+  ====================================================== */
+
+  function normalizeURL(
+    value
+  ) {
+
+    value =
+      clean(value);
+
+
+    if (!value) {
+
+      return "";
 
     }
 
 
-    /*
-     * Array → @graph
-     */
+    try {
 
-    if (
-      Array.isArray(schema)
-    ) {
+      const url =
+        new URL(
+          value,
+          CONFIG.SITE_URL
+        );
+
+
+      /*
+       * Only HTTP/HTTPS URLs are allowed.
+       */
 
       if (
-        schema.length === 0
+        url.protocol !==
+          "http:" &&
+        url.protocol !==
+          "https:"
       ) {
 
-        return null;
+        return "";
 
       }
 
 
-      return {
-
-        "@context":
-          CONFIG.CONTEXT,
-
-        "@graph":
-          schema
-
-      };
-
-    }
-
-
-    /*
-     * Schema must be an object
-     */
-
-    if (
-      !isObject(schema)
-    ) {
-
-      return null;
-
-    }
-
-
-    /*
-     * Clone object.
-     *
-     * Do not mutate backend response.
-     */
-
-    const normalized =
-      Object.assign(
-        {},
-        schema
-      );
-
-
-    /*
-     * Add @context only when backend
-     * did not provide one.
-     */
-
-    if (
-      !normalized["@context"]
-    ) {
-
-      normalized["@context"] =
-        CONFIG.CONTEXT;
-
-    }
-
-
-    return normalized;
-
-  }
-
-
-  /* =======================================================
-     BASIC SCHEMA VALIDATION
-  ====================================================== */
-
-  function isValidSchema(
-    schema
-  ) {
-
-    if (
-      !schema ||
-      !isObject(schema)
-    ) {
-
-      return false;
-
-    }
-
-
-    /*
-     * @graph schema
-     */
-
-    if (
-      Array.isArray(
-        schema["@graph"]
-      )
-    ) {
-
-      return (
-        schema["@graph"].length >
-        0
-      );
-
-    }
-
-
-    /*
-     * Normal single schema
-     */
-
-    if (
-      schema["@type"]
-    ) {
-
-      return true;
-
-    }
-
-
-    /*
-     * Some valid schema structures
-     * may primarily use @id.
-     */
-
-    if (
-      schema["@id"]
-    ) {
-
-      return true;
-
-    }
-
-
-    return false;
-
-  }
-
-
-  /* =======================================================
-     SANITIZE SCHEMA
-  ====================================================== */
-
-  function sanitizeSchema(
-    schema
-  ) {
-
-    if (
-      !schema
-    ) {
-
-      return null;
-
-    }
-
-
-    /*
-     * Do not modify original object.
-     */
-
-    let output;
-
-
-    try {
-
-      output =
-        JSON.parse(
-          JSON.stringify(
-            schema
-          )
-        );
+      return url.href;
 
     } catch (
       error
     ) {
 
-      return null;
+      return "";
 
     }
-
-
-    return output;
 
   }
 
 
   /* =======================================================
-     INSERT
+     SET META
   ====================================================== */
 
-  function insert(
-    schema
+  function setMeta(
+    attribute,
+    value,
+    content
   ) {
 
-    const normalized =
-      normalizeSchema(
-        schema
+    content =
+      clean(
+        content
+      );
+
+
+    if (!content) {
+
+      return null;
+
+    }
+
+
+    attribute =
+      clean(
+        attribute
+      );
+
+
+    value =
+      clean(
+        value
       );
 
 
     if (
-      !normalized
+      !attribute ||
+      !value
     ) {
 
-      return false;
+      return null;
 
     }
 
 
-    const sanitized =
-      sanitizeSchema(
-        normalized
+    const selector =
+      `meta[${escapeSelector(attribute)}="${escapeSelector(value)}"]`;
+
+
+    let element =
+      document.head.querySelector(
+        selector
       );
 
 
-    if (
-      !sanitized
-    ) {
+    if (!element) {
 
-      return false;
-
-    }
-
-
-    if (
-      !isValidSchema(
-        sanitized
-      )
-    ) {
-
-      return false;
-
-    }
-
-
-    let json;
-
-
-    try {
-
-      json =
-        JSON.stringify(
-          sanitized
+      element =
+        document.createElement(
+          "meta"
         );
 
-    } catch (
-      error
-    ) {
 
-      console.error(
-        "[UBnux Schema] JSON serialization failed:",
-        error
+      element.setAttribute(
+        attribute,
+        value
       );
 
 
-      return false;
+      document.head.appendChild(
+        element
+      );
 
     }
 
 
-    if (
-      !json
-    ) {
-
-      return false;
-
-    }
-
-
-    /*
-     * Prevent accidental duplicate insertion
-     * inside the same render cycle.
-     */
-
-    removeExisting();
-
-
-    const script =
-      document.createElement(
-        "script"
-      );
-
-
-    script.type =
-      CONFIG.JSON_TYPE;
-
-
-    script.setAttribute(
-      CONFIG.SCRIPT_ATTRIBUTE,
-      "true"
+    element.setAttribute(
+      "content",
+      content
     );
 
 
-    script.textContent =
-      json;
+    return element;
+
+  }
 
 
-    document.head.appendChild(
-      script
+  /* =======================================================
+     REMOVE META
+  ====================================================== */
+
+  function removeMeta(
+    attribute,
+    value
+  ) {
+
+    attribute =
+      clean(
+        attribute
+      );
+
+
+    value =
+      clean(
+        value
+      );
+
+
+    if (
+      !attribute ||
+      !value
+    ) {
+
+      return false;
+
+    }
+
+
+    const selector =
+      `meta[${escapeSelector(attribute)}="${escapeSelector(value)}"]`;
+
+
+    const elements =
+      document.head.querySelectorAll(
+        selector
+      );
+
+
+    elements.forEach(
+      function (
+        element
+      ) {
+
+        element.remove();
+
+      }
+    );
+
+
+    return (
+      elements.length >
+      0
+    );
+
+  }
+
+
+  /* =======================================================
+     SET CANONICAL
+  ====================================================== */
+
+  function setCanonical(
+    url
+  ) {
+
+    url =
+      normalizeURL(
+        url
+      );
+
+
+    if (!url) {
+
+      return null;
+
+    }
+
+
+    let links =
+      document.head.querySelectorAll(
+        'link[rel="canonical"]'
+      );
+
+
+    let link =
+      links.length
+        ? links[0]
+        : null;
+
+
+    /*
+     * If multiple canonical tags
+     * already exist, remove duplicates.
+     */
+
+    if (
+      links.length >
+      1
+    ) {
+
+      for (
+        let i = 1;
+        i < links.length;
+        i++
+      ) {
+
+        links[i].remove();
+
+      }
+
+    }
+
+
+    if (!link) {
+
+      link =
+        document.createElement(
+          "link"
+        );
+
+
+      link.setAttribute(
+        "rel",
+        "canonical"
+      );
+
+
+      document.head.appendChild(
+        link
+      );
+
+    }
+
+
+    link.setAttribute(
+      "href",
+      url
+    );
+
+
+    return link;
+
+  }
+
+
+  /* =======================================================
+     GET CANONICAL
+  ====================================================== */
+
+  function getCanonical(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return "";
+
+    }
+
+
+    return normalizeURL(
+
+      seo.canonicalURL ||
+
+      seo.canonical ||
+
+      seo.url ||
+
+      ""
+
+    );
+
+  }
+
+
+  /* =======================================================
+     GET BUSINESS IMAGE
+  ====================================================== */
+
+  function getImage(
+    seo
+  ) {
+
+    let image =
+      "";
+
+
+    if (
+      seo
+    ) {
+
+      image =
+        firstValue(
+
+          seo.image,
+
+          seo.imageURL,
+
+          seo.imageUrl
+
+        );
+
+
+      if (
+        !image &&
+        seo.business
+      ) {
+
+        image =
+          firstValue(
+
+            seo.business.CoverURL,
+
+            seo.business.coverURL,
+
+            seo.business.LogoURL,
+
+            seo.business.logoURL,
+
+            seo.business.cover,
+
+            seo.business.logo
+
+          );
+
+      }
+
+    }
+
+
+    image =
+      normalizeURL(
+        image
+      );
+
+
+    if (!image) {
+
+      image =
+        CONFIG.DEFAULT_IMAGE;
+
+    }
+
+
+    return image;
+
+  }
+
+
+  /* =======================================================
+     FIRST VALUE
+  ====================================================== */
+
+  function firstValue() {
+
+    const values =
+      Array.prototype.slice.call(
+        arguments
+      );
+
+
+    for (
+      let i = 0;
+      i < values.length;
+      i++
+    ) {
+
+      const value =
+        clean(
+          values[i]
+        );
+
+
+      if (value) {
+
+        return value;
+
+      }
+
+    }
+
+
+    return "";
+
+  }
+
+
+  /* =======================================================
+     GET ROBOTS
+  ====================================================== */
+
+  function getRobots(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return CONFIG.DEFAULT_ROBOTS;
+
+    }
+
+
+    /*
+     * Explicit backend robots
+     * always gets priority.
+     */
+
+    if (
+      seo.robots
+    ) {
+
+      return clean(
+        seo.robots
+      );
+
+    }
+
+
+    /*
+     * Explicit noindex.
+     */
+
+    if (
+      isFalse(
+        seo.indexable
+      )
+    ) {
+
+      return CONFIG.DEFAULT_NOINDEX;
+
+    }
+
+
+    /*
+     * Backend indexability object.
+     */
+
+    if (
+      seo.indexability &&
+      isFalse(
+        seo.indexability.indexable
+      )
+    ) {
+
+      return CONFIG.DEFAULT_NOINDEX;
+
+    }
+
+
+    return CONFIG.DEFAULT_ROBOTS;
+
+  }
+
+
+  /* =======================================================
+     GET TITLE
+  ====================================================== */
+
+  function getTitle(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return "";
+
+    }
+
+
+    return firstValue(
+
+      seo.title,
+
+      seo.Title,
+
+      seo.seoTitle
+
+    );
+
+  }
+
+
+  /* =======================================================
+     GET DESCRIPTION
+  ====================================================== */
+
+  function getDescription(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return "";
+
+    }
+
+
+    return firstValue(
+
+      seo.description,
+
+      seo.Description,
+
+      seo.metaDescription,
+
+      seo.seoDescription
+
+    );
+
+  }
+
+
+  /* =======================================================
+     GET IMAGE ALT
+  ====================================================== */
+
+  function getImageAlt(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return CONFIG.SITE_NAME;
+
+    }
+
+
+    return firstValue(
+
+      seo.imageAlt,
+
+      seo.image_alt,
+
+      seo.business &&
+        seo.business.BusinessName,
+
+      seo.business &&
+        seo.business.businessName,
+
+      getTitle(seo),
+
+      CONFIG.SITE_NAME
+
+    );
+
+  }
+
+
+  /* =======================================================
+     OPEN GRAPH
+  ====================================================== */
+
+  function applyOpenGraph(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return;
+
+    }
+
+
+    const title =
+      getTitle(
+        seo
+      );
+
+
+    const description =
+      getDescription(
+        seo
+      );
+
+
+    const canonical =
+      getCanonical(
+        seo
+      );
+
+
+    const image =
+      getImage(
+        seo
+      );
+
+
+    const imageAlt =
+      getImageAlt(
+        seo
+      );
+
+
+    if (title) {
+
+      setMeta(
+        "property",
+        "og:title",
+        title
+      );
+
+    }
+
+
+    if (description) {
+
+      setMeta(
+        "property",
+        "og:description",
+        description
+      );
+
+    }
+
+
+    if (canonical) {
+
+      setMeta(
+        "property",
+        "og:url",
+        canonical
+      );
+
+    }
+
+
+    setMeta(
+      "property",
+      "og:type",
+      "website"
+    );
+
+
+    setMeta(
+      "property",
+      "og:site_name",
+      CONFIG.SITE_NAME
+    );
+
+
+    setMeta(
+      "property",
+      "og:locale",
+      CONFIG.DEFAULT_LOCALE
+    );
+
+
+    if (image) {
+
+      setMeta(
+        "property",
+        "og:image",
+        image
+      );
+
+    }
+
+
+    if (imageAlt) {
+
+      setMeta(
+        "property",
+        "og:image:alt",
+        imageAlt
+      );
+
+    }
+
+  }
+
+
+  /* =======================================================
+     TWITTER
+  ====================================================== */
+
+  function applyTwitter(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return;
+
+    }
+
+
+    const title =
+      getTitle(
+        seo
+      );
+
+
+    const description =
+      getDescription(
+        seo
+      );
+
+
+    const image =
+      getImage(
+        seo
+      );
+
+
+    const imageAlt =
+      getImageAlt(
+        seo
+      );
+
+
+    setMeta(
+      "name",
+      "twitter:card",
+      "summary_large_image"
+    );
+
+
+    if (title) {
+
+      setMeta(
+        "name",
+        "twitter:title",
+        title
+      );
+
+    }
+
+
+    if (description) {
+
+      setMeta(
+        "name",
+        "twitter:description",
+        description
+      );
+
+    }
+
+
+    if (image) {
+
+      setMeta(
+        "name",
+        "twitter:image",
+        image
+      );
+
+    }
+
+
+    if (imageAlt) {
+
+      setMeta(
+        "name",
+        "twitter:image:alt",
+        imageAlt
+      );
+
+    }
+
+  }
+
+
+  /* =======================================================
+     CLEAN OLD UBNUX META
+  ====================================================== */
+
+  function removeOldUBnuxMeta() {
+
+    const selectors = [
+
+      'meta[data-ubnux-seo="true"]',
+
+      'meta[data-ubnux-meta="true"]'
+
+    ];
+
+
+    selectors.forEach(
+      function (
+        selector
+      ) {
+
+        document
+          .head
+          .querySelectorAll(
+            selector
+          )
+          .forEach(
+            function (
+              element
+            ) {
+
+              element.remove();
+
+            }
+          );
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     MARK UBNUX META
+  ====================================================== */
+
+  function markUBnuxMeta() {
+
+    const names = [
+
+      "description",
+
+      "robots",
+
+      "application-name",
+
+      "twitter:card",
+
+      "twitter:title",
+
+      "twitter:description",
+
+      "twitter:image",
+
+      "twitter:image:alt"
+
+    ];
+
+
+    names.forEach(
+      function (
+        name
+      ) {
+
+        const element =
+          document.head.querySelector(
+            `meta[name="${escapeSelector(name)}"]`
+          );
+
+
+        if (element) {
+
+          element.setAttribute(
+            "data-ubnux-seo",
+            "true"
+          );
+
+        }
+
+      }
+    );
+
+
+    const properties = [
+
+      "og:title",
+
+      "og:description",
+
+      "og:url",
+
+      "og:type",
+
+      "og:site_name",
+
+      "og:locale",
+
+      "og:image",
+
+      "og:image:alt"
+
+    ];
+
+
+    properties.forEach(
+      function (
+        property
+      ) {
+
+        const element =
+          document.head.querySelector(
+            `meta[property="${escapeSelector(property)}"]`
+          );
+
+
+        if (element) {
+
+          element.setAttribute(
+            "data-ubnux-seo",
+            "true"
+          );
+
+        }
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     APPLY SEO
+  ====================================================== */
+
+  function apply(
+    seo
+  ) {
+
+    if (!seo) {
+
+      return false;
+
+    }
+
+
+    /*
+     * Do NOT clear all page metadata.
+     * Only update UBnux-managed fields.
+     */
+
+    removeOldUBnuxMeta();
+
+
+    /* =====================================================
+       TITLE
+    ================================================== */
+
+    const title =
+      getTitle(
+        seo
+      );
+
+
+    if (title) {
+
+      document.title =
+        title;
+
+    }
+
+
+    /* =====================================================
+       DESCRIPTION
+    ================================================== */
+
+    const description =
+      getDescription(
+        seo
+      );
+
+
+    if (description) {
+
+      setMeta(
+        "name",
+        "description",
+        description
+      );
+
+    }
+
+
+    /* =====================================================
+       ROBOTS
+    ================================================== */
+
+    setMeta(
+      "name",
+      "robots",
+      getRobots(
+        seo
+      )
+    );
+
+
+    /* =====================================================
+       CANONICAL
+    ================================================== */
+
+    const canonical =
+      getCanonical(
+        seo
+      );
+
+
+    if (canonical) {
+
+      setCanonical(
+        canonical
+      );
+
+    }
+
+
+    /* =====================================================
+       OPEN GRAPH
+    ================================================== */
+
+    applyOpenGraph(
+      seo
+    );
+
+
+    /* =====================================================
+       TWITTER
+    ================================================== */
+
+    applyTwitter(
+      seo
+    );
+
+
+    /* =====================================================
+       APPLICATION NAME
+    ================================================== */
+
+    setMeta(
+      "name",
+      "application-name",
+      CONFIG.SITE_NAME
+    );
+
+
+    /* =====================================================
+       MARK UBNUX META
+    ================================================== */
+
+    markUBnuxMeta();
+
+
+    return true;
+
+  }
+
+
+  /* =======================================================
+     RESET BUSINESS SEO
+  ====================================================== */
+
+  function reset() {
+
+    /*
+     * Restore homepage/default canonical
+     * only when explicitly requested.
+     */
+
+    const config =
+      window.UBNUX_CONFIG ||
+      {};
+
+
+    const defaultTitle =
+      firstValue(
+
+        config.SEO &&
+          config.SEO.DEFAULT_TITLE,
+
+        CONFIG.SITE_NAME
+
+      );
+
+
+    const defaultDescription =
+      firstValue(
+
+        config.SEO &&
+          config.SEO.DEFAULT_DESCRIPTION,
+
+        ""
+
+      );
+
+
+    const defaultRobots =
+      firstValue(
+
+        config.SEO &&
+          config.SEO.DEFAULT_ROBOTS,
+
+        CONFIG.DEFAULT_ROBOTS
+
+      );
+
+
+    document.title =
+      defaultTitle;
+
+
+    if (
+      defaultDescription
+    ) {
+
+      setMeta(
+        "name",
+        "description",
+        defaultDescription
+      );
+
+    }
+
+
+    setMeta(
+      "name",
+      "robots",
+      defaultRobots
+    );
+
+
+    setCanonical(
+      CONFIG.SITE_URL + "/"
     );
 
 
@@ -477,208 +1303,71 @@
 
 
   /* =======================================================
-     RENDER
-  ====================================================== */
-
-  function render(
-    schema
-  ) {
-
-    /*
-     * Always remove old UBnux schema
-     * before rendering the new one.
-     */
-
-    removeExisting();
-
-
-    const normalized =
-      normalizeSchema(
-        schema
-      );
-
-
-    if (
-      !normalized
-    ) {
-
-      return false;
-
-    }
-
-
-    return insert(
-      normalized
-    );
-
-  }
-
-
-  /* =======================================================
-     RENDER BUSINESS SEO RESPONSE
-  ====================================================== */
-
-  function renderFromSEO(
-    seoResponse
-  ) {
-
-    if (
-      !seoResponse
-    ) {
-
-      return false;
-
-    }
-
-
-    let schema =
-      null;
-
-
-    /*
-     * Preferred:
-     *
-     * response.schema
-     */
-
-    if (
-      seoResponse.schema
-    ) {
-
-      schema =
-        seoResponse.schema;
-
-    }
-
-
-    /*
-     * Compatibility:
-     *
-     * response.seo.schema
-     */
-
-    else if (
-      seoResponse.seo &&
-      seoResponse.seo.schema
-    ) {
-
-      schema =
-        seoResponse.seo.schema;
-
-    }
-
-
-    /*
-     * Direct SEO object compatibility.
-     */
-
-    else if (
-      seoResponse["@context"] ||
-      seoResponse["@type"] ||
-      seoResponse["@graph"]
-    ) {
-
-      schema =
-        seoResponse;
-
-    }
-
-
-    if (
-      !schema
-    ) {
-
-      return false;
-
-    }
-
-
-    return render(
-      schema
-    );
-
-  }
-
-
-  /* =======================================================
-     GET CURRENT SCHEMA
+     GET CURRENT SEO
   ====================================================== */
 
   function getCurrent() {
 
-    const script =
-      document.querySelector(
-        `script[type="${CONFIG.JSON_TYPE}"][${CONFIG.SCRIPT_ATTRIBUTE}]`
-      );
-
-
-    if (
-      !script
-    ) {
-
-      return null;
-
-    }
-
-
-    const text =
+    const title =
       clean(
-        script.textContent
+        document.title
       );
 
 
-    if (!text) {
-
-      return null;
-
-    }
-
-
-    try {
-
-      return JSON.parse(
-        text
-      );
-
-    } catch (
-      error
-    ) {
-
-      console.error(
-        "[UBnux Schema] Existing schema JSON is invalid:",
-        error
+    const descriptionElement =
+      document.head.querySelector(
+        'meta[name="description"]'
       );
 
 
-      return null;
-
-    }
-
-  }
-
-
-  /* =======================================================
-     HAS SCHEMA
-  ====================================================== */
-
-  function hasSchema() {
-
-    return !!document.querySelector(
-      `script[type="${CONFIG.JSON_TYPE}"][${CONFIG.SCRIPT_ATTRIBUTE}]`
-    );
-
-  }
+    const robotsElement =
+      document.head.querySelector(
+        'meta[name="robots"]'
+      );
 
 
-  /* =======================================================
-     GET SCHEMA COUNT
-  ====================================================== */
+    const canonicalElement =
+      document.head.querySelector(
+        'link[rel="canonical"]'
+      );
 
-  function getCount() {
 
-    return document.querySelectorAll(
-      `script[type="${CONFIG.JSON_TYPE}"][${CONFIG.SCRIPT_ATTRIBUTE}]`
-    ).length;
+    return {
+
+      title:
+        title,
+
+      description:
+        descriptionElement
+          ? clean(
+              descriptionElement
+                .getAttribute(
+                  "content"
+                )
+            )
+          : "",
+
+      robots:
+        robotsElement
+          ? clean(
+              robotsElement
+                .getAttribute(
+                  "content"
+                )
+            )
+          : "",
+
+      canonical:
+        canonicalElement
+          ? clean(
+              canonicalElement
+                .getAttribute(
+                  "href"
+                )
+            )
+          : ""
+
+    };
 
   }
 
@@ -687,33 +1376,42 @@
      PUBLIC API
   ====================================================== */
 
-  window.UBNUX_SCHEMA = {
+  window.UBnuxSEOMeta = {
 
     version:
       CONFIG.VERSION,
 
-    insert:
-      insert,
+    apply:
+      apply,
 
-    render:
-      render,
-
-    renderFromSEO:
-      renderFromSEO,
-
-    remove:
-      removeExisting,
+    reset:
+      reset,
 
     getCurrent:
       getCurrent,
 
-    hasSchema:
-      hasSchema,
+    setMeta:
+      setMeta,
 
-    getCount:
-      getCount
+    removeMeta:
+      removeMeta,
+
+    setCanonical:
+      setCanonical,
+
+    getImage:
+      getImage,
+
+    getRobots:
+      getRobots,
+
+    getCanonical:
+      getCanonical
 
   };
+
+
+  window.UBnuxSchemaStaticFirst = true;
 
 
 })(window, document);
