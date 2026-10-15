@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux - SEO Router
    File: assets/js/router.js
-   Version: 2.4.0
+   Version: 4.0.0
 
    Responsibilities:
    - Parse UBnux SEO URLs
@@ -63,8 +63,21 @@
      CONSTANTS
   ======================================================= */
 
+  /*
+   * Use the configured canonical origin when available.
+   * Router remains completely client-side and performs no API/static
+   * data fetches.
+   */
+  var CONFIG =
+    window.UBNUX_CONFIG ||
+    {};
+
   var SITE_ORIGIN =
-    "https://ubnux.com";
+    String(
+      CONFIG.SITE_URL ||
+      CONFIG.PUBLIC_ORIGIN ||
+      "https://ubnux.com"
+    ).replace(/\\/+$/, "");
 
 
   var SEO_PREFIX =
@@ -1336,6 +1349,12 @@
 
   App.router = {
 
+    VERSION:
+      "4.0.0",
+
+    STATIC_FIRST:
+      true,
+
     SITE_ORIGIN:
       SITE_ORIGIN,
 
@@ -1436,6 +1455,13 @@
   window.App =
     App;
 
+  /*
+   * Diagnostic flag for the static-first architecture.
+   * Router itself never loads master data or businesses.
+   */
+  window.UBnuxRouterStaticFirst =
+    true;
+
 
   /* =======================================================
      DEBUG HELPER
@@ -1448,7 +1474,11 @@
   ) {
 
     window.console.debug(
-      "UBnux SEO Router 2.3.0 initialized."
+      "UBnux SEO Router 4.0.0 initialized.",
+      {
+        staticFirst: true,
+        siteOrigin: SITE_ORIGIN
+      }
     );
 
   }
