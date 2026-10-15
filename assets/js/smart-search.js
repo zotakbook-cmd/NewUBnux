@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux Smart Search Frontend
    File: assets/js/smart-search.js
-   Version: 4.0.0
+   Version: 4.1.1
 
    STATIC-FIRST ARCHITECTURE
    -------------------------
@@ -18,13 +18,9 @@
    Connects:
    Browser URL / search form
         ↓
-   UBnuxAPI.smartSearch()
+   Static business-index.json for search and pagination
         ↓
-   Cloudflare /api
-        ↓
-   GAS SmartSearchEngine
-        ↓
-   district-wise Google Sheets
+   Google Sheets API fallback only if static data is unavailable
 
    Supports:
    /siwan/
@@ -788,14 +784,9 @@
   async function run(query, options) {
     options = options || {};
 
+    // Static search does not require the API. The API is only needed
+    // if the static index cannot be loaded and we need a fallback.
     var API = getAPI();
-
-    if (!API || typeof API.smartSearch !== "function") {
-      console.error(
-        "[UBnux Smart Search] UBnuxAPI.smartSearch() is not available."
-      );
-      return;
-    }
 
     query = clean(query);
 
@@ -821,6 +812,11 @@
         response = await staticSmartSearch(query, CONFIG.PAGE_SIZE, "");
       } catch (staticError) {
         console.warn("[UBnux Smart Search] Static index unavailable; using API fallback.", staticError);
+        if (!API || typeof API.smartSearch !== "function") {
+          throw new Error(
+            "Static business data could not be loaded, and the API fallback is unavailable."
+          );
+        }
         response = await API.smartSearch(
           { q: query, limit: CONFIG.PAGE_SIZE },
           { cache: false, limit: CONFIG.PAGE_SIZE }
@@ -930,8 +926,14 @@
     }
 
     var API = getAPI();
+    var usingStatic = Boolean(
+      state.firstResponse && state.firstResponse.source === "static"
+    );
 
-    if (!API || typeof API.smartSearch !== "function") {
+    // Only API-backed first-page results should use API pagination.
+    // Static results keep paging over the same local JSON index.
+    if (!usingStatic && (!API || typeof API.smartSearch !== "function")) {
+      console.error("[UBnux Smart Search] API pagination is unavailable.");
       return;
     }
 
@@ -941,17 +943,26 @@
     setLoadMore(true, true);
 
     try {
-      var response = await API.smartSearch(
-        {
-          q: state.query,
-          cursor: state.nextCursor,
-          limit: CONFIG.PAGE_SIZE
-        },
-        {
-          cache: false,
-          limit: CONFIG.PAGE_SIZE
-        }
-      );
+      var response;
+      if (usingStatic) {
+        response = await staticSmartSearch(
+          state.query,
+          CONFIG.PAGE_SIZE,
+          state.nextCursor
+        );
+      } else {
+        response = await API.smartSearch(
+          {
+            q: state.query,
+            cursor: state.nextCursor,
+            limit: CONFIG.PAGE_SIZE
+          },
+          {
+            cache: false,
+            limit: CONFIG.PAGE_SIZE
+          }
+        );
+      }
 
       if (requestId !== state.requestId) return;
 
@@ -999,22 +1010,43 @@
   function bindLoadMore() {
     var button = getLoadMoreButton();
 
-    if (!button || button.getAttribute("data-ubnux-smart-bound") === "1") {
+    if (!button || document.__ubnuxSmartLoadMoreCaptureBound) {
       return;
     }
 
-    button.setAttribute("data-ubnux-smart-bound", "1");
+    /*
+     * businesses.js also binds a click handler to #loadMoreButton.
+     * Intercept in the capture phase while Smart Search is active so
+     * only this controller pages search results. Otherwise two requests
+     * can fire on each click, one of them reaching Google Sheets/API.
+     * Normal directory pagination is unchanged when Smart Search is idle.
+     */
+    document.__ubnuxSmartLoadMoreCaptureBound = true;
+    document.addEventListener("click", function (event) {
+      var target = event.target;
+      var loadMore = target && target.closest
+        ? target.closest("#loadMoreButton")
+        : (target && target.id === "loadMoreButton" ? target : null);
 
-    button.addEventListener("click", function (event) {
-      if (!state.active) return;
+      if (!loadMore || !state.active) return;
 
       event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") {
+        event.stopImmediatePropagation();
+      }
+
       next();
-    });
+    }, true);
   }
 
   function onPopState() {
-    if (!isSmartRoute()) return;
+    if (!isSmartRoute()) {
+      // Returning to the homepage/directory should restore its own
+      // Load More handler rather than keeping Smart Search interception on.
+      state.active = false;
+      return;
+    }
 
     var query = getRouteQuery();
 
@@ -1067,7 +1099,7 @@
    * Expose a small public controller.
    */
   window.UBnuxSmartSearch = {
-    version: "3.0.0",
+    version: "4.1.1",
     state: state,
     isSmartRoute: isSmartRoute,
     getRouteQuery: getRouteQuery,
@@ -1088,7 +1120,8 @@
    * business/search request. It is useful while testing Network tab.
    */
   window.UBnuxSmartSearchStaticFirst = true;
-  window.UBnuxSmartSearchVersion = "4.0.0";
+  window.UBnuxSmartSearchStaticPagination = true;
+  window.UBnuxSmartSearchVersion = "4.1.1";
 
   if (
     document.readyState === "loading"
