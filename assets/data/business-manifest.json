@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "staticFirst": true,
+  "businessIndex": "/assets/data/business-index.json",
+  "categoryIndex": "/assets/data/category-index.json",
+  "districtIndex": "/assets/data/district-index.json",
+  "districtChunks": "/assets/data/businesses/{district}.json",
+  "detailStrategy": "Use business detail API or future per-business static detail only after click.",
+  "homepageBusinessLoad": false,
+  "productionNote": "Replace demo chunk(s) with exported Google Sheets business data before production."
+}
