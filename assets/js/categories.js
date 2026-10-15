@@ -1,21 +1,26 @@
-
 /* =========================================================
    UBnux Category Manager
    File: assets/js/categories.js
+   Version: 6.0.0
 
-   Responsibilities:
-   - Load category data
-   - Render custom category dropdown
-   - Category search
-   - Category selection
-   - Selected category display
-   - Category name lookup
-   - Safe DOM handling
+   STATIC-FIRST ARCHITECTURE
+   ---------------------------------------------------------
+   Initial page:
+     categories.json
+          ↓
+     local category state
+          ↓
+     dropdown
+
+   NO API / NO Apps Script call on initial load.
+
+   API refresh is available only through:
+     UBnuxCategories.refreshFromAPI()
 
    Compatible with:
-   - Custom category dropdown in index.html
-   - District-wise business backend
+   - Custom category dropdown
    - UBnux Main Application
+   - UBnuxState
 ========================================================= */
 
 (function (window, document) {
@@ -37,12 +42,24 @@
     );
 
     return;
-
   }
 
 
   const state =
     window.UBnuxState.state;
+
+
+  /* =======================================================
+     CONFIG
+  ====================================================== */
+
+  const CONFIG =
+    window.UBNUX_CONFIG || {};
+
+
+  const STATIC_URL =
+    CONFIG.CATEGORIES_JSON_URL ||
+    "/assets/data/categories.json";
 
 
   /* =======================================================
@@ -103,17 +120,18 @@
 
   let categories = [];
 
-
   let selectedCategorySlug = "";
+
+  let staticLoaded = false;
+
+  let staticLoadingPromise = null;
 
 
   /* =======================================================
-     NORMALIZE
+     HELPERS
   ====================================================== */
 
-  function normalize(
-    value
-  ) {
+  function normalize(value) {
 
     return String(
       value === undefined ||
@@ -127,13 +145,7 @@
   }
 
 
-  /* =======================================================
-     ESCAPE HTML
-  ====================================================== */
-
-  function escapeHTML(
-    value
-  ) {
+  function escapeHTML(value) {
 
     return String(
       value === undefined ||
@@ -141,26 +153,11 @@
         ? ""
         : value
     )
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-      .replace(
-        /</g,
-        "&lt;"
-      )
-      .replace(
-        />/g,
-        "&gt;"
-      )
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-      .replace(
-        /'/g,
-        "&#039;"
-      );
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
 
   }
 
@@ -169,9 +166,7 @@
      GET CATEGORY ICON
   ====================================================== */
 
-  function getCategoryIcon(
-    item
-  ) {
+  function getCategoryIcon(item) {
 
     if (
       item &&
@@ -190,23 +185,176 @@
 
 
   /* =======================================================
-     FIND CATEGORY
+     NORMALIZE CATEGORY OBJECT
   ====================================================== */
 
-  function findCategory(
-    slug
-  ) {
+  function normalizeCategory(item) {
 
-    const target =
-      normalize(
-        slug
+    if (!item || typeof item !== "object") {
+      return null;
+    }
+
+
+    const category = {
+      ...item
+    };
+
+
+    category.CategoryID =
+      String(
+        item.CategoryID ||
+        item.categoryId ||
+        item.id ||
+        ""
+      ).trim();
+
+
+    category.CategoryName =
+      String(
+        item.CategoryName ||
+        item.categoryName ||
+        item.name ||
+        ""
+      ).trim();
+
+
+    category.Slug =
+      String(
+        item.Slug ||
+        item.slug ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    category.Icon =
+      item.Icon ||
+      item.icon ||
+      "🏪";
+
+
+    /*
+     * Active handling
+     *
+     * Only explicit false disables a category.
+     */
+
+    category.Active =
+      !(
+        item.Active === false ||
+        normalize(item.Active) === "false" ||
+        normalize(item.Active) === "0"
       );
 
 
+    return category;
+
+  }
+
+
+  /* =======================================================
+     EXTRACT ARRAY FROM STATIC JSON
+  ====================================================== */
+
+  function extractCategories(response) {
+
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+
+    if (
+      response &&
+      Array.isArray(response.categories)
+    ) {
+      return response.categories;
+    }
+
+
+    if (
+      response &&
+      response.data &&
+      Array.isArray(response.data.categories)
+    ) {
+      return response.data.categories;
+    }
+
+
+    if (
+      response &&
+      response.data &&
+      Array.isArray(response.data)
+    ) {
+      return response.data;
+    }
+
+
+    if (
+      response &&
+      Array.isArray(response.rows)
+    ) {
+      return response.rows;
+    }
+
+
+    return [];
+
+  }
+
+
+  /* =======================================================
+     SORT CATEGORIES
+  ====================================================== */
+
+  function sortCategories(list) {
+
+    return list.sort(
+      function (a, b) {
+
+        const sortA =
+          Number(a.SortOrder) || 999999;
+
+
+        const sortB =
+          Number(b.SortOrder) || 999999;
+
+
+        if (sortA !== sortB) {
+          return sortA - sortB;
+        }
+
+
+        return String(
+          a.CategoryName || ""
+        ).localeCompare(
+          String(
+            b.CategoryName || ""
+          ),
+          undefined,
+          {
+            sensitivity: "base"
+          }
+        );
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     FIND CATEGORY
+  ====================================================== */
+
+  function findCategory(slug) {
+
+    const target =
+      normalize(slug);
+
+
     if (!target) {
-
       return null;
-
     }
 
 
@@ -214,9 +362,8 @@
       function (item) {
 
         return (
-          normalize(
-            item.Slug
-          ) === target
+          normalize(item.Slug) ===
+          target
         );
 
       }
@@ -229,14 +376,10 @@
      UPDATE SELECTED DISPLAY
   ====================================================== */
 
-  function updateSelectedDisplay(
-    slug
-  ) {
+  function updateSelectedDisplay(slug) {
 
     const item =
-      findCategory(
-        slug
-      );
+      findCategory(slug);
 
 
     if (!item) {
@@ -245,23 +388,18 @@
 
 
       if (selectedIcon) {
-
         selectedIcon.textContent =
           "🏪";
-
       }
 
 
       if (selectedText) {
-
         selectedText.textContent =
           "Select Business Category";
-
       }
 
 
       return;
-
     }
 
 
@@ -274,9 +412,7 @@
     if (selectedIcon) {
 
       selectedIcon.textContent =
-        getCategoryIcon(
-          item
-        );
+        getCategoryIcon(item);
 
     }
 
@@ -330,11 +466,14 @@
       !dropdownButton ||
       dropdownButton.disabled
     ) {
-
       return;
-
     }
 
+
+    /*
+     * If static data has not arrived yet,
+     * still allow dropdown to open.
+     */
 
     dropdownMenu.hidden =
       false;
@@ -348,8 +487,7 @@
 
     if (searchInput) {
 
-      searchInput.value =
-        "";
+      searchInput.value = "";
 
 
       renderOptions(
@@ -360,7 +498,9 @@
       setTimeout(
         function () {
 
-          searchInput.focus();
+          try {
+            searchInput.focus();
+          } catch (e) {}
 
         },
         0
@@ -378,9 +518,7 @@
   function toggleDropdown() {
 
     if (!dropdownMenu) {
-
       return;
-
     }
 
 
@@ -401,14 +539,10 @@
      RENDER OPTIONS
   ====================================================== */
 
-  function renderOptions(
-    list
-  ) {
+  function renderOptions(list) {
 
     if (!categoryOptions) {
-
       return;
-
     }
 
 
@@ -432,7 +566,6 @@
       }
 
       return;
-
     }
 
 
@@ -460,9 +593,7 @@
 
 
         if (!slug || !name) {
-
           return;
-
         }
 
 
@@ -497,9 +628,7 @@
           normalize(
             selectedCategorySlug
           ) ===
-          normalize(
-            slug
-          )
+          normalize(slug)
             ? "true"
             : "false"
         );
@@ -508,16 +637,12 @@
         option.innerHTML =
           '<span class="category-option-icon">' +
             escapeHTML(
-              getCategoryIcon(
-                item
-              )
+              getCategoryIcon(item)
             ) +
           "</span>" +
 
           '<span class="category-option-text">' +
-            escapeHTML(
-              name
-            ) +
+            escapeHTML(name) +
           "</span>";
 
 
@@ -547,14 +672,10 @@
      SEARCH CATEGORIES
   ====================================================== */
 
-  function searchCategories(
-    query
-  ) {
+  function searchCategories(query) {
 
     const search =
-      normalize(
-        query
-      );
+      normalize(query);
 
 
     if (!search) {
@@ -584,13 +705,16 @@
             );
 
 
+          const id =
+            normalize(
+              item.CategoryID
+            );
+
+
           return (
-            name.includes(
-              search
-            ) ||
-            slug.includes(
-              search
-            )
+            name.includes(search) ||
+            slug.includes(search) ||
+            id.includes(search)
           );
 
         }
@@ -608,20 +732,14 @@
      SELECT CATEGORY
   ====================================================== */
 
-  function selectCategory(
-    slug
-  ) {
+  function selectCategory(slug) {
 
     const item =
-      findCategory(
-        slug
-      );
+      findCategory(slug);
 
 
     if (!item) {
-
       return;
-
     }
 
 
@@ -643,6 +761,31 @@
       String(
         item.CategoryName || ""
       );
+
+
+    /*
+     * Use State API when available.
+     */
+
+    if (
+      window.UBnuxState &&
+      typeof window.UBnuxState.setSelection ===
+        "function"
+    ) {
+
+      window.UBnuxState.setSelection(
+        "category",
+        selectedCategorySlug
+      );
+
+      window.UBnuxState.setSelection(
+        "categoryName",
+        String(
+          item.CategoryName || ""
+        )
+      );
+
+    }
 
 
     updateSelectedDisplay(
@@ -680,14 +823,10 @@
      SET CATEGORY
   ====================================================== */
 
-  function setCategory(
-    slug
-  ) {
+  function setCategory(slug) {
 
     const item =
-      findCategory(
-        slug
-      );
+      findCategory(slug);
 
 
     if (!item) {
@@ -719,6 +858,27 @@
       String(
         item.CategoryName || ""
       );
+
+
+    if (
+      window.UBnuxState &&
+      typeof window.UBnuxState.setSelection ===
+        "function"
+    ) {
+
+      window.UBnuxState.setSelection(
+        "category",
+        selectedCategorySlug
+      );
+
+      window.UBnuxState.setSelection(
+        "categoryName",
+        String(
+          item.CategoryName || ""
+        )
+      );
+
+    }
 
 
     updateSelectedDisplay(
@@ -753,16 +913,32 @@
       "";
 
 
+    if (
+      window.UBnuxState &&
+      typeof window.UBnuxState.setSelection ===
+        "function"
+    ) {
+
+      window.UBnuxState.setSelection(
+        "category",
+        ""
+      );
+
+      window.UBnuxState.setSelection(
+        "categoryName",
+        ""
+      );
+
+    }
+
+
     updateSelectedDisplay(
       ""
     );
 
 
     if (searchInput) {
-
-      searchInput.value =
-        "";
-
+      searchInput.value = "";
     }
 
 
@@ -774,17 +950,13 @@
 
 
   /* =======================================================
-     ENABLE DROPDOWN
+     ENABLE / DISABLE DROPDOWN
   ====================================================== */
 
-  function setEnabled(
-    enabled
-  ) {
+  function setEnabled(enabled) {
 
     const value =
-      Boolean(
-        enabled
-      );
+      Boolean(enabled);
 
 
     if (dropdownButton) {
@@ -796,9 +968,7 @@
 
 
     if (!value) {
-
       closeDropdown();
-
     }
 
   }
@@ -808,28 +978,88 @@
      RENDER CATEGORIES
   ====================================================== */
 
-  function renderCategories(
-    data
-  ) {
+  function renderCategories(data) {
+
+    const source =
+      Array.isArray(data)
+        ? data
+        : [];
+
+
+    const normalized =
+      source
+        .map(normalizeCategory)
+        .filter(
+          function (item) {
+
+            return (
+              item &&
+              item.CategoryName &&
+              item.Slug &&
+              item.Active !== false
+            );
+
+          }
+        );
+
+
+    /*
+     * Remove duplicate slugs.
+     */
+
+    const unique =
+      [];
+
+    const seen =
+      new Set();
+
+
+    normalized.forEach(
+      function (item) {
+
+        const key =
+          normalize(item.Slug);
+
+
+        if (
+          !key ||
+          seen.has(key)
+        ) {
+          return;
+        }
+
+
+        seen.add(key);
+
+        unique.push(item);
+
+      }
+    );
+
 
     categories =
-      Array.isArray(data)
-        ? data.filter(
-            function (item) {
-
-              return (
-                item &&
-                item.Active !== false &&
-                item.Active !== "false"
-              );
-
-            }
-          )
-        : [];
+      sortCategories(unique);
 
 
     state.categories =
       categories;
+
+
+    /*
+     * Sync through state manager.
+     */
+
+    if (
+      window.UBnuxState &&
+      typeof window.UBnuxState.setCategories ===
+        "function"
+    ) {
+
+      window.UBnuxState.setCategories(
+        categories
+      );
+
+    }
 
 
     renderOptions(
@@ -837,9 +1067,7 @@
     );
 
 
-    if (
-      selectedCategorySlug
-    ) {
+    if (selectedCategorySlug) {
 
       updateSelectedDisplay(
         selectedCategorySlug
@@ -855,10 +1083,178 @@
 
 
     /*
-     * Category list is loaded,
-     * but selection remains controlled
-     * by district selection in app.js.
+     * Category dropdown should remain
+     * available globally.
      */
+
+    setEnabled(true);
+
+
+    document.dispatchEvent(
+      new CustomEvent(
+        "ubnux:categoriesloaded",
+        {
+          detail: {
+            categories:
+              categories,
+
+            count:
+              categories.length,
+
+            source:
+              staticLoaded
+                ? "static"
+                : "runtime"
+          }
+        }
+      )
+    );
+
+
+    return categories;
+
+  }
+
+
+  /* =======================================================
+     STATIC JSON FETCH
+  ====================================================== */
+
+  function fetchStaticCategories() {
+
+    if (staticLoadingPromise) {
+      return staticLoadingPromise;
+    }
+
+
+    staticLoadingPromise =
+      fetch(
+        STATIC_URL,
+        {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "force-cache",
+          headers: {
+            "Accept":
+              "application/json"
+          }
+        }
+      )
+        .then(
+          function (response) {
+
+            if (!response.ok) {
+
+              throw new Error(
+                "Categories JSON HTTP " +
+                response.status
+              );
+
+            }
+
+
+            return response.json();
+
+          }
+        )
+        .then(
+          function (json) {
+
+            const data =
+              extractCategories(json);
+
+
+            if (!data.length) {
+
+              throw new Error(
+                "categories.json contains no categories."
+              );
+
+            }
+
+
+            staticLoaded =
+              true;
+
+
+            renderCategories(
+              data
+            );
+
+
+            return categories;
+
+          }
+        )
+        .catch(
+          function (error) {
+
+            console.error(
+              "UBnux static categories load failed:",
+              error
+            );
+
+
+            /*
+             * Important:
+             * Do not call API automatically here.
+             *
+             * This keeps homepage strictly
+             * static-first.
+             */
+
+            return [];
+
+          }
+        );
+
+
+    return staticLoadingPromise;
+
+  }
+
+
+  /* =======================================================
+     EXPLICIT API REFRESH
+     -------------------------------------------------------
+     This is NOT called during normal page load.
+  ====================================================== */
+
+  function refreshFromAPI() {
+
+    if (
+      !window.UBnuxAPI ||
+      typeof window.UBnuxAPI.getCategories !==
+        "function"
+    ) {
+
+      return Promise.reject(
+        new Error(
+          "UBnuxAPI.getCategories is not available."
+        )
+      );
+
+    }
+
+
+    return window.UBnuxAPI
+      .getCategories()
+      .then(
+        function (response) {
+
+          const data =
+            extractCategories(response);
+
+
+          renderCategories(
+            data
+          );
+
+
+          return categories;
+
+        }
+      );
 
   }
 
@@ -867,14 +1263,10 @@
      GET CATEGORY NAME
   ====================================================== */
 
-  function getCategoryName(
-    slug
-  ) {
+  function getCategoryName(slug) {
 
     const item =
-      findCategory(
-        slug
-      );
+      findCategory(slug);
 
 
     return item
@@ -890,9 +1282,7 @@
      GET CATEGORY
   ====================================================== */
 
-  function getCategory(
-    slug
-  ) {
+  function getCategory(slug) {
 
     return findCategory(
       slug
@@ -908,6 +1298,30 @@
   function getSelectedCategory() {
 
     return selectedCategorySlug || "";
+
+  }
+
+
+  /* =======================================================
+     GET ALL CATEGORIES
+  ====================================================== */
+
+  function getCategories() {
+
+    return categories.slice();
+
+  }
+
+
+  /* =======================================================
+     STATIC STATUS
+  ====================================================== */
+
+  function isStaticLoaded() {
+
+    return Boolean(
+      staticLoaded
+    );
 
   }
 
@@ -957,6 +1371,7 @@
 
             closeDropdown();
 
+
             if (dropdownButton) {
 
               dropdownButton.focus();
@@ -993,10 +1408,20 @@
 
 
   /* =======================================================
-     INITIALIZE CATEGORY MODULE
+     INITIALIZE
   ====================================================== */
 
   setupEvents();
+
+
+  /*
+   * IMPORTANT:
+   *
+   * This is a STATIC request only.
+   * No Apps Script / API call happens here.
+   */
+
+  fetchStaticCategories();
 
 
   /* =======================================================
@@ -1006,6 +1431,8 @@
   window.UBnuxCategories = {
 
     renderCategories,
+
+    getCategories,
 
     getCategoryName,
 
@@ -1025,7 +1452,16 @@
 
     closeDropdown,
 
-    searchCategories
+    searchCategories,
+
+    refreshFromAPI,
+
+    isStaticLoaded,
+
+    getStaticURL:
+      function () {
+        return STATIC_URL;
+      }
 
   };
 
