@@ -1,7 +1,8 @@
 /* =========================================================
    UBnux
    File: assets/js/config.js
-   Version: 3.0.3
+   Version: 4.0.0
+   Static-First Architecture
 ========================================================= */
 
 (function (window) {
@@ -13,24 +14,67 @@
      CURRENT ORIGIN
   ===================================================== */
 
-  /*
-   * API अब current domain/origin से चलेगी.
-   *
-   * Main site:
-   * https://ubnux.com/api
-   *
-   * BusinessKey site:
-   * https://siwan-fashion-house.ubnux.com/api
-   *
-   * https://mukesh.ubnux.com/api
-   *
-   * इससे BusinessKey subdomain पर CORS problem नहीं होगी,
-   * क्योंकि request उसी hostname के /api endpoint पर जाएगी.
-   */
-
   var CURRENT_ORIGIN =
     window.location.origin;
 
+
+  /*
+   * Main API remains same-origin.
+   *
+   * Browser
+   *   ↓
+   * Current Origin /api
+   *   ↓
+   * Cloudflare Worker / Pages Function
+   *   ↓
+   * Google Apps Script
+   *
+   * IMPORTANT:
+   * Google Apps Script URL must NOT be exposed here.
+   */
+
+  var API_URL =
+    CURRENT_ORIGIN + "/api";
+
+
+  /* =====================================================
+     STATIC DATA
+  ===================================================== */
+
+  /*
+   * Static-first architecture:
+   *
+   * Homepage does NOT need Apps Script / API for master data.
+   *
+   * Browser
+   *   ↓
+   * Static JSON
+   *   ↓
+   * Cloudflare
+   *
+   * Business data is loaded separately only after
+   * an explicit search/filter/detail action.
+   */
+
+  var STATIC_DATA_BASE =
+    "/assets/data";
+
+
+  var STATES_JSON_URL =
+    STATIC_DATA_BASE + "/states.json";
+
+
+  var DISTRICTS_JSON_URL =
+    STATIC_DATA_BASE + "/districts.json";
+
+
+  var CATEGORIES_JSON_URL =
+    STATIC_DATA_BASE + "/categories.json";
+
+
+  /* =====================================================
+     SITE
+  ===================================================== */
 
   window.UBNUX_CONFIG = {
 
@@ -38,23 +82,25 @@
        API
     ===================================================== */
 
-    /*
-     * Cloudflare Pages / Worker API proxy
-     *
-     * Browser
-     *    ↓
-     * Current Origin /api
-     *    ↓
-     * Cloudflare Worker / Pages Function
-     *    ↓
-     * Google Apps Script
-     *
-     * IMPORTANT:
-     * Google Apps Script URL यहाँ नहीं डालना है.
-     */
-
     API_URL:
-      CURRENT_ORIGIN + "/api",
+      API_URL,
+
+
+    /* =====================================================
+       STATIC DATA
+    ===================================================== */
+
+    STATIC_DATA_BASE:
+      STATIC_DATA_BASE,
+
+    STATES_JSON_URL:
+      STATES_JSON_URL,
+
+    DISTRICTS_JSON_URL:
+      DISTRICTS_JSON_URL,
+
+    CATEGORIES_JSON_URL:
+      CATEGORIES_JSON_URL,
 
 
     /* =====================================================
@@ -63,13 +109,6 @@
 
     SITE_NAME:
       "UBnux",
-
-    /*
-     * Main canonical website origin.
-     *
-     * BusinessKey subdomains भी इसी main website
-     * को canonical SEO origin के रूप में use करेंगे.
-     */
 
     SITE_URL:
       "https://ubnux.com",
@@ -93,13 +132,14 @@
        CACHE
     ===================================================== */
 
+    /*
+     * Static JSON is controlled by browser/CDN caching.
+     *
+     * API cache remains disabled during current testing.
+     */
+
     CACHE_TTL:
       1000 * 60 * 10,
-
-    /*
-     * API cache intentionally disabled
-     * during current testing phase.
-     */
 
     API_CACHE_TTL:
       0,
@@ -136,10 +176,6 @@
       DEFAULT_ROBOTS:
         "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
 
-      /*
-       * Default image remains on main UBnux domain.
-       */
-
       DEFAULT_IMAGE:
         "https://ubnux.com/assets/images/default-business.jpg"
 
@@ -164,7 +200,24 @@
       BUSINESS_BREADCRUMBS:
         true
 
-    }
+    },
+
+
+    /* =====================================================
+       STATIC-FIRST FLAGS
+    ===================================================== */
+
+    STATIC_FIRST:
+      true,
+
+    LOAD_BUSINESSES_ON_START:
+      false,
+
+    LOAD_MASTER_DATA_FROM_API_ON_START:
+      false,
+
+    ENABLE_STATIC_MASTER_DATA:
+      true
 
   };
 
@@ -175,6 +228,31 @@
 
   window.ZilaBizConfig =
     window.UBNUX_CONFIG;
+
+
+  /* =======================================================
+     DEBUG
+  ====================================================== */
+
+  if (
+    window.console &&
+    typeof window.console.debug === "function"
+  ) {
+
+    window.console.debug(
+      "[UBnux Config] Static-first configuration loaded.",
+      {
+        version: "4.0.0",
+        apiURL: API_URL,
+        staticDataBase: STATIC_DATA_BASE,
+        statesJSON: STATES_JSON_URL,
+        districtsJSON: DISTRICTS_JSON_URL,
+        categoriesJSON: CATEGORIES_JSON_URL,
+        staticFirst: true
+      }
+    );
+
+  }
 
 
 })(window);
