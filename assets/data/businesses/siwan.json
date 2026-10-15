@@ -7,10 +7,10 @@
   "businesses": [
     {
       "BusinessID": "DEMO-BIZ-001",
-      "BusinessKey": "siwan-fashion-house",
+      "BusinessKey": "aman",
       "DistrictID": "DIST-001",
       "CategoryID": "CAT001",
-      "BusinessName": "siwan Fashion House",
+      "BusinessName": "Aman Fashion House",
       "Slug": "siwan-fashion-house",
       "OwnerName": "Amit Kumar",
       "Mobile": "9876543210",
