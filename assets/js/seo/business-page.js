@@ -5,7 +5,7 @@
    assets/js/seo/business-page.js
 
    Version:
-   11.2.0
+   12.0.0
 
    RESPONSIBILITIES
    ---------------------------------------------------------
@@ -49,6 +49,17 @@
 
 
   /* =======================================================
+     STATIC-FIRST DIAGNOSTIC
+     -------------------------------------------------------
+     This controller is intentionally allowed to perform
+     network work only for a permanent business route.
+     Homepage/listing routes must never trigger this controller.
+  ====================================================== */
+
+  window.UBnuxBusinessPageStaticFirst = true;
+
+
+  /* =======================================================
      NAMESPACE
   ======================================================= */
 
@@ -81,7 +92,7 @@
   var CONFIG = {
 
     VERSION:
-      "11.3.0",
+      "12.0.0",
 
     SITE_NAME:
       GLOBAL_CONFIG.SITE_NAME ||
@@ -133,7 +144,13 @@
         GLOBAL_CONFIG.SEO &&
         GLOBAL_CONFIG.SEO.DEFAULT_ROBOTS
       ) ||
-      "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+      "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
+
+    STATIC_FIRST:
+      GLOBAL_CONFIG.STATIC_FIRST !== false,
+
+    LOAD_ON_BUSINESS_ROUTE_ONLY:
+      true
 
   };
 
@@ -5817,11 +5834,25 @@
     try {
 
       /* ===================================================
-         API
+         API — BUSINESS DETAIL ONLY
+         ---------------------------------------------------
+         API access is intentionally deferred until a valid
+         permanent /in/{state}/{district}/{category}/{business}/
+         route has been confirmed. No homepage/listing API work
+         is performed by this controller.
       ================================================== */
 
+      if (
+        CONFIG.LOAD_ON_BUSINESS_ROUTE_ONLY !== true ||
+        !isBusinessRoute(route)
+      ) {
+        throw new Error(
+          "Business API lookup blocked: invalid business route."
+        );
+      }
+
       log(
-        "Loading business:",
+        "Loading business detail on demand:",
         route
       );
 
