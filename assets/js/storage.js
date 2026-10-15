@@ -1,25 +1,34 @@
 /* =========================================================
    UBnux Storage
    File: assets/js/storage.js
+   Version: 4.0.0 - Static First
 ========================================================= */
 
 (function (window) {
 
   "use strict";
 
+  const config = window.UBNUX_CONFIG || {};
 
-  const config =
-    window.UBNUX_CONFIG;
-
+  /*
+   * Storage is intentionally LOCAL-ONLY.
+   *
+   * IMPORTANT:
+   * - No API calls
+   * - No Google Sheets calls
+   * - No business loading
+   * - No static JSON loading
+   * - Safe to execute during the initial static-first bootstrap
+   */
 
   const prefix =
-    config.STORAGE_PREFIX;
+    typeof config.STORAGE_PREFIX === "string" &&
+    config.STORAGE_PREFIX
+      ? config.STORAGE_PREFIX
+      : "ubnux_";
 
 
-  function set(
-    key,
-    value
-  ) {
+  function set(key, value) {
 
     try {
 
@@ -28,6 +37,8 @@
         JSON.stringify(value)
       );
 
+      return true;
+
     } catch (error) {
 
       console.warn(
@@ -35,15 +46,14 @@
         error
       );
 
+      return false;
+
     }
 
   }
 
 
-  function get(
-    key,
-    fallback
-  ) {
+  function get(key, fallback) {
 
     try {
 
@@ -52,19 +62,11 @@
           prefix + key
         );
 
-
-      if (
-        value === null
-      ) {
-
+      if (value === null) {
         return fallback;
-
       }
 
-
-      return JSON.parse(
-        value
-      );
+      return JSON.parse(value);
 
     } catch (error) {
 
@@ -75,15 +77,15 @@
   }
 
 
-  function remove(
-    key
-  ) {
+  function remove(key) {
 
     try {
 
       localStorage.removeItem(
         prefix + key
       );
+
+      return true;
 
     } catch (error) {
 
@@ -92,38 +94,97 @@
         error
       );
 
+      return false;
+
     }
 
   }
 
 
-  function saveSelection(
-    selection
-  ) {
+  function clearAll() {
 
-    set(
-      "selection",
-      {
+    try {
 
-        state:
-          selection.state || "",
+      const keys = [];
 
-        district:
-          selection.district || "",
+      for (
+        let i = 0;
+        i < localStorage.length;
+        i++
+      ) {
 
-        category:
-          selection.category || "",
+        const key =
+          localStorage.key(i);
 
-        stateName:
-          selection.stateName || "",
+        if (
+          key &&
+          key.indexOf(prefix) === 0
+        ) {
 
-        districtName:
-          selection.districtName || "",
+          keys.push(key);
 
-        categoryName:
-          selection.categoryName || ""
+        }
 
       }
+
+      keys.forEach(function (key) {
+        localStorage.removeItem(key);
+      });
+
+      return true;
+
+    } catch (error) {
+
+      console.warn(
+        "UBnux storage clear failed:",
+        error
+      );
+
+      return false;
+
+    }
+
+  }
+
+
+  function normalizeSelection(selection) {
+
+    selection =
+      selection &&
+      typeof selection === "object"
+        ? selection
+        : {};
+
+    return {
+
+      state:
+        selection.state || "",
+
+      district:
+        selection.district || "",
+
+      category:
+        selection.category || "",
+
+      stateName:
+        selection.stateName || "",
+
+      districtName:
+        selection.districtName || "",
+
+      categoryName:
+        selection.categoryName || ""
+
+    };
+
+  }
+
+
+  function saveSelection(selection) {
+
+    return set(
+      "selection",
+      normalizeSelection(selection)
     );
 
   }
@@ -133,21 +194,7 @@
 
     return get(
       "selection",
-      {
-
-        state: "",
-
-        district: "",
-
-        category: "",
-
-        stateName: "",
-
-        districtName: "",
-
-        categoryName: ""
-
-      }
+      normalizeSelection({})
     );
 
   }
@@ -155,14 +202,33 @@
 
   function clearSelection() {
 
-    remove(
+    return remove(
       "selection"
     );
 
   }
 
 
+  /*
+   * Static-first preference.
+   *
+   * This does NOT trigger any data loading.
+   * It only exposes whether the current application
+   * configuration is operating in static-first mode.
+   */
+
+  function isStaticFirst() {
+
+    return config.STATIC_FIRST === true;
+
+  }
+
+
   window.UBnuxStorage = {
+
+    VERSION: "4.0.0",
+
+    STATIC_FIRST: true,
 
     set,
 
@@ -170,13 +236,38 @@
 
     remove,
 
+    clearAll,
+
     saveSelection,
 
     getSelection,
 
-    clearSelection
+    clearSelection,
+
+    isStaticFirst
 
   };
+
+
+  /*
+   * Diagnostic flag.
+   * No network request is performed here.
+   */
+
+  window.UBnuxStorageStaticFirst = true;
+
+
+  if (
+    config.DEBUG === true ||
+    config.ENABLE_DEBUG === true
+  ) {
+
+    console.info(
+      "[UBnux Storage v4.0.0] " +
+      "LocalStorage only | Static-first safe"
+    );
+
+  }
 
 
 })(window);
