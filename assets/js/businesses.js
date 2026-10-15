@@ -1,13 +1,40 @@
 /* =========================================================
    UBnux - Business Listing Manager
    File: assets/js/businesses.js
+   Version: 5.0.0
 
-   Version:
-   4.1.0
-
-   Responsibilities:
+   STATIC-FIRST ARCHITECTURE
    ---------------------------------------------------------
-   - Business API loading
+   IMPORTANT:
+
+   This module NEVER loads businesses automatically
+   when the homepage opens.
+
+   Business data is requested ONLY when:
+   - User searches
+   - User selects State / District / Category
+   - User clicks Load More
+   - Another module explicitly calls loadBusinesses()
+
+   Initial homepage:
+      HTML
+       ↓
+      Static master data
+       ↓
+      No business API call
+
+   User action:
+      Search / Filter
+       ↓
+      loadBusinesses()
+       ↓
+      API / future static index
+       ↓
+      Business results
+
+   RESPONSIBILITIES:
+   ---------------------------------------------------------
+   - Business loading on demand
    - Business card rendering
    - Business count
    - Pagination
@@ -17,21 +44,20 @@
    - Empty state
    - Error state
    - Retry
-   - API response normalization
+   - Response normalization
    - Selection synchronization
    - SEO business URL generation
    - Duplicate protection
    - Stale response protection
 
-   IMPORTANT:
+   DOES NOT:
    ---------------------------------------------------------
-   - Does NOT contain search-engine logic
-   - Does NOT contain district/category ownership
-   - Does NOT modify browser URL
-   - Does NOT redirect
-   - Works with current UBnuxAPI
-   - app.js controls category/state/district flow
-   - Search modules remain independent
+   - Load business data on initial page load
+   - Start API request automatically
+   - Control Smart Search logic
+   - Modify browser URL
+   - Redirect
+   - Own district/category data
 
    BUSINESS URL:
    ---------------------------------------------------------
@@ -40,7 +66,7 @@
    LEGACY:
    ---------------------------------------------------------
    /business/... URLs are NEVER generated.
-   ========================================================= */
+========================================================= */
 
 (function (window, document) {
 
@@ -56,7 +82,7 @@
 
 
   const VERSION =
-    "4.1.4";
+    "5.0.0";
 
 
   const PAGE_SIZE =
@@ -85,6 +111,8 @@
 
     hasMore: false,
 
+    nextCursor: "",
+
     isLoading: false,
 
     selectedState: "",
@@ -98,7 +126,9 @@
 
     lastRequestId: 0,
 
-    lastLoadedAt: 0
+    lastLoadedAt: 0,
+
+    hasUserRequestedData: false
 
   };
 
@@ -152,14 +182,11 @@
 
     }
 
+
     return String(value).trim();
 
   }
 
-
-  /* =========================================================
-     HTML ESCAPE
-  ========================================================= */
 
   function escapeHTML(value) {
 
@@ -193,10 +220,6 @@
   }
 
 
-  /* =========================================================
-     NUMBER
-  ========================================================= */
-
   function safeNumber(
     value,
     fallback
@@ -204,6 +227,7 @@
 
     const number =
       Number(value);
+
 
     return Number.isFinite(
       number
@@ -217,10 +241,6 @@
 
   }
 
-
-  /* =========================================================
-     BOOLEAN
-  ========================================================= */
 
   function isTrue(value) {
 
@@ -252,10 +272,6 @@
   }
 
 
-  /* =========================================================
-     SLUG
-  ========================================================= */
-
   function normalizeSlug(
     value
   ) {
@@ -282,9 +298,7 @@
       clean(url);
 
 
-    if (
-      image
-    ) {
+    if (image) {
 
       return escapeHTML(
         image
@@ -331,8 +345,6 @@
 
   /* =========================================================
      BUSINESS URL
-     ---------------------------------------------------------
-     Permanent SEO URL only.
   ========================================================= */
 
   function getBusinessURL(
@@ -348,12 +360,9 @@
     }
 
 
-    /* =========================================================
+    /* =======================================================
        BACKEND CANONICAL URL
-       ---------------------------------------------------------
-       If the API already supplies the permanent SEO path,
-       always use it first.
-    ========================================================= */
+    ======================================================= */
 
     const backendSEOPath =
       clean(
@@ -403,29 +412,12 @@
     }
 
 
-    /* =========================================================
-       SELECTION FALLBACK
-       ---------------------------------------------------------
-       Smart Search/API listing responses may not contain
-       StateSlug and CategorySlug on every business object.
-
-       Example API object:
-       {
-         StateSlug: "",
-         DistrictSlug: "siwan",
-         CategorySlug: "",
-         Slug: "siwan-fashion-house"
-       }
-
-       The active listing selection already contains:
-       state = BR
-       district = SIWAN
-       category = clothing-and-fashion
-
-       Use that information instead of returning '#'.
-    ========================================================= */
+    /* =======================================================
+       GET GLOBAL SELECTION
+    ======================================================= */
 
     let selected = null;
+
 
     try {
 
@@ -448,9 +440,9 @@
     }
 
 
-    /* =========================================================
+    /* =======================================================
        STATE NAME RESOLUTION
-    ========================================================= */
+    ======================================================= */
 
     let selectedStateName =
       clean(
@@ -490,10 +482,14 @@
                 item.Code ||
                 item.code ||
                 ""
-              ).trim().toUpperCase() ===
-              String(
-                selected.state
-              ).trim().toUpperCase();
+              )
+                .trim()
+                .toUpperCase() ===
+                String(
+                  selected.state
+                )
+                  .trim()
+                  .toUpperCase();
 
             }
           );
@@ -513,11 +509,17 @@
         }
 
       } catch (error) {
-        /* Keep the other fallback sources. */
+
+        /* Keep fallback sources. */
+
       }
 
     }
 
+
+    /* =======================================================
+       SLUGS
+    ======================================================= */
 
     const stateSlug =
       normalizeSlug(
@@ -571,9 +573,9 @@
       );
 
 
-    /* =========================================================
-       FINAL VALIDATION
-    ========================================================= */
+    /* =======================================================
+       VALIDATION
+    ======================================================= */
 
     if (
       !stateSlug ||
@@ -590,24 +592,26 @@
             business.businessID ||
             business.id ||
             "",
+
           StateSlug:
             stateSlug,
+
           DistrictSlug:
             districtSlug,
+
           CategorySlug:
             categorySlug,
+
           Slug:
             businessSlug,
+
           Selection:
             selected
+
         }
       );
 
 
-      /*
-       * Never create a fake SEO URL.
-       * Keep '#' only when absolutely required.
-       */
       return "#";
 
     }
@@ -728,6 +732,7 @@
           class="business-rating"
           aria-label="No rating available"
         >
+
           <span
             class="rating-star"
             aria-hidden="true"
@@ -1189,8 +1194,10 @@
       loadMoreWrapper.hidden =
         false;
 
+
       loadMoreButton.disabled =
         state.isLoading;
+
 
       loadMoreButton.textContent =
         state.isLoading
@@ -1229,9 +1236,11 @@
       businessGrid.innerHTML =
         "";
 
+
       showEmptyState(
         true
       );
+
 
       updateSummary();
 
@@ -1263,7 +1272,7 @@
 
 
   /* =========================================================
-     NORMALIZE API RESPONSE
+     NORMALIZE RESPONSE
   ========================================================= */
 
   function normalizeResponse(
@@ -1279,7 +1288,7 @@
 
 
     /*
-     * Supported backend formats:
+     * Supported formats:
      *
      * response.businesses
      * response.data
@@ -1327,24 +1336,45 @@
     }
 
 
+    const pagination =
+      response.pagination ||
+      (
+        response.data &&
+        response.data.pagination
+      ) ||
+      {};
+
+
     const page =
       safeNumber(
-        response.page ||
-        (
-          response.data &&
-          response.data.page
-        ),
+        response.page !== undefined
+          ? response.page
+          : (
+              pagination.page !== undefined
+                ? pagination.page
+                : (
+                    response.data &&
+                    response.data.page
+                  )
+            ),
         state.currentPage
       );
 
 
     const total =
       safeNumber(
-        response.total ||
-        (
-          response.data &&
-          response.data.total
-        ),
+        response.total !== undefined
+          ? response.total
+          : (
+              pagination.total !== undefined
+                ? pagination.total
+                : (
+                    response.data &&
+                    response.data.total !== undefined
+                      ? response.data.total
+                      : businesses.length
+                  )
+            ),
         businesses.length
       );
 
@@ -1359,6 +1389,15 @@
       hasMore =
         Boolean(
           response.hasMore
+        );
+
+    } else if (
+      pagination.hasMore !== undefined
+    ) {
+
+      hasMore =
+        Boolean(
+          pagination.hasMore
         );
 
     } else if (
@@ -1382,6 +1421,22 @@
     }
 
 
+    const nextCursor =
+      clean(
+        response.nextCursor ||
+        pagination.nextCursor ||
+        (
+          response.data &&
+          response.data.nextCursor
+        ) ||
+        (
+          response.data &&
+          response.data.pagination &&
+          response.data.pagination.nextCursor
+        )
+      );
+
+
     return {
 
       businesses:
@@ -1395,7 +1450,9 @@
 
       total,
 
-      hasMore
+      hasMore,
+
+      nextCursor
 
     };
 
@@ -1474,7 +1531,7 @@
 
 
   /* =========================================================
-     DEDUPLICATE BUSINESSES
+     DEDUPLICATE
   ========================================================= */
 
   function deduplicateBusinesses(
@@ -1494,6 +1551,7 @@
 
     const seen =
       new Set();
+
 
     const output =
       [];
@@ -1525,6 +1583,7 @@
           key
         );
 
+
         output.push(
           business
         );
@@ -1539,9 +1598,7 @@
 
 
   /* =========================================================
-     SYNC WITH GLOBAL SELECTION
-     ---------------------------------------------------------
-     Global UBnuxState is the source of truth.
+     SYNC GLOBAL SELECTION
   ========================================================= */
 
   function syncSelection() {
@@ -1638,22 +1695,27 @@
     state.businesses =
       [];
 
+
     state.currentPage =
       1;
+
 
     state.total =
       0;
 
+
     state.hasMore =
       false;
+
+
+    state.nextCursor =
+      "";
 
   }
 
 
   /* =========================================================
-     BUSINESS PAGE SAFETY
-     ---------------------------------------------------------
-     Never load listing data on a business SEO URL.
+     BUSINESS SEO PAGE SAFETY
   ========================================================= */
 
   function isBusinessSEOPage() {
@@ -1719,7 +1781,14 @@
 
   /* =========================================================
      LOAD BUSINESSES
-     ========================================================= */
+     
+     IMPORTANT:
+     ---------------------------------------------------------
+     This function is NOT called automatically.
+
+     It only runs when another module explicitly requests
+     business data.
+  ========================================================= */
 
   async function loadBusinesses(
     append,
@@ -1732,33 +1801,32 @@
       );
 
 
-    /* =====================================================
-       BUSINESS PAGE PROTECTION
-    ===================================================== */
+    /* =======================================================
+       BUSINESS SEO PAGE PROTECTION
+    ======================================================= */
 
     if (
       isBusinessSEOPage()
     ) {
 
       console.debug(
-        "UBnux: Business SEO page detected. Business listing load skipped."
+        "UBnux: Business SEO page detected. Listing load skipped."
       );
+
 
       return;
 
     }
 
 
-    /* =====================================================
+    /* =======================================================
        SELECTION
-       -----------------------------------------------------
-       forcedSelection is used by direct SEO category
-       routes so the URL remains the source of truth.
-    ===================================================== */
+    ======================================================= */
 
     if (
       forcedSelection &&
-      typeof forcedSelection === "object"
+      typeof forcedSelection ===
+        "object"
     ) {
 
       state.selectedState =
@@ -1766,15 +1834,18 @@
           forcedSelection.state
         );
 
+
       state.selectedDistrict =
         clean(
           forcedSelection.district
         );
 
+
       state.selectedCategory =
         clean(
           forcedSelection.category
         );
+
 
       if (
         forcedSelection.sort
@@ -1800,21 +1871,25 @@
       {
         state:
           state.selectedState,
+
         district:
           state.selectedDistrict,
+
         category:
           state.selectedCategory,
+
         sort:
           state.selectedSort,
+
         forced:
           Boolean(forcedSelection)
       }
     );
 
 
-    /* =====================================================
-       VALIDATE SELECTION
-    ===================================================== */
+    /* =======================================================
+       VALIDATE
+    ======================================================= */
 
     if (
       !hasValidSelection()
@@ -1825,12 +1900,15 @@
         {
           state:
             state.selectedState,
+
           district:
             state.selectedDistrict,
+
           category:
             state.selectedCategory
         }
       );
+
 
       resetList();
 
@@ -1841,9 +1919,9 @@
     }
 
 
-    /* =====================================================
+    /* =======================================================
        PREVENT CONCURRENT REQUEST
-    ===================================================== */
+    ======================================================= */
 
     if (
       state.isLoading
@@ -1854,11 +1932,19 @@
     }
 
 
-    /* =====================================================
+    /* =======================================================
+       THIS IS A USER / MODULE REQUEST
+       -------------------------------------------------------
+       From this point business data is allowed to load.
+    ======================================================= */
+
+    state.hasUserRequestedData =
+      true;
+
+
+    /* =======================================================
        REQUEST ID
-       -----------------------------------------------------
-       Protects against stale responses.
-    ===================================================== */
+    ======================================================= */
 
     const requestId =
       ++state.lastRequestId;
@@ -1881,14 +1967,21 @@
       state.currentPage =
         1;
 
+
       state.businesses =
         [];
+
 
       state.total =
         0;
 
+
       state.hasMore =
         false;
+
+
+      state.nextCursor =
+        "";
 
 
       renderSkeletons(
@@ -1917,9 +2010,12 @@
 
     try {
 
-      /* ===================================================
-         API
-      =================================================== */
+      /* =====================================================
+         ON-DEMAND API ONLY
+         
+         IMPORTANT:
+         No API call is made by this file during initialization.
+      ===================================================== */
 
       if (
         !window.UBnuxAPI ||
@@ -1937,6 +2033,7 @@
 
 
       const apiParams = {
+
         state:
           state.selectedState,
 
@@ -1954,11 +2051,27 @@
 
         sort:
           state.selectedSort
+
       };
 
 
+      /*
+       * Cursor can be used by backend when available.
+       */
+
+      if (
+        append &&
+        state.nextCursor
+      ) {
+
+        apiParams.cursor =
+          state.nextCursor;
+
+      }
+
+
       console.debug(
-        "[UBnux Businesses] API request:",
+        "[UBnux Businesses] On-demand API request:",
         apiParams
       );
 
@@ -1966,7 +2079,9 @@
       const response =
         await window
           .UBnuxAPI
-          .getBusinesses(apiParams);
+          .getBusinesses(
+            apiParams
+          );
 
 
       console.debug(
@@ -1975,9 +2090,9 @@
       );
 
 
-      /* ===================================================
+      /* =====================================================
          NORMALIZE
-      =================================================== */
+      ===================================================== */
 
       const normalized =
         normalizeResponse(
@@ -1990,19 +2105,25 @@
         {
           received:
             normalized.businesses.length,
+
           total:
             normalized.total,
+
           page:
             normalized.page,
+
           hasMore:
-            normalized.hasMore
+            normalized.hasMore,
+
+          nextCursor:
+            normalized.nextCursor
         }
       );
 
-      /* ===================================================
-         STALE RESPONSE CHECK
-      =================================================== */
 
+      /* =====================================================
+         STALE RESPONSE CHECK
+      ===================================================== */
 
       if (
         requestId !==
@@ -2014,16 +2135,15 @@
       }
 
 
-
       const incomingBusinesses =
         deduplicateBusinesses(
           normalized.businesses
         );
 
 
-      /* ===================================================
+      /* =====================================================
          APPEND
-      =================================================== */
+      ===================================================== */
 
       if (
         append
@@ -2056,11 +2176,90 @@
         normalized.hasMore;
 
 
+      state.nextCursor =
+        normalized.nextCursor;
+
+
       state.lastLoadedAt =
         Date.now();
 
 
+      /* =====================================================
+         GLOBAL STATE SYNC
+      ===================================================== */
+
+      if (
+        window.UBnuxState
+      ) {
+
+        if (
+          typeof
+            window.UBnuxState
+              .setBusinesses ===
+            "function"
+        ) {
+
+          window.UBnuxState.setBusinesses(
+            state.businesses
+          );
+
+        }
+
+
+        if (
+          typeof
+            window.UBnuxState
+              .setPagination ===
+            "function"
+        ) {
+
+          window.UBnuxState.setPagination(
+            {
+              page:
+                state.currentPage,
+
+              total:
+                state.total,
+
+              hasMore:
+                state.hasMore,
+
+              nextCursor:
+                state.nextCursor
+            }
+          );
+
+        }
+
+      }
+
+
       renderBusinesses();
+
+
+      document.dispatchEvent(
+        new CustomEvent(
+          "ubnux:businessesloaded",
+          {
+            detail: {
+              businesses:
+                state.businesses.slice(),
+
+              page:
+                state.currentPage,
+
+              total:
+                state.total,
+
+              hasMore:
+                state.hasMore,
+
+              nextCursor:
+                state.nextCursor
+            }
+          }
+        )
+      );
 
 
     } catch (error) {
@@ -2156,10 +2355,24 @@
 
       }
 
+
+      document.dispatchEvent(
+        new CustomEvent(
+          "ubnux:businesseserror",
+          {
+            detail: {
+              error:
+                error
+            }
+          }
+        )
+      );
+
+
     } finally {
 
       /*
-       * Only the latest request may release loading state.
+       * Only latest request releases loading.
        */
 
       if (
@@ -2169,6 +2382,7 @@
 
         state.isLoading =
           false;
+
 
         updateSummary();
 
@@ -2222,10 +2436,7 @@
 
 
   /* =========================================================
-     SORT CHANGE
-     ---------------------------------------------------------
-     app.js owns actual sorting event.
-     This module only syncs the value.
+     SELECTION CHANGE
   ========================================================= */
 
   document.addEventListener(
@@ -2296,7 +2507,7 @@
 
 
   /* =========================================================
-     PUBLIC SETTERS
+     PUBLIC SET SELECTION
   ========================================================= */
 
   function setSelection(
@@ -2381,7 +2592,24 @@
       false;
 
 
+    state.hasUserRequestedData =
+      false;
+
+
     resetList();
+
+
+    if (
+      window.UBnuxState &&
+      typeof
+        window.UBnuxState
+          .resetBusinesses ===
+        "function"
+    ) {
+
+      window.UBnuxState.resetBusinesses();
+
+    }
 
 
     renderBusinesses();
@@ -2412,31 +2640,24 @@
       VERSION,
 
     state:
-
       state,
 
     loadBusinesses:
-
       loadBusinesses,
 
     refresh:
-
       refresh,
 
     reset:
-
       reset,
 
     renderBusinesses:
-
       renderBusinesses,
 
     setSelection:
-
       setSelection,
 
     getBusinessURL:
-
       getBusinessURL,
 
     getBusinesses:
@@ -2458,13 +2679,31 @@
 
         };
 
+      },
+
+    hasUserRequestedData:
+      function () {
+
+        return Boolean(
+          state.hasUserRequestedData
+        );
+
       }
 
   };
 
 
   /* =========================================================
-     DEBUG
+     INITIALIZATION
+     
+     VERY IMPORTANT:
+     ---------------------------------------------------------
+     No loadBusinesses() here.
+     No API call here.
+     No business JSON call here.
+
+     Homepage remains business-data free until
+     user/module explicitly requests it.
   ========================================================= */
 
   if (
@@ -2475,7 +2714,7 @@
   ) {
 
     window.console.debug(
-      "[UBnux Businesses] Initialized.",
+      "[UBnux Businesses] Initialized in static-first mode.",
       {
         version:
           VERSION,
@@ -2484,8 +2723,10 @@
           PAGE_SIZE,
 
         defaultSort:
-          DEFAULT_SORT
+          DEFAULT_SORT,
 
+        initialBusinessLoad:
+          false
       }
     );
 
