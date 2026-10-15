@@ -1,1 +1,273 @@
-{"version":"1.0.0","staticFirst":true,"totalCategories":1,"categories":{"clothing-and-fashion":["DEMO-BIZ-001","DEMO-BIZ-002","DEMO-BIZ-003","DEMO-BIZ-004","DEMO-BIZ-005","DEMO-BIZ-006","DEMO-BIZ-007","DEMO-BIZ-008","DEMO-BIZ-009","DEMO-BIZ-010"]}}
+{
+  "version": "1.1.0",
+  "generatedAt": "2026-10-15T11:56:45.314Z",
+  "staticFirst": true,
+  "categories": {
+    "clothing-and-fashion": [
+      "DEMO-BIZ-001",
+      "DEMO-BIZ-004",
+      "DEMO-BIZ-005",
+      "DEMO-BIZ-006",
+      "DEMO-BIZ-007",
+      "DEMO-BIZ-008",
+      "DEMO-BIZ-009",
+      "DEMO-BIZ-010",
+      "DEMO-BIZ-021",
+      "DEMO-BIZ-002",
+      "DEMO-BIZ-003"
+    ],
+    "restaurants": [
+      "DEMO-BIZ-002",
+      "DEMO-BIZ-011",
+      "DEMO-BIZ-012",
+      "DEMO-BIZ-013",
+      "DEMO-BIZ-014",
+      "DEMO-BIZ-015",
+      "DEMO-BIZ-016",
+      "DEMO-BIZ-017",
+      "DEMO-BIZ-018",
+      "DEMO-BIZ-019",
+      "DEMO-BIZ-020"
+    ],
+    "safety-training-institute": [
+      "DEMO-BIZ-003",
+      "DEMO-BIZ-021"
+    ],
+    "cat004": [
+      "DEMO-BIZ-022"
+    ],
+    "clinics": [
+      "DEMO-BIZ-023"
+    ],
+    "diagnostic-centers": [
+      "DEMO-BIZ-024",
+      "DEMO-BIZ-096"
+    ],
+    "beauty-parlours": [
+      "DEMO-BIZ-025"
+    ],
+    "salons-hair-studios": [
+      "DEMO-BIZ-026"
+    ],
+    "yoga-meditation-centers": [
+      "DEMO-BIZ-027"
+    ],
+    "schools": [
+      "DEMO-BIZ-028"
+    ],
+    "colleges": [
+      "DEMO-BIZ-029"
+    ],
+    "training-institutes": [
+      "DEMO-BIZ-030"
+    ],
+    "skill-development-centers": [
+      "DEMO-BIZ-031"
+    ],
+    "computer-laptop-stores": [
+      "DEMO-BIZ-032"
+    ],
+    "electronics-stores": [
+      "DEMO-BIZ-033"
+    ],
+    "mobile-repair-shops": [
+      "DEMO-BIZ-034"
+    ],
+    "home-decor-stores": [
+      "DEMO-BIZ-035"
+    ],
+    "hardware-stores": [
+      "DEMO-BIZ-036"
+    ],
+    "electrical-shops": [
+      "DEMO-BIZ-037"
+    ],
+    "refrigerator-repair": [
+      "DEMO-BIZ-038"
+    ],
+    "washing-machine-repair": [
+      "DEMO-BIZ-039"
+    ],
+    "car-repair-service": [
+      "DEMO-BIZ-040"
+    ],
+    "car-dealers": [
+      "DEMO-BIZ-041"
+    ],
+    "bike-dealers": [
+      "DEMO-BIZ-042"
+    ],
+    "car-rental": [
+      "DEMO-BIZ-043"
+    ],
+    "travel-agencies": [
+      "DEMO-BIZ-044"
+    ],
+    "tour-operators": [
+      "DEMO-BIZ-045"
+    ],
+    "courier-services": [
+      "DEMO-BIZ-046"
+    ],
+    "petrol-pumps": [
+      "DEMO-BIZ-047"
+    ],
+    "supermarkets": [
+      "DEMO-BIZ-048"
+    ],
+    "sweet-shops": [
+      "DEMO-BIZ-049"
+    ],
+    "cafes": [
+      "DEMO-BIZ-050"
+    ],
+    "wedding-planners": [
+      "DEMO-BIZ-051"
+    ],
+    "photography-studios": [
+      "DEMO-BIZ-052"
+    ],
+    "printing-services": [
+      "DEMO-BIZ-053"
+    ],
+    "advertising-agencies": [
+      "DEMO-BIZ-054"
+    ],
+    "digital-marketing-agencies": [
+      "DEMO-BIZ-055"
+    ],
+    "web-development-companies": [
+      "DEMO-BIZ-056"
+    ],
+    "it-services": [
+      "DEMO-BIZ-057"
+    ],
+    "cyber-security-services": [
+      "DEMO-BIZ-058"
+    ],
+    "ca-accounting-services": [
+      "DEMO-BIZ-059"
+    ],
+    "tax-consultants": [
+      "DEMO-BIZ-060"
+    ],
+    "lawyers-advocates": [
+      "DEMO-BIZ-061"
+    ],
+    "legal-services": [
+      "DEMO-BIZ-062"
+    ],
+    "insurance-agents": [
+      "DEMO-BIZ-063"
+    ],
+    "loan-finance-services": [
+      "DEMO-BIZ-064"
+    ],
+    "real-estate-agents": [
+      "DEMO-BIZ-065"
+    ],
+    "property-dealers": [
+      "DEMO-BIZ-066"
+    ],
+    "builders-developers": [
+      "DEMO-BIZ-067"
+    ],
+    "interior-designers": [
+      "DEMO-BIZ-068"
+    ],
+    "construction-companies": [
+      "DEMO-BIZ-069"
+    ],
+    "security-services": [
+      "DEMO-BIZ-070"
+    ],
+    "pest-control-services": [
+      "DEMO-BIZ-071"
+    ],
+    "cleaning-services": [
+      "DEMO-BIZ-072"
+    ],
+    "laundry-dry-cleaning": [
+      "DEMO-BIZ-073"
+    ],
+    "car-wash": [
+      "DEMO-BIZ-074"
+    ],
+    "pet-shops": [
+      "DEMO-BIZ-075"
+    ],
+    "veterinary-clinics": [
+      "DEMO-BIZ-076"
+    ],
+    "florists": [
+      "DEMO-BIZ-077"
+    ],
+    "jewellery-stores": [
+      "DEMO-BIZ-078"
+    ],
+    "optical-stores": [
+      "DEMO-BIZ-079"
+    ],
+    "footwear-stores": [
+      "DEMO-BIZ-080"
+    ],
+    "gift-shops": [
+      "DEMO-BIZ-081"
+    ],
+    "book-stores": [
+      "DEMO-BIZ-082"
+    ],
+    "stationery-shops": [
+      "DEMO-BIZ-083"
+    ],
+    "hardware-paint-stores": [
+      "DEMO-BIZ-084"
+    ],
+    "bakery-cake-shops": [
+      "DEMO-BIZ-085"
+    ],
+    "meat-chicken-shops": [
+      "DEMO-BIZ-086"
+    ],
+    "fish-seafood-shops": [
+      "DEMO-BIZ-087"
+    ],
+    "dairy-milk-shops": [
+      "DEMO-BIZ-088"
+    ],
+    "organic-health-food-stores": [
+      "DEMO-BIZ-089"
+    ],
+    "music-schools": [
+      "DEMO-BIZ-090"
+    ],
+    "dance-academies": [
+      "DEMO-BIZ-091"
+    ],
+    "sports-academies": [
+      "DEMO-BIZ-092"
+    ],
+    "swimming-pools": [
+      "DEMO-BIZ-093"
+    ],
+    "play-schools": [
+      "DEMO-BIZ-094"
+    ],
+    "day-care-centers": [
+      "DEMO-BIZ-095",
+      "DEMO-BIZ-100"
+    ],
+    "dentists": [
+      "DEMO-BIZ-097"
+    ],
+    "computer-repair-shops": [
+      "DEMO-BIZ-098"
+    ],
+    "bakeries": [
+      "DEMO-BIZ-099"
+    ],
+    "software-companies": [
+      "DEMO-BIZ-100"
+    ]
+  }
+}

@@ -1,11 +1,24 @@
 {
-  "version": "1.0.0",
-  "staticFirst": true,
-  "businessIndex": "/assets/data/business-index.json",
-  "categoryIndex": "/assets/data/category-index.json",
-  "districtIndex": "/assets/data/district-index.json",
-  "districtChunks": "/assets/data/businesses/{district}.json",
-  "detailStrategy": "Use business detail API or future per-business static detail only after click.",
-  "homepageBusinessLoad": false,
-  "productionNote": "Replace demo chunk(s) with exported Google Sheets business data before production."
+  "version": "1.1.0",
+  "generatedAt": "2026-10-15T11:56:45.314Z",
+  "source": "Google Sheets",
+  "spreadsheetId": "1WLxzPN29CgRvIFJnyua_8RLAOKA_yUPZmh5IJfLOhzk",
+  "spreadsheetName": "NewUBnux",
+  "businessSheetSuffix": "_Businesses",
+  "totalBusinesses": 201,
+  "districtCount": 2,
+  "categoryCount": 81,
+  "files": [
+    "business-index.json",
+    "businesses/patna.json",
+    "businesses/siwan.json",
+    "categories.json",
+    "category-index.json",
+    "district-index.json",
+    "districts.json",
+    "states.json"
+  ],
+  "strategy": "static-first; district chunks plus compact search index",
+  "apiFallback": true,
+  "homepageBusinessLoad": false
 }
