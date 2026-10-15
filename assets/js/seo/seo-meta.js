@@ -3,7 +3,7 @@
    File: assets/js/seo/seo-meta.js
 
    Version:
-   3.1.0
+   4.0.0
 
    Responsibilities:
    - Document title
@@ -33,16 +33,18 @@
   const CONFIG = {
 
     VERSION:
-      "3.1.0",
+      "4.0.0",
 
     SITE_NAME:
       "UBnux",
 
     SITE_URL:
-      "https://ubnux.com",
+      ((window.UBNUX_CONFIG && (window.UBNUX_CONFIG.SITE_URL || window.UBNUX_CONFIG.PUBLIC_ORIGIN)) ||
+       "https://ubnux.com"),
 
     DEFAULT_IMAGE:
-      "https://ubnux.com/assets/images/default-business.jpg",
+      ((window.UBNUX_CONFIG && window.UBNUX_CONFIG.DEFAULT_SOCIAL_IMAGE) ||
+       "https://ubnux.com/assets/images/default-business.jpg"),
 
     DEFAULT_ROBOTS:
       "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
@@ -51,7 +53,13 @@
       "noindex,follow",
 
     DEFAULT_LOCALE:
-      "en_IN"
+      "en_IN",
+
+    STATIC_FIRST:
+      true,
+
+    AUTO_FETCH: 
+      false
 
   };
 
