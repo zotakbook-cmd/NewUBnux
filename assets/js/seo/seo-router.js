@@ -1,7 +1,7 @@
 /* =========================================================
    UBnux - Business SEO Router
    File: assets/js/seo/seo-router.js
-   Version: 2.4.0
+   Version: 3.0.0
 
    Responsibilities:
    - Read current URL
@@ -600,7 +600,15 @@
   const UBNUX_SEO_ROUTER = {
 
     version:
-      "2.4.0",
+      "3.0.0",
+
+    staticFirst:
+      true,
+
+    /*
+     * This module is intentionally parse-only.
+     * It never fetches master data, business data, or APIs.
+     */
 
     getPath:
       getPath,
@@ -668,6 +676,13 @@
 
   window.App.seoRouter =
     UBNUX_SEO_ROUTER;
+
+
+  /* =======================================================
+     STATIC-FIRST DIAGNOSTIC
+  ======================================================= */
+
+  window.UBnuxSEORouterStaticFirst = true;
 
 
   /* =======================================================
