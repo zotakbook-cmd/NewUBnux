@@ -1,7 +1,19 @@
 /* =========================================================
    UBnux Smart Search Frontend
    File: assets/js/smart-search.js
-   Version: 2.0.2
+   Version: 3.0.0
+
+   STATIC-FIRST ARCHITECTURE
+   -------------------------
+   1. Homepage/index load performs NO business/search API request.
+   2. Static master data is handled by the static-first modules.
+   3. Smart Search API is called only for:
+      - an explicit search submission,
+      - an explicit /search route navigation,
+      - browser back/forward navigation to an existing search route.
+   4. Business data is never prefetched by this module.
+   5. Business detail /in/.../ remains protected.
+
 
    Connects:
    Browser URL / search form
@@ -30,7 +42,11 @@
   "use strict";
 
   var CONFIG = {
-    PAGE_SIZE: 18,
+    PAGE_SIZE:
+      window.UBNUX_CONFIG &&
+      Number(window.UBNUX_CONFIG.BUSINESS_PAGE_SIZE)
+        ? Number(window.UBNUX_CONFIG.BUSINESS_PAGE_SIZE)
+        : 18,
     ROOT_ID: "ubnuxSmartSearch",
     SEARCH_IDS: [
       "searchInput",
@@ -965,11 +981,29 @@
     }
   }
 
+  /*
+   * IMPORTANT:
+   * The homepage "/" is NOT a Smart Search route.
+   * Therefore initialize() must never call the search API on the
+   * normal homepage load.
+   *
+   * A direct /fashion/, /siwan/ or /siwan/fashion/ URL is itself
+   * a search route, so restoring that URL is intentionally allowed
+   * to execute one Smart Search request.
+   */
+  function shouldRestoreSearchRoute() {
+    if (!isSmartRoute()) return false;
+
+    var query = getRouteQuery();
+    return Boolean(query);
+  }
+
   function initialize() {
     bindSearchForm();
     bindLoadMore();
 
-    if (!isSmartRoute()) {
+    /* STATIC-FIRST: absolutely no API call on the homepage. */
+    if (!shouldRestoreSearchRoute()) {
       return;
     }
 
@@ -978,7 +1012,10 @@
     var query = getRouteQuery();
 
     if (query) {
-      run(query, { noScroll: true });
+      run(query, {
+        noScroll: true,
+        routeRestore: true
+      });
     }
   }
 
@@ -988,7 +1025,7 @@
    * Expose a small public controller.
    */
   window.UBnuxSmartSearch = {
-    version: "2.0.0",
+    version: "3.0.0",
     state: state,
     isSmartRoute: isSmartRoute,
     getRouteQuery: getRouteQuery,
@@ -1002,6 +1039,13 @@
    * controller and must not run its normal directory bootstrap.
    */
   window.UBnuxSmartSearchRoute = isSmartRoute();
+
+  /*
+   * Diagnostic flag:
+   * true means this module has intentionally avoided any initial
+   * business/search request. It is useful while testing Network tab.
+   */
+  window.UBnuxSmartSearchStaticFirst = true;
 
   if (
     document.readyState === "loading"
