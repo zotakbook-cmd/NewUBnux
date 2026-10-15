@@ -3,7 +3,7 @@
    File: assets/js/api.js
 
    Version:
-   3.0.1
+   4.0.0
 
    Responsibilities:
    ---------------------------------------------------------
@@ -39,7 +39,7 @@
 
 
   const VERSION =
-    "3.0.0";
+    "4.0.0";
 
 
   /* =======================================================
@@ -706,6 +706,127 @@
 
 
     return data;
+
+  }
+
+
+  /* =======================================================
+     STATIC MASTER DATA
+     -------------------------------------------------------
+     api.js is passive during bootstrap. It does not call
+     Apps Script automatically. Master-data loading is owned
+     by the static-first state/district/category modules.
+     These helpers are explicit/on-demand only.
+     ====================================================== */
+
+  function getStaticURL(name, fallback) {
+
+    return clean(
+      config[name] ||
+      fallback
+    );
+
+  }
+
+
+  async function fetchStaticJSON(url, options) {
+
+    url =
+      clean(url);
+
+    if (!url) {
+      throw new Error(
+        "Static JSON URL is required."
+      );
+    }
+
+    options =
+      options ||
+      {};
+
+    const response =
+      await fetch(
+        url,
+        {
+          method:
+            "GET",
+
+          cache:
+            options.cache === false
+              ? "no-store"
+              : "force-cache",
+
+          headers: {
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Static data request failed: HTTP " +
+        response.status
+      );
+
+    }
+
+    try {
+
+      return await response.json();
+
+    } catch (error) {
+
+      throw new Error(
+        "Static data returned invalid JSON."
+      );
+
+    }
+
+  }
+
+
+  async function getStatesStatic(options) {
+
+    return fetchStaticJSON(
+      getStaticURL(
+        "STATES_JSON_URL",
+        "/assets/data/states.json"
+      ),
+      options
+    );
+
+  }
+
+
+  async function getDistrictsStatic(stateCode, options) {
+
+    /*
+     * stateCode is accepted for API compatibility.
+     * Filtering remains the responsibility of districts.js.
+     */
+
+    return fetchStaticJSON(
+      getStaticURL(
+        "DISTRICTS_JSON_URL",
+        "/assets/data/districts.json"
+      ),
+      options
+    );
+
+  }
+
+
+  async function getCategoriesStatic(options) {
+
+    return fetchStaticJSON(
+      getStaticURL(
+        "CATEGORIES_JSON_URL",
+        "/assets/data/categories.json"
+      ),
+      options
+    );
 
   }
 
@@ -1674,6 +1795,19 @@
     getCategories:
       getCategories,
 
+    /*
+     * Static-first master data
+     */
+
+    getStatesStatic:
+      getStatesStatic,
+
+    getDistrictsStatic:
+      getDistrictsStatic,
+
+    getCategoriesStatic:
+      getCategoriesStatic,
+
 
     /*
      * Businesses
@@ -1717,6 +1851,12 @@
 
   window.ZilaBizAPI =
     api;
+
+
+  /*
+   * Diagnostic flag for static-first bootstrap.
+   */
+  window.UBnuxAPIStaticFirst = true;
 
 
   /* =======================================================
@@ -1764,7 +1904,7 @@
   ) {
 
     window.console.debug(
-      "[UBnux API] Initialized.",
+      "[UBnux API] Initialized (static-first; no startup API request).",
       {
 
         version:
