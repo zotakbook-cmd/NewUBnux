@@ -1,4 +1,4 @@
-/* UBnux Smart Search v6.3.0
+/* UBnux Smart Search v6.5.0
  * Entity-first search:
  * 1) District name -> complete district chunk
  * 2) Category name -> all matching businesses
@@ -61,12 +61,65 @@
     return out;
   }
   function fetchJSONDirect(url){
-    return fetch(url,{cache:"no-store",headers:{Accept:"application/json"}}).then(function(r){
-      if(!r.ok) throw Error("HTTP "+r.status);
-      return r.json();
+    var u=text(url);
+    if(!u) return Promise.reject(Error("Empty JSON URL"));
+    var sep=u.indexOf("?")>=0 ? "&" : "?";
+    u=u+sep+"ubnux_cb="+Date.now();
+    return fetch(u,{cache:"no-store",credentials:"same-origin",headers:{Accept:"application/json,text/plain,*/*"}}).then(function(r){
+      return r.text().then(function(body){
+        if(!r.ok) throw Error("HTTP "+r.status+" for "+url);
+        var t=(body||"").trim();
+        if(!t) throw Error("Empty response for "+url);
+        if(/^<!doctype html/i.test(t) || /^<html/i.test(t) || t.charAt(0)==="<") {
+          throw Error("HTML received instead of JSON for "+url);
+        }
+        try { return JSON.parse(t); }
+        catch(e){ throw Error("Invalid JSON for "+url+": "+e.message); }
+      });
     });
   }
 
+  function rawGithubURL(fileOrSlug){
+    var f=text(fileOrSlug);
+    var ds="";
+    var m=f.match(/\/businesses\/([^/?#]+)\.json/i);
+    if(m) ds=slug(m[1]);
+    if(!ds && /\.json(?:[?#].*)?$/i.test(f)) ds=slug(f.split("/").pop().split("?")[0].replace(/\.json$/i,""));
+    if(!ds) ds=slug(f);
+    if(!ds) return "";
+    return "https://raw.githubusercontent.com/zotakbook-cmd/NewUBnux/main/assets/data/businesses/"+ds+".json";
+  }
+
+  function localDistrictURL(district){
+    var ds=slug(districtDisplay(district)||districtName(district));
+    return ds ? "/assets/data/businesses/"+ds+".json" : "";
+  }
+
+  function districtDataCandidates(district,file){
+    var out=[];
+    var raw=rawGithubURL(file || localDistrictURL(district));
+    var local=localDistrictURL(district);
+    if(raw) out.push(raw);                 // source-of-truth fallback first
+    if(local) out.push(local);             // Cloudflare static copy
+    var f=text(file);
+    if(f){
+      if(/^https?:\/\//i.test(f)) out.push(f);
+      else {
+        var u=f.replace(/^\/+/,"");
+        if(u.indexOf("assets/")===0) out.push("/"+u);
+        else if(u.indexOf("businesses/")===0) out.push("/assets/data/"+u);
+        else out.push("/assets/data/"+u.replace(/^\.\//,""));
+      }
+    }
+    return out.filter(function(v,i,a){return v && a.indexOf(v)===i;});
+  }
+  function getJSONRawFirst(url){
+    return fetchJSONDirect(url).catch(function(firstErr){
+      var raw=rawGithubURL(url);
+      if(!raw) throw firstErr;
+      return fetchJSONDirect(raw).catch(function(){ throw firstErr; });
+    });
+  }
   function getJSON(url){
     if(window.UBnuxStaticCache && typeof window.UBnuxStaticCache.getJSON==="function"){
       return window.UBnuxStaticCache.getJSON(url).catch(function(){
@@ -314,41 +367,39 @@
         return xslug===ds && (!stateSlug || !xstate || xstate===slug(stateSlug));
       });
       if(!rec){
-        rec=list.find(function(x){
-          return slug(districtName(x))===ds || slug(districtDisplay(x))===ds;
-        });
+        rec=list.find(function(x){ return slug(districtName(x))===ds || slug(districtDisplay(x))===ds; });
       }
-      return rec ? loadDistrictChunk(rec) : [];
+      rec=rec || {DistrictName:districtSlug,Slug:ds,stateSlug:stateSlug,file:"/assets/data/businesses/"+ds+".json"};
+      return loadDistrictChunk(rec);
     }).catch(function(e){
-      console.warn("UBnux direct district lookup failed",e);
-      return [];
+      console.warn("UBnux direct district index unavailable; loading source chunk",e);
+      var pseudo={DistrictName:districtSlug,Slug:ds,stateSlug:stateSlug,file:"/assets/data/businesses/"+ds+".json"};
+      return loadDistrictChunk(pseudo);
     });
   }
-
   function loadDistrictChunk(d){
     if(!d) return Promise.resolve([]);
-    return loadDistrictIndex().then(function(list){
-      var wanted=districtName(d);
-      var rec=list.find(function(x){ return eqEntity(districtName(x),wanted); }) || d;
-      var files=chunkURL(districtFile(rec),rec);
-      if(!files.length) return [];
-      var key=files[0];
-      if(districtChunkCache[key]) return districtChunkCache[key];
+    var files=districtDataCandidates(d,districtFile(d));
+    if(!files.length) return Promise.resolve([]);
+    var key=files.join("|");
+    if(districtChunkCache[key]) return districtChunkCache[key];
 
-      function tryOne(i){
-        if(i>=files.length) return Promise.resolve([]);
-        return getJSON(files[i]).then(function(x){
-          var a=unique(rows(x,"businesses"));
-          if(a.length) return a;
-          return tryOne(i+1);
-        }).catch(function(){ return tryOne(i+1); });
-      }
-      districtChunkCache[key]=tryOne(0);
-      return districtChunkCache[key];
-    }).catch(function(e){
-      console.warn("UBnux district chunk load failed",e);
-      return [];
+    function tryOne(i){
+      if(i>=files.length) return Promise.resolve([]);
+      return fetchJSONDirect(files[i]).then(function(x){
+        var a=unique(rows(x,"businesses"));
+        if(a.length) return a;
+        return tryOne(i+1);
+      }).catch(function(err){
+        console.warn("UBnux district source failed:",files[i],err.message||err);
+        return tryOne(i+1);
+      });
+    }
+    districtChunkCache[key]=tryOne(0).then(function(a){
+      if(!a.length) console.error("UBnux: no district businesses loaded for",districtName(d),files);
+      return a;
     });
+    return districtChunkCache[key];
   }
 
   function rankGeneric(list,q){
@@ -491,6 +542,12 @@
     }
 
     state.active=true; state.q=q;
+
+    /* When init supplied a parsed SEO route, use the URL slugs directly.
+       Do not depend on entity recognition or the compact business index. */
+    if(opts.route && opts.route.districtSlug){
+      return runDirectoryRoute(opts.route,{noHistory:true});
+    }
 
     /* SEO directory URLs are authoritative. Load the exact district chunk
        directly instead of trying to infer the district from the compact
@@ -642,7 +699,7 @@
   }
 
   window.UBnuxSmartSearch={
-    version:"6.3.0",
+    version:"6.5.0",
     state:state,
     init:init,
     bind:bind,

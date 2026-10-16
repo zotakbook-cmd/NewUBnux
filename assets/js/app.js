@@ -1,4 +1,4 @@
-/* UBnux App v6.2.0 - resilient static bootstrap + loader failsafe */
+/* UBnux App v6.5.0 - resilient static bootstrap + loader failsafe */
 (function (window, document) {
   "use strict";
 
