@@ -1,4 +1,4 @@
-/* UBnux Categories v5.0.4 - robust static/API loader + safe dropdown */
+/* UBnux Categories v5.1.2 - stable dropdown + static/API fallback */
 (function (window, document) {
   "use strict";
 
@@ -6,217 +6,230 @@
     return String(v == null ? "" : v).trim();
   }
 
-  function toArray(d) {
-    if (Array.isArray(d)) return d;
-    if (!d || typeof d !== "object") return [];
-    return d.categories || d.data || d.items || d.results || [];
+  function rows(x) {
+    if (Array.isArray(x)) return x;
+    if (!x || typeof x !== "object") return [];
+    return (
+      (Array.isArray(x.categories) && x.categories) ||
+      (Array.isArray(x.data) && x.data) ||
+      (Array.isArray(x.items) && x.items) ||
+      (Array.isArray(x.results) && x.results) ||
+      []
+    );
   }
 
-  function categoryKey(c) {
+  function slug(v) {
+    return clean(v).toLowerCase().replace(/\s+/g, "-");
+  }
+
+  function categoryValue(c) {
+    c = c || {};
     return clean(
-      c && (
-        c.Slug ||
-        c.slug ||
-        c.CategoryID ||
-        c.categoryId ||
-        c.id ||
-        c.CategoryName ||
-        c.name
-      )
+      c.Slug ||
+      c.slug ||
+      c.CategoryID ||
+      c.categoryId ||
+      c.ID ||
+      c.id ||
+      c.CategoryName ||
+      c.name
     );
   }
 
   function categoryName(c) {
+    c = c || {};
     return clean(
-      c && (
-        c.CategoryName ||
-        c.categoryName ||
-        c.Name ||
-        c.name
-      )
+      c.CategoryName ||
+      c.categoryName ||
+      c.Name ||
+      c.name ||
+      c.Slug ||
+      c.slug
     );
   }
 
-  function isActive(c) {
-    if (!c) return false;
-    var v = c.Active;
-    if (v === undefined) v = c.active;
-    if (v === undefined || v === null || v === "") return true;
-    return !(v === false || String(v).toLowerCase() === "false" || String(v) === "0");
+  function categoryIcon(c) {
+    c = c || {};
+    return clean(c.Icon || c.icon || "▦");
   }
 
-  function normalize(list) {
-    var seen = Object.create(null);
-    return toArray(list).filter(function (c) {
-      if (!c || typeof c !== "object" || !isActive(c)) return false;
-      var k = categoryKey(c).toLowerCase();
-      if (!k || seen[k]) return false;
-      seen[k] = true;
-      return true;
-    }).sort(function (a, b) {
-      return (
-        Number(a.SortOrder || a.sortOrder || 9999) -
-        Number(b.SortOrder || b.sortOrder || 9999)
-      ) || categoryName(a).localeCompare(categoryName(b));
-    });
-  }
+  function closeMenu() {
+    var menu = document.getElementById("categoryDropdownMenu");
+    var button = document.getElementById("categoryDropdownButton");
 
-  function setState(list) {
-    if (window.UBnuxState && typeof window.UBnuxState.setCategories === "function") {
-      try {
-        window.UBnuxState.setCategories(list);
-      } catch (e) {
-        console.warn("UBnuxCategories: setCategories failed", e);
-      }
+    if (!menu) return;
+
+    menu.classList.remove("open");
+    menu.hidden = true;
+    menu.setAttribute("hidden", "");
+
+    if (button) {
+      button.setAttribute("aria-expanded", "false");
     }
   }
 
-  function setSelected(value, name) {
-    var s = window.UBnuxState;
+  function openMenu() {
+    var menu = document.getElementById("categoryDropdownMenu");
+    var button = document.getElementById("categoryDropdownButton");
 
-    if (s) {
-      try {
-        if (!s.state) s.state = {};
-        s.state.selectedCategory = value;
+    if (!menu) return;
 
-        if (typeof s.setSelectedCategory === "function") {
-          s.setSelectedCategory(value);
-        }
-      } catch (e) {
-        console.warn("UBnuxCategories: state update failed", e);
-      }
+    menu.hidden = false;
+    menu.removeAttribute("hidden");
+    menu.classList.add("open");
+
+    if (button) {
+      button.setAttribute("aria-expanded", "true");
     }
+  }
 
+  function setSelected(c) {
     var text = document.getElementById("selectedCategoryText");
-    if (text) text.textContent = name || "Select Category";
-  }
+    var icon = document.getElementById("selectedCategoryIcon");
 
-  function closeDropdown() {
-    var m = document.getElementById("categoryDropdownMenu");
-    if (m) {
-      m.classList.remove("open");
-      m.setAttribute("aria-hidden", "true");
-    }
+    if (text) text.textContent = categoryName(c) || "Select Business Category";
+    if (icon) icon.textContent = categoryIcon(c) || "🏪";
   }
 
   function render(list) {
     var opts = document.getElementById("categoryOptions");
-    var text = document.getElementById("selectedCategoryText");
+    var search = document.getElementById("categorySearchInput");
+    var empty = document.getElementById("categoryEmptyState");
 
-    if (!opts) {
-      console.warn("UBnuxCategories: #categoryOptions not found");
-      return;
-    }
+    if (!opts) return;
 
-    var categories = normalize(list);
+    list = rows(list)
+      .filter(function (x) {
+        return x && x.Active !== false && x.active !== false;
+      })
+      .sort(function (a, b) {
+        return (
+          Number(a.SortOrder || a.sortOrder || 9999) -
+            Number(b.SortOrder || b.sortOrder || 9999) ||
+          categoryName(a).localeCompare(categoryName(b))
+        );
+      });
+
     opts.innerHTML = "";
 
-    if (!categories.length) {
-      var empty = document.createElement("div");
-      empty.className = "category-option-empty";
-      empty.textContent = "No categories found";
-      opts.appendChild(empty);
-      if (text && !clean(text.textContent)) text.textContent = "Select Category";
-      return;
-    }
-
-    categories.forEach(function (c) {
-      var value = categoryKey(c);
-      var name = categoryName(c) || value;
-      var icon = clean(c.Icon || c.icon || "▦");
-
+    list.forEach(function (c) {
       var b = document.createElement("button");
       b.type = "button";
       b.className = "category-option";
-      b.dataset.value = value;
-      b.setAttribute("role", "option");
 
-      var iconSpan = document.createElement("span");
-      iconSpan.textContent = icon;
+      var icon = document.createElement("span");
+      icon.textContent = categoryIcon(c);
 
-      var nameSpan = document.createElement("span");
-      nameSpan.textContent = name;
+      var label = document.createElement("span");
+      label.textContent = categoryName(c);
 
-      b.appendChild(iconSpan);
-      b.appendChild(nameSpan);
+      b.appendChild(icon);
+      b.appendChild(label);
 
-      b.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
+      b.dataset.value = categoryValue(c);
 
-        setSelected(value, name);
-        closeDropdown();
+      b.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
 
-        if (window.UBnuxApp && typeof window.UBnuxApp.applyFilters === "function") {
-          try {
-            window.UBnuxApp.applyFilters();
-          } catch (err) {
-            console.warn("UBnuxCategories: applyFilters failed", err);
-          }
-        } else if (window.UBnuxFilters && typeof window.UBnuxFilters.apply === "function") {
-          try {
-            window.UBnuxFilters.apply();
-          } catch (err2) {
-            console.warn("UBnuxCategories: filter apply failed", err2);
-          }
+        if (window.UBnuxState && window.UBnuxState.state) {
+          window.UBnuxState.state.selectedCategory = b.dataset.value;
+        }
+
+        setSelected(c);
+        closeMenu();
+
+        if (search) search.value = "";
+
+        opts.querySelectorAll(".category-option").forEach(function (x) {
+          x.hidden = false;
+        });
+
+        if (empty) empty.hidden = true;
+
+        if (
+          window.UBnuxApp &&
+          typeof window.UBnuxApp.applyFilters === "function"
+        ) {
+          window.UBnuxApp.applyFilters();
         }
       });
 
       opts.appendChild(b);
     });
+
+    if (search && !search.dataset.ubnuxBound) {
+      search.dataset.ubnuxBound = "1";
+
+      search.addEventListener("input", function () {
+        var q = clean(search.value).toLowerCase();
+        var visible = 0;
+
+        opts.querySelectorAll(".category-option").forEach(function (x) {
+          var show =
+            !q ||
+            clean(x.textContent).toLowerCase().indexOf(q) !== -1;
+
+          x.hidden = !show;
+          if (show) visible++;
+        });
+
+        if (empty) empty.hidden = visible !== 0;
+      });
+
+      search.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+      });
+    }
+
+    var selected = null;
+    var selectedValue =
+      window.UBnuxState &&
+      window.UBnuxState.state
+        ? clean(window.UBnuxState.state.selectedCategory)
+        : "";
+
+    if (selectedValue) {
+      selected = list.find(function (c) {
+        return (
+          clean(categoryValue(c)).toLowerCase() ===
+          selectedValue.toLowerCase()
+        );
+      });
+    }
+
+    if (selected) {
+      setSelected(selected);
+    }
   }
 
-  function fetchJSON(url) {
-    return fetch(url, {
-      method: "GET",
-      cache: "no-cache",
-      headers: { "Accept": "application/json" }
-    }).then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.text();
-    }).then(function (text) {
-      if (/^\s*</.test(text)) {
-        throw new Error("Expected JSON but received HTML");
-      }
-      return JSON.parse(text);
-    });
-  }
-
-  function getStaticURL() {
-    var cfg = window.UBNUX_CONFIG || {};
-    return cfg.CATEGORIES_JSON_URL || "/assets/data/categories.json";
-  }
-
-  function load() {
-    var url = getStaticURL();
-
-    var promise;
-
+  function getJSON(url) {
     if (
       window.UBnuxStaticCache &&
       typeof window.UBnuxStaticCache.getJSON === "function"
     ) {
-      promise = window.UBnuxStaticCache.getJSON(url);
-    } else {
-      promise = fetchJSON(url);
+      return window.UBnuxStaticCache.getJSON(url);
     }
 
-    return promise.then(function (d) {
-      var list = normalize(d);
-      setState(list);
+    return fetch(url, { cache: "no-cache" }).then(function (r) {
+      if (!r.ok) throw new Error("Category data HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  function load() {
+    var cfg = window.UBNUX_CONFIG || {};
+    var url = cfg.CATEGORIES_JSON_URL || "/assets/data/categories.json";
+
+    return getJSON(url).then(function (data) {
+      var list = rows(data);
+
+      if (window.UBnuxState && typeof window.UBnuxState.setCategories === "function") {
+        window.UBnuxState.setCategories(list);
+      }
+
       render(list);
       return list;
-    }).catch(function (err) {
-      console.error("UBnuxCategories: categories load failed", err);
-
-      /*
-        Do not break the whole homepage if categories.json fails.
-        Try the API only when the API module is actually available.
-      */
-      return refreshFromAPI().catch(function () {
-        render([]);
-        return [];
-      });
     });
   }
 
@@ -225,27 +238,45 @@
       !window.UBnuxAPI ||
       typeof window.UBnuxAPI.get !== "function"
     ) {
-      return Promise.reject(new Error("UBnuxAPI.get is unavailable"));
+      return Promise.reject(new Error("UBnuxAPI.get unavailable"));
     }
 
     return window.UBnuxAPI.get("categories", {}).then(function (r) {
-      var list = normalize(r);
-      setState(list);
+      var list = rows(r);
+
+      if (window.UBnuxState && typeof window.UBnuxState.setCategories === "function") {
+        window.UBnuxState.setCategories(list);
+      }
+
       render(list);
       return list;
     });
   }
 
+  /* One delegated global handler; does not fight app.js. */
+  document.addEventListener("click", function (ev) {
+    var button = document.getElementById("categoryDropdownButton");
+    var dropdown = document.getElementById("categoryDropdown");
+    var menu = document.getElementById("categoryDropdownMenu");
+
+    if (!button || !dropdown || !menu) return;
+
+    if (button.contains(ev.target)) return;
+
+    if (!dropdown.contains(ev.target)) {
+      closeMenu();
+    }
+  });
+
+  window.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape") closeMenu();
+  });
+
   window.UBnuxCategories = {
     load: load,
     render: render,
-    refreshFromAPI: refreshFromAPI,
-    get: function () {
-      return window.UBnuxState &&
-        Array.isArray(window.UBnuxState.categories)
-        ? window.UBnuxState.categories
-        : [];
-    }
+    open: openMenu,
+    close: closeMenu,
+    refreshFromAPI: refreshFromAPI
   };
-
 })(window, document);

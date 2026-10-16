@@ -1,4 +1,4 @@
-/* UBnux App v5.1.1 - resilient static bootstrap + loader failsafe */
+/* UBnux App v5.1.2 - resilient static bootstrap + loader failsafe */
 (function (window, document) {
   "use strict";
 
@@ -363,14 +363,50 @@
     var menu = el("categoryDropdownMenu");
 
     if (cb && menu) {
-      cb.addEventListener("click", function () {
-        var open =
-          menu.classList.toggle("open");
+      cb.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        var open = !menu.classList.contains("open");
+
+        if (open) {
+          menu.hidden = false;
+          menu.removeAttribute("hidden");
+          menu.classList.add("open");
+        } else {
+          menu.classList.remove("open");
+          menu.hidden = true;
+          menu.setAttribute("hidden", "");
+        }
 
         cb.setAttribute(
           "aria-expanded",
           open ? "true" : "false"
         );
+      });
+
+      /* Close category dropdown when clicking outside */
+      document.addEventListener("click", function (ev) {
+        if (!menu.classList.contains("open")) return;
+
+        var dropdown = el("categoryDropdown");
+        if (dropdown && !dropdown.contains(ev.target)) {
+          menu.classList.remove("open");
+          menu.hidden = true;
+          menu.setAttribute("hidden", "");
+          cb.setAttribute("aria-expanded", "false");
+        }
+      });
+
+      /* Close category dropdown with Escape */
+      document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape" && menu.classList.contains("open")) {
+          menu.classList.remove("open");
+          menu.hidden = true;
+          menu.setAttribute("hidden", "");
+          cb.setAttribute("aria-expanded", "false");
+          cb.focus();
+        }
       });
     }
 
@@ -495,21 +531,7 @@
      INITIALIZATION
   ========================================================= */
 
-  function isBusinessRoute() {
-    return !!(window.UBnuxRouter &&
-      typeof window.UBnuxRouter.isBusinessRoute === "function" &&
-      window.UBnuxRouter.isBusinessRoute());
-  }
-
   function init() {
-    if (isBusinessRoute()) {
-      hideLoader();
-      var home = el("homePage");
-      if (home) home.hidden = true;
-      if (document.body) document.body.classList.add("ubnux-ready");
-      return;
-    }
-
     var y = el("currentYear");
 
     if (y) {
