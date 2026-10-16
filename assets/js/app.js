@@ -385,7 +385,8 @@
      businesses.js handles the first 18 records and local Load More.
   ========================================================= */
 
-  function applyFilters() {
+  function applyFilters(options) {
+    options = options || {};
     if (
       !window.UBnuxSmartSearch ||
       typeof window.UBnuxSmartSearch.loadIndex !== "function"
@@ -496,6 +497,10 @@
           );
         }
 
+        if(options.updateSEO && window.UBnuxSmartSearch && typeof window.UBnuxSmartSearch.resetAndGenerateSEOFromSelectors === "function") {
+          window.UBnuxSmartSearch.resetAndGenerateSEOFromSelectors();
+        }
+
         return p;
       })
       .catch(function (e) {
@@ -530,6 +535,10 @@
                 p,
                 p.length
               );
+            }
+
+            if(options.updateSEO && window.UBnuxSmartSearch && typeof window.UBnuxSmartSearch.resetAndGenerateSEOFromSelectors === "function") {
+              window.UBnuxSmartSearch.resetAndGenerateSEOFromSelectors();
             }
 
             return p;
@@ -570,9 +579,16 @@
             st.selected.state = selectedState;
             st.selected.stateName = s.options[s.selectedIndex] ? s.options[s.selectedIndex].textContent : selectedState;
             st.selected.district = ""; st.selected.districtName = "";
+            /* State is a new selector context: clear the old category too. */
+            st.selectedCategory = "";
+            st.selected.category = "";
+            st.selected.categoryName = "";
+            if(window.UBnuxCategories && typeof window.UBnuxCategories.clearCategory === "function") {
+              window.UBnuxCategories.clearCategory();
+            }
           }
         } catch (stateErr) {}
-        applyFilters();
+        applyFilters({updateSEO:true});
       });
     }
 
@@ -587,7 +603,7 @@
             st.selected.districtName = d.options[d.selectedIndex] ? d.options[d.selectedIndex].textContent : "";
           }
         } catch (e) {}
-        applyFilters();
+        applyFilters({updateSEO:true});
       });
     }
 

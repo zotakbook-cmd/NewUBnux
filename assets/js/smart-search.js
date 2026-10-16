@@ -475,12 +475,81 @@
   }
 
   function updateSEO(path,q){
-    try{history.replaceState({ubnuxSearch:q},"",path);}catch(e){}
+    path=path||"/";
+    try{history.replaceState({ubnuxSearch:q||"",ubnuxSEO:true},"",path);}catch(e){}
     var canonical=document.querySelector('link[rel="canonical"]');
     if(canonical) canonical.href=location.origin+path;
-    document.title="UBnux Search - "+q;
+    document.title=q?"UBnux Search - "+q:"UBnux - Local Business Discovery";
     var meta=document.querySelector('meta[name="description"]');
-    if(meta) meta.content="Search local businesses for "+q+" on UBnux.";
+    if(meta) meta.content=q?"Search local businesses for "+q+" on UBnux.":"Discover local businesses, shops and services on UBnux.";
+  }
+
+  /* =========================================================
+     SELECTOR -> SEO URL
+     ---------------------------------------------------------
+     Dropdown selections must completely replace the previous
+     Smart Search SEO state. This is deliberately separate from
+     Smart Search so changing State/District/Category never leaves
+     an old /search/... or /in/... URL behind.
+  ========================================================= */
+  function selectorSEOPath(){
+    var sEl=document.getElementById("stateFilter");
+    var dEl=document.getElementById("districtFilter");
+    var s=text(sEl&&sEl.value);
+    var d=text(dEl&&dEl.value);
+    var c="";
+    if(window.UBnuxState&&window.UBnuxState.state){
+      c=text(window.UBnuxState.state.selectedCategory||window.UBnuxState.state.selected.category||"");
+    }
+
+    var stateName=sEl&&sEl.selectedIndex>=0&&sEl.options[sEl.selectedIndex]
+      ? text(sEl.options[sEl.selectedIndex].textContent) : s;
+    var districtNameText=dEl&&dEl.selectedIndex>=0&&dEl.options[dEl.selectedIndex]
+      ? text(dEl.options[dEl.selectedIndex].textContent) : d;
+    var categoryNameText=c;
+    if(window.UBnuxCategories&&typeof window.UBnuxCategories.getCategoryName==="function"&&c){
+      categoryNameText=text(window.UBnuxCategories.getCategoryName(c))||c;
+    }
+
+    if(d){
+      var districtObj=window.UBnuxDistricts&&typeof window.UBnuxDistricts.getDistrict==="function"
+        ? window.UBnuxDistricts.getDistrict(d) : null;
+      if(districtObj){
+        stateName=text(first(districtObj,["StateName","stateName","State","state","StateSlug","stateSlug","StateCode","stateCode"]))||stateName;
+        districtNameText=districtDisplay(districtObj)||districtNameText;
+      }
+    }
+
+    var ss=slug(stateName), dd=slug(districtNameText), cc=slug(categoryNameText);
+    if(ss&&dd&&cc) return "/in/"+ss+"/"+dd+"/"+cc+"/";
+    if(ss&&dd) return "/in/"+ss+"/"+dd+"/";
+    if(ss&&cc) return "/in/"+ss+"/all/"+cc+"/";
+    if(cc) return "/in/all/"+cc+"/";
+    return "/";
+  }
+
+  function resetAndGenerateSEOFromSelectors(){
+    var path=selectorSEOPath();
+    var sEl=document.getElementById("stateFilter");
+    var dEl=document.getElementById("districtFilter");
+    var c="";
+    if(window.UBnuxState&&window.UBnuxState.state){
+      c=text(window.UBnuxState.state.selectedCategory||window.UBnuxState.state.selected.category||"");
+    }
+    var parts=[];
+    if(sEl&&sEl.value) parts.push(sEl.options[sEl.selectedIndex]?text(sEl.options[sEl.selectedIndex].textContent):sEl.value);
+    if(dEl&&dEl.value) parts.push(dEl.options[dEl.selectedIndex]?text(dEl.options[dEl.selectedIndex].textContent):dEl.value);
+    if(c&&window.UBnuxCategories&&typeof window.UBnuxCategories.getCategoryName==="function") parts.push(window.UBnuxCategories.getCategoryName(c));
+
+    /* Clear the previous search state/input before installing the new SEO state. */
+    state.active=false; state.q=""; state.intent=null; state.matches=[];
+    var input=document.getElementById("ubnuxSmartSearchInput");
+    if(input) input.value="";
+
+    /* First reset the old route, then immediately install the new canonical route. */
+    try{history.replaceState({ubnuxReset:true},"","/");}catch(resetErr){}
+    updateSEO(path,parts.join(" / "));
+    return path;
   }
 
   function render(list,q){
@@ -761,6 +830,14 @@
     isDirectorySearchRoute:function(){
       var r=directoryRoute();
       return !!r;
+    },
+    selectorSEOPath:selectorSEOPath,
+    resetAndGenerateSEOFromSelectors:resetAndGenerateSEOFromSelectors,
+    resetSEO:function(){
+      state.active=false; state.q=""; state.intent=null; state.matches=[];
+      var input=document.getElementById("ubnuxSmartSearchInput");
+      if(input) input.value="";
+      updateSEO("/","");
     }
   };
 

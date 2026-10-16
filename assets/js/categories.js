@@ -79,7 +79,7 @@
       i.textContent=icon(c);n.textContent=name(c);b.appendChild(i);b.appendChild(n);
       b.addEventListener("click",function(e){
         e.preventDefault();e.stopPropagation();
-        if(setCategory(b.dataset.value)&&window.UBnuxApp&&typeof window.UBnuxApp.applyFilters==="function")window.UBnuxApp.applyFilters();
+        if(setCategory(b.dataset.value)&&window.UBnuxApp&&typeof window.UBnuxApp.applyFilters==="function")window.UBnuxApp.applyFilters({updateSEO:true});
       });
       box.appendChild(b);
     });
