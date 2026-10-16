@@ -1,4 +1,4 @@
-/* UBnux App v5.1.2 - resilient static bootstrap + loader failsafe */
+/* UBnux App v5.1.3 - resilient static bootstrap + loader failsafe */
 (function (window, document) {
   "use strict";
 
@@ -163,6 +163,231 @@
   }
 
   /* =========================================================
+     DISTRICT DATA LOADER
+     IMPORTANT:
+     When a district is selected, use that district's full
+     static chunk instead of the compact homepage index.
+     This prevents district results from being limited to the
+     compact/search index.
+  ========================================================= */
+
+  var districtDataCache = Object.create(null);
+
+  function field(obj, names) {
+    obj = obj || {};
+    for (var i = 0; i < names.length; i++) {
+      var v = obj[names[i]];
+      if (v !== undefined && v !== null && clean(v) !== "") {
+        return clean(v);
+      }
+    }
+    return "";
+  }
+
+  function districtKey(obj) {
+    return field(obj, [
+      "DistrictID", "districtId", "id", "ID",
+      "DistrictCode", "districtCode",
+      "Slug", "slug", "DistrictSlug", "districtSlug",
+      "DistrictName", "districtName", "District", "district"
+    ]);
+  }
+
+  function districtSlug(obj) {
+    return val(field(obj, [
+      "Slug", "slug", "DistrictSlug", "districtSlug",
+      "DistrictName", "districtName", "District", "district"
+    ]));
+  }
+
+  function districtFile(obj) {
+    return field(obj, [
+      "file", "File", "url", "URL",
+      "dataFile", "DataFile",
+      "businessFile", "BusinessFile"
+    ]);
+  }
+
+  function businessMatchesDistrict(b, wanted) {
+    var w = val(wanted);
+    if (!w) return true;
+
+    var values = [
+      b.district,
+      b.districtName,
+      b.districtSlug,
+      b.DistrictName,
+      b.DistrictSlug,
+      b.DistrictID,
+      b.districtId,
+      b.DistrictCode,
+      b.districtCode,
+      b.District,
+      b.district
+    ];
+
+    return values.some(function (x) {
+      return val(x) === w;
+    });
+  }
+
+  function businessMatchesState(b, wanted) {
+    var w = val(wanted);
+    if (!w) return true;
+
+    var values = [
+      b.state,
+      b.stateName,
+      b.stateSlug,
+      b.State,
+      b.StateName,
+      b.StateSlug,
+      b.StateCode,
+      b.stateCode
+    ];
+
+    return values.some(function (x) {
+      return val(x) === w;
+    });
+  }
+
+  function businessMatchesCategory(b, wanted) {
+    var w = val(wanted);
+    if (!w) return true;
+
+    var values = [
+      b.category,
+      b.categoryName,
+      b.categorySlug,
+      b.categoryId,
+      b.CategoryName,
+      b.CategorySlug,
+      b.CategoryID,
+      b.CategoryCode,
+      b.categoryCode
+    ];
+
+    return values.some(function (x) {
+      return val(x) === w;
+    });
+  }
+
+  function normalizeDistrictChunkRows(x) {
+    if (Array.isArray(x)) return x;
+    if (!x || typeof x !== "object") return [];
+
+    if (Array.isArray(x.businesses)) return x.businesses;
+    if (Array.isArray(x.results)) return x.results;
+    if (Array.isArray(x.items)) return x.items;
+    if (Array.isArray(x.data)) return x.data;
+
+    return [];
+  }
+
+  function loadSelectedDistrictData(selectedDistrict, stateValue) {
+    var districtValue = val(selectedDistrict);
+
+    if (!districtValue) {
+      return window.UBnuxSmartSearch.loadIndex();
+    }
+
+    var st =
+      window.UBnuxState &&
+      typeof window.UBnuxState.get === "function"
+        ? window.UBnuxState.get()
+        : {};
+
+    var districtRows =
+      st && Array.isArray(st.districts)
+        ? st.districts
+        : [];
+
+    var d = districtRows.find(function (x) {
+      return districtKey(x).toLowerCase() === districtValue;
+    });
+
+    var indexURL =
+      (window.UBNUX_CONFIG &&
+        window.UBNUX_CONFIG.DISTRICT_INDEX_JSON_URL) ||
+      "/assets/data/district-index.json";
+
+    function loadIndex() {
+      if (
+        !window.UBnuxStaticCache ||
+        typeof window.UBnuxStaticCache.getJSON !== "function"
+      ) {
+        return Promise.reject(
+          new Error("UBnuxStaticCache.getJSON unavailable")
+        );
+      }
+
+      return window.UBnuxStaticCache.getJSON(indexURL).then(function (x) {
+        var list = rows(x, "districts");
+
+        if (
+          !list.length &&
+          x &&
+          x.data &&
+          typeof x.data === "object"
+        ) {
+          list = rows(x.data, "districts");
+        }
+
+        return list;
+      });
+    }
+
+    return Promise.resolve(d)
+      .then(function (district) {
+        if (district && districtFile(district)) {
+          return district;
+        }
+
+        return loadIndex().then(function (list) {
+          var found =
+            list.find(function (x) {
+              return districtKey(x).toLowerCase() === districtValue;
+            }) ||
+            list.find(function (x) {
+              return districtSlug(x) === districtValue;
+            }) ||
+            list.find(function (x) {
+              return (
+                val(x.DistrictID) === districtValue ||
+                val(x.districtId) === districtValue
+              );
+            });
+
+          return found || null;
+        });
+      })
+      .then(function (district) {
+        var file = district && districtFile(district);
+
+        if (!file) {
+          /* Safe fallback: homepage index still works if the
+             district index is unavailable. */
+          return window.UBnuxSmartSearch.loadIndex();
+        }
+
+        var cacheKey = file;
+
+        if (districtDataCache[cacheKey]) {
+          return districtDataCache[cacheKey];
+        }
+
+        var promise =
+          window.UBnuxStaticCache.getJSON(file).then(function (x) {
+            return normalizeDistrictChunkRows(x);
+          });
+
+        districtDataCache[cacheKey] = promise;
+
+        return promise;
+      });
+  }
+
+  /* =========================================================
      FILTERS
      IMPORTANT: Pass the FULL filtered dataset to businesses.js.
      businesses.js handles the first 18 records and local Load More.
@@ -193,67 +418,78 @@
       );
     }
 
-    return window.UBnuxSmartSearch
-      .loadIndex()
+    /*
+     * If a district is selected, load that district's FULL
+     * static chunk. Do not use business-index.json as the
+     * primary source because it is a compact homepage/search
+     * index and may not contain every district field/record.
+     */
+    return loadSelectedDistrictData(d, s)
       .then(function (index) {
         index = Array.isArray(index) ? index : [];
 
         var p = index.filter(function (b) {
           b = b || {};
 
-          var stateMatch =
-            !s ||
-            val(b.state) === s ||
-            val(b.stateName) === s ||
-            val(b.stateCode) === s ||
-            val(b.stateSlug) === s;
-
-          var districtMatch =
-            !d ||
-            val(b.district) === d ||
-            val(b.districtName) === d ||
-            val(b.districtCode) === d ||
-            val(b.districtSlug) === d;
-
-          var categoryMatch =
-            !c ||
-            val(b.category) === c ||
-            val(b.categoryId) === c ||
-            val(b.categoryName) === c ||
-            val(b.categorySlug) === c;
-
           return (
-            stateMatch &&
-            districtMatch &&
-            categoryMatch
+            businessMatchesState(b, s) &&
+            businessMatchesDistrict(b, d) &&
+            businessMatchesCategory(b, c)
           );
         });
 
-        var sortEl = el("sortFilter");
+        /*
+         * Some district chunks are already district-scoped and
+         * may not contain the exact state alias expected by the
+         * homepage selector. If a district was explicitly
+         * selected and the state alias removes everything,
+         * trust the district chunk and re-apply district/category.
+         */
+        if (d && p.length === 0 && index.length > 0) {
+          p = index.filter(function (b) {
+            return (
+              businessMatchesDistrict(b, d) &&
+              businessMatchesCategory(b, c)
+            );
+          });
+        }
 
+        var sortEl = el("sortFilter");
         var sort =
           val(sortEl && sortEl.value) ||
           "featured";
 
         p.sort(function (a, b) {
           if (sort === "name") {
-            return val(a.name).localeCompare(
-              val(b.name)
+            return val(
+              a.name || a.BusinessName
+            ).localeCompare(
+              val(b.name || b.BusinessName)
             );
           }
 
           if (sort === "rating") {
             return (
-              Number(b.rating || 0) -
-              Number(a.rating || 0)
+              Number(
+                b.rating || b.Rating || 0
+              ) -
+              Number(
+                a.rating || a.Rating || 0
+              )
             );
           }
 
           return (
-            Number(!!b.featured) -
-              Number(!!a.featured) ||
-            val(a.name).localeCompare(
-              val(b.name)
+            Number(
+              !!(b.featured || b.Featured)
+            ) -
+              Number(
+                !!(a.featured || a.Featured)
+              ) ||
+            val(
+              a.name || a.BusinessName
+            ).localeCompare(
+              val(b.name || b.BusinessName)
             )
           );
         });
@@ -276,14 +512,46 @@
           e
         );
 
-        if (
-          window.UBnuxBusinesses &&
-          typeof window.UBnuxBusinesses.render === "function"
-        ) {
-          window.UBnuxBusinesses.render([], 0);
-        }
+        /*
+         * Final fallback to the existing compact index so the
+         * directory never becomes blank merely because a
+         * district chunk/index is temporarily unavailable.
+         */
+        return window.UBnuxSmartSearch
+          .loadIndex()
+          .then(function (index) {
+            index = Array.isArray(index) ? index : [];
 
-        return [];
+            var p = index.filter(function (b) {
+              return (
+                businessMatchesState(b, s) &&
+                businessMatchesDistrict(b, d) &&
+                businessMatchesCategory(b, c)
+              );
+            });
+
+            if (
+              window.UBnuxBusinesses &&
+              typeof window.UBnuxBusinesses.render === "function"
+            ) {
+              window.UBnuxBusinesses.render(
+                p,
+                p.length
+              );
+            }
+
+            return p;
+          })
+          .catch(function () {
+            if (
+              window.UBnuxBusinesses &&
+              typeof window.UBnuxBusinesses.render === "function"
+            ) {
+              window.UBnuxBusinesses.render([], 0);
+            }
+
+            return [];
+          });
       });
   }
 
@@ -363,50 +631,14 @@
     var menu = el("categoryDropdownMenu");
 
     if (cb && menu) {
-      cb.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-
-        var open = !menu.classList.contains("open");
-
-        if (open) {
-          menu.hidden = false;
-          menu.removeAttribute("hidden");
-          menu.classList.add("open");
-        } else {
-          menu.classList.remove("open");
-          menu.hidden = true;
-          menu.setAttribute("hidden", "");
-        }
+      cb.addEventListener("click", function () {
+        var open =
+          menu.classList.toggle("open");
 
         cb.setAttribute(
           "aria-expanded",
           open ? "true" : "false"
         );
-      });
-
-      /* Close category dropdown when clicking outside */
-      document.addEventListener("click", function (ev) {
-        if (!menu.classList.contains("open")) return;
-
-        var dropdown = el("categoryDropdown");
-        if (dropdown && !dropdown.contains(ev.target)) {
-          menu.classList.remove("open");
-          menu.hidden = true;
-          menu.setAttribute("hidden", "");
-          cb.setAttribute("aria-expanded", "false");
-        }
-      });
-
-      /* Close category dropdown with Escape */
-      document.addEventListener("keydown", function (ev) {
-        if (ev.key === "Escape" && menu.classList.contains("open")) {
-          menu.classList.remove("open");
-          menu.hidden = true;
-          menu.setAttribute("hidden", "");
-          cb.setAttribute("aria-expanded", "false");
-          cb.focus();
-        }
       });
     }
 
