@@ -1,0 +1,11 @@
+/assets/data/*.json
+  Cache-Control: public, max-age=0, s-maxage=0, must-revalidate
+  CDN-Cache-Control: no-store
+
+/assets/data/businesses/*.json
+  Cache-Control: public, max-age=0, s-maxage=0, must-revalidate
+  CDN-Cache-Control: no-store
+
+/api/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
