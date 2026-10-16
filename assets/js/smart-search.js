@@ -565,6 +565,29 @@
        * Load the complete district chunk and show every business in it.
        */
       if(intent.district){
+        /*
+         * QUICK SEARCH FIX: when a user searches from the homepage, the
+         * browser URL is changed with history.replaceState only after the
+         * data render. The homepage bootstrap can then run/apply filters
+         * and overwrite that render with 0 results.
+         *
+         * The SEO directory route is already the authoritative data route,
+         * and we know the exact district + state from the master record.
+         * Navigate to it immediately. The normal SEO-route loader then
+         * loads the complete district chunk exactly like a manual refresh.
+         */
+        if(!opts.noHistory && !opts.route){
+          var districtPath=pathFor(q,intent,[]);
+          if(/^\/in\//.test(districtPath)){
+            try{
+              window.location.assign(districtPath);
+            }catch(navErr){
+              console.error("UBnux district search navigation failed:",navErr);
+            }
+            return Promise.resolve([]);
+          }
+        }
+
         return loadDistrictChunk(intent.district).then(function(full){
           var result=unique(full);
           if(intent.category) result=result.filter(function(b){return categoryMatches(b,intent.category);});
@@ -699,7 +722,7 @@
   }
 
   window.UBnuxSmartSearch={
-    version:"6.5.0",
+    version:"6.6.0",
     state:state,
     init:init,
     bind:bind,
