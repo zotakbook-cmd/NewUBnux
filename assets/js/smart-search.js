@@ -1,4 +1,4 @@
-/* UBnux Smart Search v7.2.0
+/* UBnux Smart Search v8.0.0
  * Entity-first search:
  * 1) District name -> complete district chunk
  * 2) Category name -> all matching businesses
@@ -25,6 +25,35 @@
       .replace(/\s+/g," ").trim();
   }
   function slug(v){ return norm(v).replace(/[^a-z0-9]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,""); }
+
+  /*
+   * Exported static rows sometimes contain both display and slug values
+   * in the same field, e.g. `Bihar bihar`, `Siwan siwan`, or
+   * `Clothing & Fashion clothing-and-fashion`.  These are valid source
+   * rows, not errors.  SEO/filter comparisons must canonicalize them.
+   */
+  function canonicalSlug(v){
+    var n=norm(v);
+    if(!n) return "";
+    var parts=n.split(" ").filter(Boolean);
+    if(parts.length>1 && parts.length%2===0){
+      var half=parts.length/2;
+      var a=parts.slice(0,half).join(" ");
+      var b=parts.slice(half).join(" ");
+      if(a===b) n=a;
+    }
+    var s=slug(n);
+    var seg=s.split("-").filter(Boolean);
+    if(seg.length>1 && seg.length%2===0){
+      var h=seg.length/2;
+      if(seg.slice(0,h).join("-")===seg.slice(h).join("-")) s=seg.slice(0,h).join("-");
+    }
+    return s;
+  }
+  function sameSlug(a,b){
+    var x=canonicalSlug(a), y=canonicalSlug(b);
+    return !!x && !!y && x===y;
+  }
   function tokens(v){ return norm(v).split(" ").filter(Boolean); }
   function first(o, keys){
     o = o || {};
@@ -200,13 +229,13 @@
     return norm(vals.join(" "));
   }
   function categoryOf(b){
-    return norm(first(b,["CategoryName","categoryName","category","Category","CategorySlug","categorySlug","CategoryID","categoryId","CategoryCode","categoryCode"]));
+    return norm(first(b,["CategorySlug","categorySlug","CategoryName","categoryName","category","Category","CategoryID","categoryId","CategoryCode","categoryCode"]));
   }
   function districtOf(b){
-    return norm(first(b,["DistrictName","districtName","district","District","DistrictSlug","districtSlug","DistrictID","districtId","DistrictCode","districtCode"]));
+    return norm(first(b,["DistrictSlug","districtSlug","DistrictName","districtName","district","District","DistrictID","districtId","DistrictCode","districtCode"]));
   }
   function stateOf(b){
-    return norm(first(b,["StateName","stateName","state","State","StateSlug","stateSlug","StateCode","stateCode"]));
+    return norm(first(b,["StateSlug","stateSlug","StateName","stateName","state","State","StateCode","stateCode"]));
   }
 
   function eqEntity(value, entity){
@@ -277,11 +306,17 @@
           var joined=norm(display+" "+name);
           ts.forEach(function(t){
             var z=fuzzy(t,joined);
+            /* Category aliases/partial keywords must beat a business name
+               containing the same word. Example: `fashion` => Clothing & Fashion. */
+            var jt=norm(joined), nn=norm(name), sn=canonicalSlug(name), st=canonicalSlug(t);
+            if(jt.indexOf(t)>=0 || nn.indexOf(t)>=0 || sn.indexOf(st)>=0){
+              z=Math.max(z,1000);
+            }
             if(!z) all=false;
             s+=z;
           });
-          if(norm(q)===name || norm(q)===slug(name)) s+=3000;
-          if(ts.length===1 && name===ts[0]) s+=2500;
+          if(norm(q)===name || canonicalSlug(q)===canonicalSlug(name)) s+=3000;
+          if(ts.length===1 && (name===ts[0] || canonicalSlug(name)===canonicalSlug(ts[0]))) s+=2500;
           if(all && s>bestScore){bestScore=s;best=c;}
         });
         return bestScore>=900 ? best : null;
@@ -435,7 +470,7 @@
      */
     if(intent && intent.district){
       district=districtName(intent.district);
-      state=stateOf(intent.district);
+      state=first(intent.district,["stateSlug","StateSlug","StateName","stateName","State","state","StateCode","stateCode"]);
 
       /* stateSlug is the authoritative SEO state when available. */
       if(!state){
@@ -465,9 +500,9 @@
      */
     if(intent && intent.category){
       if(district && state){
-        return "/in/"+slug(state)+"/"+slug(district)+"/"+slug(category)+"/";
+        return "/in/"+canonicalSlug(state)+"/"+canonicalSlug(district)+"/"+canonicalSlug(category)+"/";
       }
-      return "/in/all/"+slug(category)+"/";
+      return "/in/all/"+canonicalSlug(category)+"/";
     }
 
     /*
@@ -479,16 +514,16 @@
       district=districtOf(b);
       category=categoryOf(b);
       if(state&&district&&category&&businessName(b)){
-        return "/in/"+slug(state)+"/"+slug(district)+"/"+slug(category)+"/"+slug(businessName(b))+"/";
+        return "/in/"+canonicalSlug(state)+"/"+canonicalSlug(district)+"/"+canonicalSlug(category)+"/"+slug(businessName(b))+"/";
       }
     }
 
     if(state&&district&&category) return "/in/"+slug(state)+"/"+slug(district)+"/"+slug(category)+"/";
-    if(state&&district) return "/in/"+slug(state)+"/"+slug(district)+"/";
-    if(state&&category) return "/in/"+slug(state)+"/all/"+slug(category)+"/";
+    if(state&&district) return "/in/"+canonicalSlug(state)+"/"+canonicalSlug(district)+"/";
+    if(state&&category) return "/in/"+canonicalSlug(state)+"/all/"+canonicalSlug(category)+"/";
     if(category) return "/in/all/"+slug(category)+"/";
 
-    return "/search/"+slug(q)+"/";
+    return "/search/"+canonicalSlug(q)+"/";
   }
 
   function updateSEO(path,q){
@@ -537,7 +572,7 @@
       }
     }
 
-    var ss=slug(stateName), dd=slug(districtNameText), cc=slug(categoryNameText);
+    var ss=canonicalSlug(stateName), dd=canonicalSlug(districtNameText), cc=canonicalSlug(categoryNameText);
     if(ss&&dd&&cc) return "/in/"+ss+"/"+dd+"/"+cc+"/";
     if(ss&&dd) return "/in/"+ss+"/"+dd+"/";
     if(ss&&cc) return "/in/"+ss+"/all/"+cc+"/";
@@ -606,7 +641,8 @@
     ];
     return vals.some(function(v){
       var n=norm(v);
-      return slug(n)===cs || n===norm(cs) || n.indexOf(norm(cs))>=0 || norm(cs).indexOf(n)>=0;
+      var sv=canonicalSlug(v);
+      return sv===cs || sameSlug(v,cs) || n===norm(cs) || n.indexOf(norm(cs))>=0 || norm(cs).indexOf(n)>=0;
     });
   }
 
@@ -615,7 +651,7 @@
       var wantedState=slug(stateSlug||"");
       var districts=list.filter(function(d){
         if(!wantedState) return true;
-        var ds=slug(first(d,["stateSlug","StateSlug","StateName","stateName","State","state"]));
+        var ds=canonicalSlug(first(d,["stateSlug","StateSlug","StateName","stateName","State","state"]));
         return !ds || ds===wantedState;
       });
       if(!districts.length && wantedState){
@@ -653,7 +689,7 @@
       return loadAllDistrictChunks(route.type==="state-category" ? route.stateSlug : "").then(function(all){
         var result=all.filter(function(b){
           return categoryMatchesSlug(b,route.categorySlug) &&
-            (!route.stateSlug || stateOf(b)===norm(route.stateSlug) || slug(stateOf(b))===slug(route.stateSlug));
+            (!route.stateSlug || sameSlug(stateOf(b),route.stateSlug));
         });
         render(result,q);
         return result;
@@ -869,7 +905,7 @@
   }
 
   window.UBnuxSmartSearch={
-    version:"7.3.0",
+    version:"8.0.0",
     state:state,
     init:init,
     bind:bind,

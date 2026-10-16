@@ -1,4 +1,4 @@
-/* UBnux Districts v7.0.0 - independent dropdown data controller */
+/* UBnux Districts v8.0.0 - independent dropdown data controller */
 (function(window,document){"use strict";
   var list=[],byState=Object.create(null);
   function clean(v){return String(v==null?"":v).trim();}

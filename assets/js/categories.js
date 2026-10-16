@@ -1,4 +1,4 @@
-/* UBnux Categories v7.0.0 - stable dropdown controller */
+/* UBnux Categories v8.0.0 - stable dropdown controller */
 (function(window,document){
   "use strict";
   var cache=[];

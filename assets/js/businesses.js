@@ -1,4 +1,4 @@
-/* UBnux Businesses v5.0.5 - fixed Load More */
+/* UBnux Businesses v8.0.0 - fixed Load More */
 (function (window, document) {
   "use strict";
 
@@ -47,7 +47,7 @@
     return lower(
       first(
         b,
-        ["BusinessID", "businessId", "id", "seoPath", "slug"],
+        ["BusinessID", "businessId", "id", "SEOPath", "seoPath", "BusinessKey", "businessKey", "Slug", "slug", "BusinessName", "name"],
         ""
       )
     );

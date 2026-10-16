@@ -1,4 +1,4 @@
-/* UBnux App v7.0.0 - resilient static bootstrap + loader failsafe */
+/* UBnux App v8.0.0 - resilient static bootstrap + loader failsafe */
 (function (window, document) {
   "use strict";
 
@@ -231,16 +231,22 @@
     });
   }
 
+  function canonicalSlug(v) {
+    var raw = val(v);
+    if (!raw) return "";
+    var p = raw.replace(/&/g,"and").replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim().split(" ").filter(Boolean);
+    if (p.length > 1 && p.length % 2 === 0) {
+      var h=p.length/2;
+      if (p.slice(0,h).join(" ")===p.slice(h).join(" ")) p=p.slice(0,h);
+    }
+    return p.join("-").replace(/-+/g,"-").replace(/^-|-$/g,"");
+  }
+
   function businessMatchesState(b, wanted) {
-    var w = val(wanted);
+    var w = canonicalSlug(wanted);
     if (!w) return true;
-    var ws = w.replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"");
-    var values = [b.state,b.stateName,b.stateSlug,b.State,b.StateName,b.StateSlug,b.StateCode,b.stateCode];
-    return values.some(function (x) {
-      var raw=val(x);
-      var sx=raw.replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"");
-      return raw===w || sx===ws;
-    });
+    var values = [b.stateSlug,b.StateSlug,b.stateName,b.StateName,b.state,b.State,b.StateCode,b.stateCode];
+    return values.some(function (x) { return canonicalSlug(x) === w; });
   }
 
   function businessMatchesCategory(b, wanted) {
