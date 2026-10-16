@@ -48,6 +48,8 @@
     );
   }
 
+  var categoriesCache = [];
+
   function categoryIcon(c) {
     c = c || {};
     return clean(c.Icon || c.icon || "▦");
@@ -110,6 +112,7 @@
         );
       });
 
+    categoriesCache = list.slice();
     opts.innerHTML = "";
 
     list.forEach(function (c) {
@@ -134,6 +137,11 @@
 
         if (window.UBnuxState && window.UBnuxState.state) {
           window.UBnuxState.state.selectedCategory = b.dataset.value;
+          if (!window.UBnuxState.state.selected) {
+            window.UBnuxState.state.selected = {};
+          }
+          window.UBnuxState.state.selected.category = b.dataset.value;
+          window.UBnuxState.state.selected.categoryName = categoryName(c);
         }
 
         setSelected(c);
@@ -233,6 +241,57 @@
     });
   }
 
+  function setEnabled(enabled) {
+    var button = document.getElementById("categoryDropdownButton");
+    if (button) button.disabled = enabled === false;
+  }
+
+  function clearCategory() {
+    if (window.UBnuxState && window.UBnuxState.state) {
+      window.UBnuxState.state.selectedCategory = "";
+      if (!window.UBnuxState.state.selected) {
+        window.UBnuxState.state.selected = {};
+      }
+      window.UBnuxState.state.selected.category = "";
+      window.UBnuxState.state.selected.categoryName = "";
+    }
+    setSelected(null);
+    closeMenu();
+  }
+
+  function setCategory(value) {
+    var target = clean(value).toLowerCase();
+    if (!target) {
+      clearCategory();
+      return true;
+    }
+
+    var item = categoriesCache.find(function(c) {
+      return clean(categoryValue(c)).toLowerCase() === target ||
+             clean(categoryName(c)).toLowerCase() === target;
+    });
+
+    if (!item) return false;
+
+    if (window.UBnuxState && window.UBnuxState.state) {
+      window.UBnuxState.state.selectedCategory = categoryValue(item);
+      if (!window.UBnuxState.state.selected) window.UBnuxState.state.selected = {};
+      window.UBnuxState.state.selected.category = categoryValue(item);
+      window.UBnuxState.state.selected.categoryName = categoryName(item);
+    }
+    setSelected(item);
+    return true;
+  }
+
+  function getCategoryName(value) {
+    var target = clean(value).toLowerCase();
+    var item = categoriesCache.find(function(c) {
+      return clean(categoryValue(c)).toLowerCase() === target ||
+             clean(categoryName(c)).toLowerCase() === target;
+    });
+    return item ? categoryName(item) : "";
+  }
+
   function refreshFromAPI() {
     if (
       !window.UBnuxAPI ||
@@ -277,6 +336,10 @@
     render: render,
     open: openMenu,
     close: closeMenu,
-    refreshFromAPI: refreshFromAPI
+    refreshFromAPI: refreshFromAPI,
+    setEnabled: setEnabled,
+    clearCategory: clearCategory,
+    setCategory: setCategory,
+    getCategoryName: getCategoryName
   };
 })(window, document);

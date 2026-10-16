@@ -413,8 +413,11 @@
       window.UBnuxState &&
       window.UBnuxState.state
     ) {
+      var stateObj = window.UBnuxState.state;
       c = val(
-        window.UBnuxState.state.selectedCategory || ""
+        stateObj.selectedCategory ||
+        (stateObj.selected && stateObj.selected.category) ||
+        ""
       );
     }
 
@@ -582,6 +585,12 @@
 
           var selectedState = val(s.value);
 
+          /* State change invalidates the previous district/category. */
+          if (d) d.value = "";
+          if (window.UBnuxCategories && typeof window.UBnuxCategories.clearCategory === "function") {
+            window.UBnuxCategories.clearCategory();
+          }
+
           var ds = districts.filter(function (x) {
             x = x || {};
 
@@ -630,15 +639,31 @@
     var cb = el("categoryDropdownButton");
     var menu = el("categoryDropdownMenu");
 
-    if (cb && menu) {
-      cb.addEventListener("click", function () {
-        var open =
-          menu.classList.toggle("open");
+    if (cb && menu && !cb.dataset.ubnuxBound) {
+      cb.dataset.ubnuxBound = "1";
 
-        cb.setAttribute(
-          "aria-expanded",
-          open ? "true" : "false"
-        );
+      cb.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        var isOpen = menu.classList.contains("open");
+
+        if (window.UBnuxCategories) {
+          if (isOpen && typeof window.UBnuxCategories.close === "function") {
+            window.UBnuxCategories.close();
+            return;
+          }
+          if (!isOpen && typeof window.UBnuxCategories.open === "function") {
+            window.UBnuxCategories.open();
+            return;
+          }
+        }
+
+        menu.classList.toggle("open", !isOpen);
+        menu.hidden = isOpen;
+        if (isOpen) menu.setAttribute("hidden", "");
+        else menu.removeAttribute("hidden");
+        cb.setAttribute("aria-expanded", isOpen ? "false" : "true");
       });
     }
 
@@ -855,6 +880,27 @@
           console.error(
             "UBnux Smart Search init failed:",
             searchError
+          );
+        }
+
+        /*
+         * Home page: render the default directory immediately.
+         * Search route: Smart Search owns the result list.
+         */
+        try {
+          var isSearchRoute = !!(
+            window.UBnuxRouter &&
+            typeof window.UBnuxRouter.isSearchRoute === "function" &&
+            window.UBnuxRouter.isSearchRoute()
+          );
+
+          if (!isSearchRoute) {
+            applyFilters();
+          }
+        } catch (defaultFilterError) {
+          console.warn(
+            "UBnux default directory render failed:",
+            defaultFilterError
           );
         }
 
