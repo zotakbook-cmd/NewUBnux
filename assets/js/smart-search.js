@@ -39,8 +39,37 @@ function pathFor(q,intent,list){
 }
 function updateSEO(path,q){try{history.replaceState({ubnuxSearch:q},"",path);}catch(e){}var c=document.querySelector('link[rel="canonical"]');if(c)c.href=location.origin+path;document.title="UBnux Search - "+q;var m=document.querySelector('meta[name="description"]');if(m)m.content="Search local businesses for "+q+" on UBnux.";}
 function render(out,q){if(window.UBnuxBusinesses&&typeof window.UBnuxBusinesses.render==="function")window.UBnuxBusinesses.render(out,out.length);var t=document.getElementById("businessSectionTitle");if(t)t.textContent='Search results for "'+q+'"';var m=document.getElementById("selectionMessage");if(m)m.textContent=out.length+" businesses found";}
+function loadDistrictChunk(intent,list){
+ var d=intent&&intent.district;if(!d)return Promise.resolve([]);
+ var wanted=entityValue(d,"district"), idxUrl=(window.UBNUX_CONFIG||{}).DISTRICT_INDEX_JSON_URL||"/assets/data/district-index.json";
+ return getJSON(idxUrl).then(function(x){
+   var rows0=rows(x);
+   var rec=rows0.find(function(r){var v=entityValue(r,"district")||norm(first(r,["DistrictName","districtName","DistrictSlug","districtSlug","DistrictID","districtId","DistrictCode","districtCode","district"]));return v&&(v===wanted||slug(v)===slug(wanted)||norm(v)===norm(wanted));});
+   var file=rec&&first(rec,["file","File","dataFile","DataFile","businessFile","BusinessFile","url","URL"]);
+   if(!file)return [];
+   var base="/assets/data/"; if(/^https?:\/\//i.test(file))return getJSON(file);
+   file=String(file).replace(/^\/+/,""); if(file.indexOf("assets/data/")===0)file="/"+file;else file=base+file.replace(/^\.\//,"");
+   return getJSON(file).then(rows);
+ }).catch(function(){return [];});
+}
+
 function run(q,opts){opts=opts||{};q=txt(q).replace(/\s+/g," ");var input=document.getElementById("ubnuxSmartSearchInput");if(input)input.value=q;if(!q){st.active=false;st.q="";st.matches=[];render([],"");return Promise.resolve([]);}st.active=true;st.q=q;
  return loadIndex().then(function(list){var intent=detect(list,q),hasD=!!intent.district,hasC=!!intent.category,hasS=!!intent.state;var pool=list.filter(function(b){return (!hasD||matchesEntity(b,intent.district,"district"))&&(!hasC||matchesEntity(b,intent.category,"category"))&&(!hasS||matchesEntity(b,intent.state,"state"));});
+ /* Render the compact index immediately. If the query resolves to a district, upgrade it to the complete district chunk without waiting for the first paint. */
+ var initialScored=pool.map(function(b){return {b:b,s:score(b,q,intent)};}).filter(function(x){return x.s>0;});
+ initialScored.sort(function(a,b){return b.s-a.s;});
+ var initialOut=unique(initialScored.map(function(x){return x.b;}));
+ st.matches=initialOut;render(initialOut,q);
+ if(!opts.noHistory)updateSEO(pathFor(q,intent,initialOut),q);
+ if(hasD){return loadDistrictChunk(intent,list).then(function(full){
+   var fullPool=unique(full||[]).filter(function(b){return matchesEntity(b,intent.district,"district")&&(!hasC||matchesEntity(b,intent.category,"category"))&&(!hasS||matchesEntity(b,intent.state,"state"));});
+   var fs=fullPool.map(function(b){return {b:b,s:score(b,q,intent)};}).filter(function(x){return x.s>0;});
+   fs.sort(function(a,b){return b.s-a.s||field(a.b,["BusinessName","name","Name"]).localeCompare(field(b.b,["BusinessName","name","Name"]));});
+   var upgraded=unique(fs.map(function(x){return x.b;}));
+   if(upgraded.length){st.matches=upgraded;render(upgraded,q);}
+   return st.matches;
+ });
+ }
  /* For a district/category keyword, keep every exact entity match even when fuzzy score is low. */
  var scored=pool.map(function(b){return {b:b,s:score(b,q,intent)};}).filter(function(x){return x.s>0;});
  if(!scored.length)scored=list.map(function(b){return {b:b,s:score(b,q,intent)};}).filter(function(x){return x.s>0;});
