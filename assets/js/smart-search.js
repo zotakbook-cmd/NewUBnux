@@ -1,4 +1,4 @@
-/* UBnux Smart Search v7.0.0
+/* UBnux Smart Search v7.2.0
  * Entity-first search:
  * 1) District name -> complete district chunk
  * 2) Category name -> all matching businesses
@@ -456,6 +456,23 @@
 
     if(intent && intent.category) category=categoryName(intent.category);
 
+    /*
+     * CATEGORY HAS PRIORITY OVER A BUSINESS MATCH.
+     * Example: query "fashion" can also fuzzy-match a business such as
+     * "Mukesh Siwan Fashion House".  That must NOT turn a category search
+     * into a business-detail URL.  If a category entity is recognized, the
+     * canonical URL is always the category directory URL.
+     */
+    if(intent && intent.category){
+      if(district && state){
+        return "/in/"+slug(state)+"/"+slug(district)+"/"+slug(category)+"/";
+      }
+      return "/in/all/"+slug(category)+"/";
+    }
+
+    /*
+     * BUSINESS URL is used only when no district/category entity won.
+     */
     if(intent && intent.business && !district && !category){
       var b=intent.business;
       state=stateOf(b);
@@ -570,7 +587,10 @@
     if(p.length===2 && p[0]==="search") return {type:"search",query:p[1].replace(/-/g," ")};
     if(p.length===3 && p[0]==="in") return {type:"district",stateSlug:p[1],districtSlug:p[2]};
     if(p.length===4 && p[0]==="in"){
+      /* /in/all/<category>/ = category across every state/district */
       if(p[1]==="all") return {type:"category",categorySlug:p[2]};
+      /* /in/<state>/all/<category>/ = category across every district in one state */
+      if(p[2]==="all") return {type:"state-category",stateSlug:p[1],categorySlug:p[3]};
       return {type:"district-category",stateSlug:p[1],districtSlug:p[2],categorySlug:p[3]};
     }
     return null;
@@ -590,6 +610,32 @@
     });
   }
 
+  function loadAllDistrictChunks(stateSlug){
+    return loadDistrictIndex().then(function(list){
+      var wantedState=slug(stateSlug||"");
+      var districts=list.filter(function(d){
+        if(!wantedState) return true;
+        var ds=slug(first(d,["stateSlug","StateSlug","StateName","stateName","State","state"]));
+        return !ds || ds===wantedState;
+      });
+      if(!districts.length && wantedState){
+        /* State metadata may be absent in an older district index; do not
+           silently return zero. Load every chunk and filter by business state. */
+        districts=list.slice();
+      }
+      return Promise.all(districts.map(function(d){
+        return loadDistrictChunk(d).catch(function(err){
+          console.warn("UBnux district chunk skipped:",districtName(d),err);
+          return [];
+        });
+      })).then(function(chunks){
+        var all=[];
+        chunks.forEach(function(a){ all=all.concat(a||[]); });
+        return unique(all);
+      });
+    });
+  }
+
   function runDirectoryRoute(route){
     route=route||{};
     var q=route.query||route.districtSlug||route.categorySlug||"";
@@ -601,13 +647,18 @@
       return run(q,{noHistory:true,skipRoute:true});
     }
 
-    if(route.type==="category"){
-      return loadIndex().then(function(index){
-        var result=unique(index).filter(function(b){return categoryMatchesSlug(b,route.categorySlug);});
+    /* CATEGORY DIRECTORY: NEVER USE business-index.json AS THE COMPLETE
+       DATASET. It is a compact index. Load every district chunk instead. */
+    if(route.type==="category" || route.type==="state-category"){
+      return loadAllDistrictChunks(route.type==="state-category" ? route.stateSlug : "").then(function(all){
+        var result=all.filter(function(b){
+          return categoryMatchesSlug(b,route.categorySlug) &&
+            (!route.stateSlug || stateOf(b)===norm(route.stateSlug) || slug(stateOf(b))===slug(route.stateSlug));
+        });
         render(result,q);
         return result;
       }).catch(function(e){
-        console.error("UBnux category route failed:",e);
+        console.error("UBnux category directory failed:",e);
         render([],q); return [];
       });
     }
@@ -818,7 +869,7 @@
   }
 
   window.UBnuxSmartSearch={
-    version:"7.0.0",
+    version:"7.3.0",
     state:state,
     init:init,
     bind:bind,
