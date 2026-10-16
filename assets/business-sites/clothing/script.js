@@ -17,10 +17,6 @@
 
   "use strict";
 
-  /* Static-only business template: receives business data from UBnuxBusinessPage.
-     This template never calls Google Sheets, Apps Script, or /api. */
-  window.UBnuxClothingStaticTemplate = true;
-
 
   /* =======================================================
      CONFIG
@@ -30,7 +26,7 @@
 
     NAME: "clothing",
 
-    VERSION: "3.3.0",
+    VERSION: "3.2.0",
 
     SLIDE_INTERVAL: 5000,
 
@@ -306,9 +302,6 @@ let heroMouseLeaveHandler = null;
     */
 
     const candidates = [
-
-      window.UBnuxBusinessPageData &&
-        window.UBnuxBusinessPageData.business,
 
       window.UBNUX_BUSINESS,
 
