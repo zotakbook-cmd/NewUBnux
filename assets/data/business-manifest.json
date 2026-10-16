@@ -1,27 +1,8 @@
 {
   "version": "2.0.0-secure",
-  "generatedAt": "2026-10-16T06:36:51.451Z",
-  "source": "Google Sheets",
-  "spreadsheetId": "1WLxzPN29CgRvIFJnyua_8RLAOKA_yUPZmh5IJfLOhzk",
-  "spreadsheetName": "NewUBnux",
-  "businessSheetSuffix": "_Businesses",
-  "totalBusinesses": 200,
-  "districtCount": 2,
-  "categoryCount": 81,
-  "files": [
-    "business-index.json",
-    "businesses/patna.json",
-    "businesses/siwan.json",
-    "categories.json",
-    "category-index.json",
-    "district-index.json",
-    "districts.json",
-    "states.json"
-  ],
-  "strategy": "static-first; minimal public index + contact-free district chunks",
-  "apiFallback": false,
+  "generatedAt": "REPLACE_BY_EXPORTER",
+  "staticFirst": true,
   "contacts": "API-only",
   "publicJsonContainsMobile": false,
-  "publicJsonContainsEmail": false,
-  "homepageBusinessLoad": false
+  "publicJsonContainsEmail": false
 }
