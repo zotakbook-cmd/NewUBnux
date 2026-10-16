@@ -1,16 +1,31 @@
 {
   "version": "2.0.0-secure",
-  "generatedAt": "REPLACE_BY_EXPORTER",
+  "generatedAt": "2026-10-16T08:22:23.236Z",
+  "staticFirst": true,
   "districts": [
     {
+      "districtId": "DIST-002",
+      "DistrictID": "DIST-002",
+      "district": "patna",
+      "slug": "patna",
+      "Slug": "patna",
+      "DistrictName": "Patna",
+      "state": "Bihar",
+      "stateSlug": "bihar",
+      "file": "/assets/data/businesses/patna.json",
+      "total": 100
+    },
+    {
       "districtId": "DIST-001",
+      "DistrictID": "DIST-001",
       "district": "siwan",
       "slug": "siwan",
+      "Slug": "siwan",
       "DistrictName": "Siwan",
       "state": "Bihar",
       "stateSlug": "bihar",
       "file": "/assets/data/businesses/siwan.json",
-      "total": 1
+      "total": 100
     }
   ]
 }
