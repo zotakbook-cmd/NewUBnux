@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0-secure",
-  "generatedAt": "2026-10-16T08:22:23.236Z",
+  "version": "1.2.0",
+  "generatedAt": "2026-10-16T08:58:21.567Z",
   "source": "Google Sheets",
   "spreadsheetId": "1WLxzPN29CgRvIFJnyua_8RLAOKA_yUPZmh5IJfLOhzk",
   "spreadsheetName": "NewUBnux",
@@ -18,10 +18,7 @@
     "districts.json",
     "states.json"
   ],
-  "strategy": "static-first; minimal public index + contact-free district chunks",
-  "apiFallback": false,
-  "contacts": "API-only",
-  "publicJsonContainsMobile": false,
-  "publicJsonContainsEmail": false,
+  "strategy": "static-first; district chunks plus compact search index",
+  "apiFallback": true,
   "homepageBusinessLoad": false
 }
