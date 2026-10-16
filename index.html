@@ -172,7 +172,7 @@
 .ubnux-smart-search-hints button:hover{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
 @media(max-width:600px){.ubnux-smart-search-static{padding:15px;border-radius:15px}.ubnux-smart-search-form{flex-direction:column}.ubnux-smart-search-form input,.ubnux-smart-search-form button{width:100%;height:48px}.ubnux-smart-search-hints{gap:6px}}
 </style>
-<link rel="stylesheet" href="/assets/css/secure-business.css?v=5.0.0">
+<link rel="stylesheet" href="/assets/css/secure-business.css?v=5.0.1">
 </head>
 
 
@@ -858,22 +858,22 @@
        CORE CONFIG
   ====================================================== -->
 
-  <script src="/assets/js/config.js?v=5.0.0"></script>
-<script src="/assets/js/cache.js?v=5.0.0"></script>
+  <script src="/assets/js/config.js?v=5.0.1"></script>
+<script src="/assets/js/cache.js?v=5.0.1"></script>
 
 
   <!-- =====================================================
        CORE ROUTER
   ====================================================== -->
 
-  <script src="/assets/js/router.js?v=5.0.0"></script>
+  <script src="/assets/js/router.js?v=5.0.1"></script>
 
 
   <!-- =====================================================
        API CLIENT
   ====================================================== -->
 
-  <script src="/assets/js/api.js?v=5.0.0"></script>
+  <script src="/assets/js/api.js?v=5.0.1"></script>
 
 
   <!-- =====================================================
@@ -883,7 +883,7 @@
        /in/state/district/category/business/
   ====================================================== -->
 
-  <script src="/assets/js/seo/seo-router.js?v=5.0.0"></script>
+  <script src="/assets/js/seo/seo-router.js?v=5.0.1"></script>
 
 
   <!-- =====================================================
@@ -898,7 +898,7 @@
        - Twitter
   ====================================================== -->
 
-  <script src="/assets/js/seo/seo-meta.js?v=5.0.0"></script>
+  <script src="/assets/js/seo/seo-meta.js?v=5.0.1"></script>
 
 
   <!-- =====================================================
@@ -907,7 +907,7 @@
        Renders backend-generated JSON-LD only.
   ====================================================== -->
 
-  <script src="/assets/js/seo/schema.js?v=5.0.0"></script>
+  <script src="/assets/js/seo/schema.js?v=5.0.1"></script>
 
 
   <!-- =====================================================
@@ -929,9 +929,12 @@
   var p=(window.location.pathname||"/").split("?")[0].split("#")[0]
     .split("/").filter(Boolean).map(function(x){return String(x).toLowerCase();});
   var permanent = p.length === 5 && p[0] === "in" && p[1] && p[2] && p[3] && p[4];
-  if (permanent) {
-    document.write('<script src="/assets/js/seo/business-page.js?v=5.0.0"><\\/script>');
-  }
+  if (!permanent) return;
+
+  var s=document.createElement("script");
+  s.src="/assets/js/seo/business-page.js?v=5.0.1";
+  s.async=false;
+  document.head.appendChild(s);
 })();
 </script>
 
@@ -940,15 +943,15 @@
        HOMEPAGE / DIRECTORY SYSTEM
   ====================================================== -->
 
-  <script src="/assets/js/storage.js?v=5.0.0"></script>
+  <script src="/assets/js/storage.js?v=5.0.1"></script>
 
-  <script src="/assets/js/state.js?v=5.0.0"></script>
+  <script src="/assets/js/state.js?v=5.0.1"></script>
 
-  <script src="/assets/js/districts.js?v=5.0.0"></script>
+  <script src="/assets/js/districts.js?v=5.0.1"></script>
 
-  <script src="/assets/js/categories.js?v=5.0.0"></script>
+  <script src="/assets/js/categories.js?v=5.0.1"></script>
 
-  <script src="/assets/js/businesses.js?v=5.0.0"></script>
+  <script src="/assets/js/businesses.js?v=5.0.1"></script>
 
   <!-- =====================================================
        SMART SEARCH CONTROLLER
@@ -957,7 +960,7 @@
        recognized before normal directory initialization.
   ====================================================== -->
 
-  <script src="/assets/js/smart-search.js?v=5.0.0"></script>
+  <script src="/assets/js/smart-search.js?v=5.0.1"></script>
 
   <!-- =====================================================
        MAIN APPLICATION
@@ -965,33 +968,8 @@
        Smart Search aware application controller.
   ====================================================== -->
 
-  <script>
-(function(){
-  function init(){
-    var form=document.getElementById("ubnuxSmartSearchForm");
-    var input=document.getElementById("ubnuxSmartSearchInput");
-    if(!form||!input)return;
-    form.addEventListener("submit",function(e){
-      e.preventDefault();
-      var q=(input.value||"").trim();
-      if(!q)return;
-      if(window.UBnuxSmartSearch&&typeof window.UBnuxSmartSearch.search==="function"){
-        window.UBnuxSmartSearch.search(q);
-      }else{
-        window.location.href="/"+q.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")+"/";
-      }
-    });
-    document.querySelectorAll("[data-smart-query]").forEach(function(btn){
-      btn.addEventListener("click",function(){
-        input.value=btn.getAttribute("data-smart-query")||"";
-        form.requestSubmit();
-      });
-    });
-  }
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
-})();
-</script>
-<script src="/assets/js/app.js?v=5.0.0"></script>
+  <!-- Smart Search behavior is owned by smart-search.js. -->
+<script src="/assets/js/app.js?v=5.0.1"></script>
 
 
 </body>
