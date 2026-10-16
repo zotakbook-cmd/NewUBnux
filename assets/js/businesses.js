@@ -1,4 +1,4 @@
-/* UBnux Businesses v5.0.2 - robust cards + pagination + safe URLs */
+/* UBnux Businesses v5.0.4 - robust cards + fixed Load More + safe URLs */
 (function (window, document) {
   "use strict";
 
@@ -338,15 +338,29 @@
     var more = document.getElementById("loadMoreWrapper");
     var button = document.getElementById("loadMoreButton");
 
+    /*
+      Load More is shown only when additional records are
+      actually loaded into allItems.
+    */
+    var visible = st.shown < st.allItems.length;
+
+    st.hasMore = visible;
+
     if (more) {
-      more.hidden = !st.hasMore;
+      more.hidden = !visible;
+      more.classList.toggle("hidden", !visible);
+      more.style.display = visible ? "" : "none";
     }
 
     if (button) {
-      button.disabled = !st.hasMore;
-      button.hidden = !st.hasMore;
+      button.disabled = !visible;
+      button.hidden = !visible;
+      button.classList.toggle("hidden", !visible);
+      button.style.display = visible ? "" : "none";
+      button.setAttribute("aria-hidden", visible ? "false" : "true");
     }
   }
+
 
   /* ---------------------------------------
      Summary
@@ -428,17 +442,11 @@
       st.shown
     );
 
-    st.hasMore =
-      st.shown < st.total &&
-      st.shown < st.allItems.length;
-
     /*
-      If loaded list itself is bigger than 18,
-      pagination continues locally.
+      Local pagination: if more than PAGE_SIZE records are loaded,
+      Load More must be available.
     */
-    if (st.allItems.length > st.shown) {
-      st.hasMore = true;
-    }
+    st.hasMore = st.shown < st.allItems.length;
 
     grid.innerHTML = "";
 
@@ -482,49 +490,11 @@
     );
 
     if (next <= st.shown) {
-      st.hasMore = false;
-      syncMore();
-      updateSummary();
-      return;
-    }
-
-    var fragment =
-      document.createDocumentFragment();
-
-    st.allItems
-      .slice(st.shown, next)
-      .forEach(function (b) {
-        fragment.appendChild(card(b));
-      });
-
-    grid.appendChild(fragment);
-
-    st.shown = next;
-
-    st.items =
-      st.allItems.slice(0, st.shown);
-
-    /*
-      IMPORTANT:
-      If backend says total is larger than
-      currently loaded records, app.js/API must
-      load the next page. We don't fake data here.
+      /*
+      Never create a dead button from a backend total alone.
+      The current businesses.js can append only records already loaded.
     */
-    st.hasMore =
-      st.shown < st.allItems.length ||
-      st.shown < st.total;
-
-    /*
-      If there are no locally loaded records left,
-      disable the button. Otherwise the button would
-      appear clickable but do nothing.
-    */
-    if (
-      st.shown >= st.allItems.length &&
-      st.shown >= st.total
-    ) {
-      st.hasMore = false;
-    }
+    st.hasMore = st.shown < st.allItems.length;
 
     updateSummary();
     syncMore();
