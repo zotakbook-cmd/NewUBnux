@@ -1,4 +1,4 @@
-/* UBnux Business Page v5.0.2 Secure Static Detail - routed shell support */
+/* UBnux Business Page v5.1.1 Secure Static Detail - routed shell support */
 (function(window, document){
   "use strict";
 
@@ -36,10 +36,18 @@
   }
 
   function route(){
-    return window.UBnuxRouter &&
-      typeof window.UBnuxRouter.businessRoute === "function"
-      ? window.UBnuxRouter.businessRoute()
-      : null;
+    if(window.UBnuxRouter &&
+       typeof window.UBnuxRouter.businessRoute === "function"){
+      return window.UBnuxRouter.businessRoute();
+    }
+    var p=String(window.location.pathname||"/").split("?")[0].split("#")[0]
+      .split("/").filter(Boolean).map(function(x){
+        try{return decodeURIComponent(x).trim().toLowerCase();}
+        catch(e){return String(x).trim().toLowerCase();}
+      });
+    return p.length===5 && p[0]==="in" ? {
+      state:p[1],district:p[2],category:p[3],slug:p[4]
+    } : null;
   }
 
   function el(id){ return document.getElementById(id); }
@@ -357,8 +365,20 @@
 
   function init(){
     var r = route();
-
     if(!r) return;
+
+    var globalLoader=el("pageLoader");
+    if(globalLoader){
+      globalLoader.classList.add("hidden");
+      globalLoader.setAttribute("aria-hidden","true");
+      globalLoader.style.opacity="0";
+      globalLoader.style.visibility="hidden";
+      globalLoader.style.pointerEvents="none";
+    }
+    var home=el("homePage");
+    if(home) home.hidden=true;
+    var root=el("businessPageRoot");
+    if(root) root.hidden=false;
 
     var loader = el("businessPageLoader");
     var error = el("businessPageError");
@@ -385,7 +405,7 @@
   }
 
   window.UBnuxBusinessPage = {
-    version:"5.0.2",
+    version:"5.1.1",
     init:init,
     loadBusiness:loadBusiness,
     loadContact:loadContact
