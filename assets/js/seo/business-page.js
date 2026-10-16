@@ -141,23 +141,27 @@
 
       return window.UBnuxStaticCache.getJSON(file).then(function(x){
         var arr = rows(x,"businesses");
-
         var slug = String(r.slug || "").trim().toLowerCase();
-        var b = arr.find(function(v){
-          return getBusinessSlug(v) === slug;
-        });
+        var b = arr.find(function(v){ return getBusinessSlug(v) === slug; });
 
         if(!b){
-          b = arr.find(function(v){
-            return getBusinessId(v) === String(r.slug || "").trim();
+          b = arr.find(function(v){ return getBusinessId(v) === String(r.slug || "").trim(); });
+        }
+
+        if(b) return { business:b, district:d };
+
+        /* Last-resort lookup from the compact global index. */
+        var indexURL = C.BUSINESS_INDEX_JSON_URL || "/assets/data/business-index.json";
+        return window.UBnuxStaticCache.getJSON(indexURL).then(function(ix){
+          var all = rows(ix,"businesses");
+          var found = all.find(function(v){
+            var path = String(v && (v.SEOPath || v.seoPath || "")).trim().toLowerCase();
+            return path === String(r.state + "/" + r.district + "/" + r.category + "/" + r.slug).replace(/^/, "/in/").replace(/\/$/, "") + "/" ||
+              (getBusinessSlug(v) === slug && String(v && (v.DistrictSlug || v.districtSlug || "")).toLowerCase() === String(r.district).toLowerCase());
           });
-        }
-
-        if(!b){
-          throw new Error("Business not found in static district data.");
-        }
-
-        return { business:b, district:d };
+          if(!found) throw new Error("Business not found in static district data.");
+          return { business:found, district:d };
+        });
       });
     });
   }
@@ -218,7 +222,7 @@
       window.UBnuxSEOMeta.apply({
         title:document.title,
         description:String(desc).slice(0,320),
-        canonicalURL:window.location.href
+        canonicalURL:window.location.origin + window.location.pathname
       });
     }
 
