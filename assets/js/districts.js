@@ -1,1 +1,21 @@
-(function(window){"use strict";function clean(v){return String(v==null?"":v).trim();}function load(){return window.UBnuxStaticCache.getJSON((window.UBNUX_CONFIG||{}).DISTRICTS_JSON_URL||"/assets/data/districts.json").then(function(d){d=Array.isArray(d)?d:(d.districts||[]);window.UBnuxState.setDistricts(d);return d;});}function render(list){var el=document.getElementById("districtFilter");if(!el)return;var selected=el.value;el.innerHTML='<option value="">All Districts</option>';list.filter(function(x){return x.Active!==false;}).sort(function(a,b){return clean(a.DistrictName||a.Name).localeCompare(clean(b.DistrictName||b.Name));}).forEach(function(d){var o=document.createElement("option");o.value=d.Slug||d.DistrictCode||d.DistrictName;o.textContent=d.DistrictName||d.Name||o.value;el.appendChild(o);});if(selected)el.value=selected;}window.UBnuxDistricts={load:load,render:render,renderStates:function(){},refreshFromAPI:function(){return window.UBnuxAPI.get("districts",{}).then(function(r){var d=r.districts||r.data||[];window.UBnuxState.setDistricts(d);render(d);return d;});}};})(window);
+/* UBnux Districts v5.4.0 - dropdown only, never auto-loads businesses */
+(function(window,document){"use strict";
+  var list=[], byState=Object.create(null);
+  function clean(v){return String(v==null?"":v).trim();}
+  function val(v){return clean(v).toLowerCase();}
+  function first(o,keys){o=o||{};for(var i=0;i<keys.length;i++)if(o[keys[i]]!=null&&clean(o[keys[i]])!=="")return o[keys[i]];return "";}
+  function rows(x){if(Array.isArray(x))return x;if(!x||typeof x!=="object")return[];return Array.isArray(x.districts)?x.districts:Array.isArray(x.data)?x.data:Array.isArray(x.items)?x.items:Array.isArray(x.results)?x.results:[];}
+  function stateOf(d){return val(first(d,["State","state","StateName","stateName","StateSlug","stateSlug","StateCode","stateCode"]));}
+  function idOf(d){return clean(first(d,["DistrictID","districtId","DistrictCode","districtCode","id","ID","Slug","slug"]));}
+  function nameOf(d){return clean(first(d,["DistrictName","districtName","Name","name","Slug","slug"]));}
+  function slugOf(d){return clean(first(d,["Slug","slug","DistrictSlug","districtSlug"]))||nameOf(d).toLowerCase().replace(/[^a-z0-9]+/g,"-");}
+  function getJSON(url){if(window.UBnuxStaticCache&&typeof window.UBnuxStaticCache.getJSON==="function")return window.UBnuxStaticCache.getJSON(url);return fetch(url,{cache:"no-cache",headers:{Accept:"application/json"}}).then(function(r){if(!r.ok)throw Error("HTTP "+r.status);return r.json();});}
+  function clearDistricts(){var d=document.getElementById("districtFilter");if(!d)return;d.innerHTML='<option value="">All Districts</option>';d.disabled=true;}
+  function render(stateValue){var d=document.getElementById("districtFilter");if(!d)return;var s=val(stateValue),arr=byState[s]||[];d.innerHTML='<option value="">All Districts</option>';arr.filter(function(x){return x.Active!==false&&x.active!==false;}).sort(function(a,b){return Number(a.SortOrder||9999)-Number(b.SortOrder||9999)||nameOf(a).localeCompare(nameOf(b));}).forEach(function(x){var o=document.createElement("option");o.value=idOf(x);o.textContent=nameOf(x);o.dataset.slug=slugOf(x);d.appendChild(o);});d.disabled=!s;}
+  function load(){var url=(window.UBNUX_CONFIG||{}).DISTRICTS_JSON_URL||"/assets/data/districts.json";return getJSON(url).then(function(x){list=rows(x);byState=Object.create(null);list.forEach(function(d){var s=stateOf(d);(byState[s]||(byState[s]=[])).push(d);});return list;});}
+  function loadDistricts(stateValue){render(stateValue);return Promise.resolve(byState[val(stateValue)]||[]);}
+  function getDistrict(id){var v=val(id);return list.find(function(d){return val(idOf(d))===v||val(slugOf(d))===v||val(nameOf(d))===v;})||null;}
+  function getDistrictName(id){var d=getDistrict(id);return d?nameOf(d):"";}
+  function getDistrictSlug(id){var d=getDistrict(id);return d?slugOf(d):clean(id);}
+  window.UBnuxDistricts={version:"5.4.0",load:load,loadDistricts:loadDistricts,render:render,clearDistricts:clearDistricts,getDistrict:getDistrict,getDistrictName:getDistrictName,getDistrictSlug:getDistrictSlug,getAll:function(){return list.slice();}};
+})(window,document);
