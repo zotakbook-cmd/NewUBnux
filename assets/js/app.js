@@ -1,4 +1,4 @@
-/* UBnux App v5.0.2 - resilient static bootstrap + loader failsafe */
+/* UBnux App v5.1.1 - resilient static bootstrap + loader failsafe */
 (function (window, document) {
   "use strict";
 
@@ -495,7 +495,21 @@
      INITIALIZATION
   ========================================================= */
 
+  function isBusinessRoute() {
+    return !!(window.UBnuxRouter &&
+      typeof window.UBnuxRouter.isBusinessRoute === "function" &&
+      window.UBnuxRouter.isBusinessRoute());
+  }
+
   function init() {
+    if (isBusinessRoute()) {
+      hideLoader();
+      var home = el("homePage");
+      if (home) home.hidden = true;
+      if (document.body) document.body.classList.add("ubnux-ready");
+      return;
+    }
+
     var y = el("currentYear");
 
     if (y) {
