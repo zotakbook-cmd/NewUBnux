@@ -164,6 +164,8 @@
 
   /* =========================================================
      FILTERS
+     IMPORTANT: Pass the FULL filtered dataset to businesses.js.
+     businesses.js handles the first 18 records and local Load More.
   ========================================================= */
 
   function applyFilters() {
@@ -261,7 +263,7 @@
           typeof window.UBnuxBusinesses.render === "function"
         ) {
           window.UBnuxBusinesses.render(
-            p.slice(0, 18),
+            p,
             p.length
           );
         }
