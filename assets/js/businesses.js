@@ -1,4 +1,4 @@
-/* UBnux Businesses v5.0.4 - robust cards + fixed Load More + safe URLs */
+/* UBnux Businesses v5.0.5 - fixed Load More */
 (function (window, document) {
   "use strict";
 
@@ -338,12 +338,8 @@
     var more = document.getElementById("loadMoreWrapper");
     var button = document.getElementById("loadMoreButton");
 
-    /*
-      Load More is shown only when additional records are
-      actually loaded into allItems.
-    */
+    /* Show Load More only when more records are actually loaded. */
     var visible = st.shown < st.allItems.length;
-
     st.hasMore = visible;
 
     if (more) {
@@ -360,7 +356,6 @@
       button.setAttribute("aria-hidden", visible ? "false" : "true");
     }
   }
-
 
   /* ---------------------------------------
      Summary
@@ -490,9 +485,31 @@
     );
 
     if (next <= st.shown) {
-      /*
-      Never create a dead button from a backend total alone.
-      The current businesses.js can append only records already loaded.
+      st.hasMore = false;
+      syncMore();
+      updateSummary();
+      return;
+    }
+
+    var fragment =
+      document.createDocumentFragment();
+
+    st.allItems
+      .slice(st.shown, next)
+      .forEach(function (b) {
+        fragment.appendChild(card(b));
+      });
+
+    grid.appendChild(fragment);
+
+    st.shown = next;
+
+    st.items =
+      st.allItems.slice(0, st.shown);
+
+    /*
+      This local Load More button can append only records
+      already loaded into allItems.
     */
     st.hasMore = st.shown < st.allItems.length;
 
