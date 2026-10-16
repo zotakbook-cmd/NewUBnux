@@ -1,4 +1,4 @@
-/* UBnux Smart Search v6.0.0
+/* UBnux Smart Search v6.3.0
  * Entity-first search:
  * 1) District name -> complete district chunk
  * 2) Category name -> all matching businesses
@@ -60,14 +60,20 @@
     });
     return out;
   }
-  function getJSON(url){
-    if(window.UBnuxStaticCache && typeof window.UBnuxStaticCache.getJSON==="function"){
-      return window.UBnuxStaticCache.getJSON(url);
-    }
+  function fetchJSONDirect(url){
     return fetch(url,{cache:"no-store",headers:{Accept:"application/json"}}).then(function(r){
       if(!r.ok) throw Error("HTTP "+r.status);
       return r.json();
     });
+  }
+
+  function getJSON(url){
+    if(window.UBnuxStaticCache && typeof window.UBnuxStaticCache.getJSON==="function"){
+      return window.UBnuxStaticCache.getJSON(url).catch(function(){
+        return fetchJSONDirect(url);
+      });
+    }
+    return fetchJSONDirect(url);
   }
   function indexURL(){ return C.BUSINESS_INDEX_JSON_URL || "/assets/data/business-index.json"; }
   function districtIndexURL(){ return C.DISTRICT_INDEX_JSON_URL || "/assets/data/district-index.json"; }
@@ -243,21 +249,21 @@
     });
   }
 
+  function safeRecognize(q,type){
+    return recognizeEntity(q,type).catch(function(e){
+      console.warn("UBnux entity recognition skipped:",type,e);
+      return null;
+    });
+  }
+
   function detectIntent(q){
+    /* One broken/empty compact index must NEVER kill a valid district search. */
     return Promise.all([
-      recognizeEntity(q,"district"),
-      recognizeEntity(q,"category"),
-      recognizeEntity(q,"business")
+      safeRecognize(q,"district"),
+      safeRecognize(q,"category"),
+      safeRecognize(q,"business")
     ]).then(function(x){
-      var d=x[0], c=x[1], b=x[2];
-      var result={district:d,category:c,business:b};
-      /*
-       * If the whole query is a district, district wins.
-       * If the whole query is a category, category wins.
-       * If both district/category are found from the whole phrase, use both.
-       * Business is a fallback/detail constraint.
-       */
-      return result;
+      return {district:x[0],category:x[1],business:x[2]};
     });
   }
 
@@ -296,6 +302,27 @@
       candidates.push("/assets/data/"+ds+".json");
     }
     return candidates.filter(function(v,i,a){return v && a.indexOf(v)===i;});
+  }
+
+  function loadDistrictBySlug(stateSlug,districtSlug){
+    var ds=slug(districtSlug);
+    if(!ds) return Promise.resolve([]);
+    return loadDistrictIndex().then(function(list){
+      var rec=list.find(function(x){
+        var xslug=slug(first(x,["slug","Slug","DistrictSlug","districtSlug","DistrictName","districtName"]));
+        var xstate=slug(first(x,["stateSlug","StateSlug","StateName","stateName","State","state"]));
+        return xslug===ds && (!stateSlug || !xstate || xstate===slug(stateSlug));
+      });
+      if(!rec){
+        rec=list.find(function(x){
+          return slug(districtName(x))===ds || slug(districtDisplay(x))===ds;
+        });
+      }
+      return rec ? loadDistrictChunk(rec) : [];
+    }).catch(function(e){
+      console.warn("UBnux direct district lookup failed",e);
+      return [];
+    });
   }
 
   function loadDistrictChunk(d){
@@ -415,6 +442,43 @@
     if(msg) msg.textContent=state.matches.length+" businesses found";
   }
 
+  function directoryRoute(){
+    var p=(location.pathname||"/").split("/").filter(Boolean).map(function(x){
+      try{return decodeURIComponent(x).toLowerCase();}catch(e){return String(x).toLowerCase();}
+    });
+    if(p.length===3 && p[0]==="in") return {stateSlug:p[1],districtSlug:p[2]};
+    if(p.length===4 && p[0]==="in") return {stateSlug:p[1],districtSlug:p[2],categorySlug:p[3]};
+    return null;
+  }
+
+  function runDirectoryRoute(route,opts){
+    opts=opts||{};
+    var q=route.districtSlug.replace(/-/g," ");
+    if(route.categorySlug) q += " "+route.categorySlug.replace(/-/g," ");
+    var input=document.getElementById("ubnuxSmartSearchInput");
+    if(input) input.value=q;
+    return loadDistrictBySlug(route.stateSlug,route.districtSlug).then(function(full){
+      var result=unique(full);
+      if(route.categorySlug){
+        var cs=slug(route.categorySlug);
+        result=result.filter(function(b){
+          return slug(first(b,["categorySlug","CategorySlug","categoryName","CategoryName","category","Category"],""))===cs;
+        });
+        if(!result.length){
+          result=unique(full).filter(function(b){
+            return slug(categoryOf(b))===cs || categoryOf(b).indexOf(norm(route.categorySlug.replace(/-/g," ")))>=0;
+          });
+        }
+      }
+      render(result,q);
+      return result;
+    }).catch(function(e){
+      console.error("UBnux directory route failed:",e);
+      render([],q);
+      return [];
+    });
+  }
+
   function run(q,opts){
     opts=opts||{};
     q=text(q).replace(/\s+/g," ");
@@ -427,6 +491,14 @@
     }
 
     state.active=true; state.q=q;
+
+    /* SEO directory URLs are authoritative. Load the exact district chunk
+       directly instead of trying to infer the district from the compact
+       business index. */
+    if(opts.route && opts.route.districtSlug){
+      return runDirectoryRoute(opts.route,opts);
+    }
+
     return detectIntent(q).then(function(intent){
       state.intent=intent;
 
@@ -545,20 +617,24 @@
       var parts=(location.pathname||"/").split("/").filter(Boolean).map(function(x){
         try{return decodeURIComponent(x).toLowerCase();}catch(e){return x.toLowerCase();}
       });
-      var q="";
+      var q="", route=null;
       if(parts.length===2 && parts[0]==="search"){
         q=parts[1].replace(/-/g," ").trim();
       }else if(parts.length===3 && parts[0]==="in"){
+        route={stateSlug:parts[1],districtSlug:parts[2]};
         q=parts[2].replace(/-/g," ").trim();
       }else if(parts.length===4 && parts[0]==="in"){
+        route={stateSlug:parts[1],districtSlug:parts[2],categorySlug:parts[3]};
         q=(parts[2]+" "+parts[3]).replace(/-/g," ").trim();
       }
       if(q){
         var input=document.getElementById("ubnuxSmartSearchInput");
         if(input) input.value=q;
-        /* Delay until businesses.js/app DOM are fully ready. */
-        setTimeout(function(){ run(q,{noHistory:true}); },0);
-        setTimeout(function(){ run(q,{noHistory:true}); },350);
+        /* App/bootstrap can still be loading. Repeat the authoritative route
+           load after startup so a late homepage render cannot leave 0 results. */
+        setTimeout(function(){ run(q,{noHistory:true,route:route}); },0);
+        setTimeout(function(){ run(q,{noHistory:true,route:route}); },350);
+        setTimeout(function(){ run(q,{noHistory:true,route:route}); },900);
       }
     }catch(e){
       console.warn("UBnux direct SEO search initialization failed",e);
@@ -566,7 +642,7 @@
   }
 
   window.UBnuxSmartSearch={
-    version:"6.2.0",
+    version:"6.3.0",
     state:state,
     init:init,
     bind:bind,
@@ -574,6 +650,7 @@
     run:run,
     loadIndex:loadIndex,
     getIndex:loadIndex,
+    loadDistrictBySlug:loadDistrictBySlug,
     isDirectorySearchRoute:function(){
       var p=(location.pathname||"/").split("/").filter(Boolean);
       return (p.length===2 && p[0]==="search") || (p.length===3 && p[0]==="in") || (p.length===4 && p[0]==="in");
