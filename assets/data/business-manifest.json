@@ -1,11 +1,11 @@
 {
-  "version": "1.1.0",
-  "generatedAt": "2026-10-15T11:56:45.314Z",
+  "version": "2.0.0-secure",
+  "generatedAt": "2026-10-16T06:36:51.451Z",
   "source": "Google Sheets",
   "spreadsheetId": "1WLxzPN29CgRvIFJnyua_8RLAOKA_yUPZmh5IJfLOhzk",
   "spreadsheetName": "NewUBnux",
   "businessSheetSuffix": "_Businesses",
-  "totalBusinesses": 201,
+  "totalBusinesses": 200,
   "districtCount": 2,
   "categoryCount": 81,
   "files": [
@@ -18,7 +18,10 @@
     "districts.json",
     "states.json"
   ],
-  "strategy": "static-first; district chunks plus compact search index",
-  "apiFallback": true,
+  "strategy": "static-first; minimal public index + contact-free district chunks",
+  "apiFallback": false,
+  "contacts": "API-only",
+  "publicJsonContainsMobile": false,
+  "publicJsonContainsEmail": false,
   "homepageBusinessLoad": false
 }
