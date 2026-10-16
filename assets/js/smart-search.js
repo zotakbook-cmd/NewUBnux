@@ -620,10 +620,24 @@
       try{return decodeURIComponent(x).toLowerCase();}catch(e){return String(x).toLowerCase();}
     });
     if(p.length===2 && p[0]==="search") return {type:"search",query:p[1].replace(/-/g," ")};
-    if(p.length===3 && p[0]==="in") return {type:"district",stateSlug:p[1],districtSlug:p[2]};
+
+    /*
+     * IMPORTANT ROUTE ORDER:
+     * /in/all/<category>/ has exactly 3 path segments.
+     * It MUST be detected as a category directory BEFORE the
+     * generic 3-segment district route, otherwise `all` is treated
+     * as a state and the category slug is treated as a district slug,
+     * which produces 0 businesses.
+     */
+    if(p.length===3 && p[0]==="in" && p[1]==="all") {
+      return {type:"category",categorySlug:p[2]};
+    }
+
+    if(p.length===3 && p[0]==="in") {
+      return {type:"district",stateSlug:p[1],districtSlug:p[2]};
+    }
+
     if(p.length===4 && p[0]==="in"){
-      /* /in/all/<category>/ = category across every state/district */
-      if(p[1]==="all") return {type:"category",categorySlug:p[2]};
       /* /in/<state>/all/<category>/ = category across every district in one state */
       if(p[2]==="all") return {type:"state-category",stateSlug:p[1],categorySlug:p[3]};
       return {type:"district-category",stateSlug:p[1],districtSlug:p[2],categorySlug:p[3]};
@@ -905,7 +919,7 @@
   }
 
   window.UBnuxSmartSearch={
-    version:"8.0.0",
+    version:"8.1.0",
     state:state,
     init:init,
     bind:bind,
