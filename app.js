@@ -1,0 +1,105 @@
+/* UBnux App v5.4.0 - deterministic directory + smart-search handoff */
+(function(window,document){"use strict";
+  var app={},bound=false,loaderTimer=null,districtIndexPromise=null,chunkCache=Object.create(null),stateCache=Object.create(null),states=[];
+  function el(id){return document.getElementById(id);} function clean(v){return String(v==null?"":v).trim();} function norm(v){return clean(v).toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9\u0900-\u097f]+/g," ").replace(/\s+/g," ").trim();} function slug(v){return norm(v).replace(/[^a-z0-9]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"");}
+  function first(o,keys){o=o||{};for(var i=0;i<keys.length;i++)if(o[keys[i]]!=null&&clean(o[keys[i]])!=="")return o[keys[i]];return "";}
+  function rows(x,key){if(Array.isArray(x))return x;if(!x||typeof x!=="object")return[];if(key&&Array.isArray(x[key]))return x[key];for(var i=0,k;i<(k=["businesses","districts","categories","states","results","items","data","records","list"]).length;i++)if(Array.isArray(x[k[i]]))return x[k[i]];return[];}
+  function unique(a){var seen=Object.create(null),out=[];(a||[]).forEach(function(b,i){if(!b||typeof b!=="object")return;var k=norm(first(b,["BusinessID","businessId","id","SEOPath","seoPath","Slug","slug","BusinessName","name"]));if(!k)k="_"+i;if(!seen[k]){seen[k]=1;out.push(b);}});return out;}
+  function getJSON(u){if(window.UBnuxStaticCache&&window.UBnuxStaticCache.getJSON)return window.UBnuxStaticCache.getJSON(u);return fetch(u,{cache:"no-cache",headers:{Accept:"application/json"}}).then(function(r){if(!r.ok)throw Error("HTTP "+r.status);return r.json();});}
+  function cfg(k,d){return window.UBNUX_CONFIG&&window.UBNUX_CONFIG[k]||d;}
+  function hideLoader(){var x=el("pageLoader");if(x){x.classList.add("hidden");x.style.opacity="0";x.style.visibility="hidden";x.style.pointerEvents="none";}if(loaderTimer){clearTimeout(loaderTimer);loaderTimer=null;}}
+  function reveal(){hideLoader();if(document.body)document.body.classList.add("ubnux-ready");}
+  function failsafe(){clearTimeout(loaderTimer);loaderTimer=setTimeout(reveal,8000);}
+  function stateNameFromOption(){var s=el("stateFilter");return s&&s.selectedOptions[0]?clean(s.selectedOptions[0].textContent):"";}
+  function districtNameFromOption(){var d=el("districtFilter");return d&&d.selectedOptions[0]?clean(d.selectedOptions[0].textContent):"";}
+  function current(){var s=el("stateFilter"),d=el("districtFilter"),c=window.UBnuxState&&window.UBnuxState.state?window.UBnuxState.state.selectedCategory||window.UBnuxState.state.selected.category:"";return{state:clean(s&&s.value),district:clean(d&&d.value),category:clean(c)};}
+  function loadStates(){return getJSON(cfg("STATES_JSON_URL","/assets/data/states.json")).then(function(x){states=rows(x,"states");if(window.UBnuxState)window.UBnuxState.setStates(states);var s=el("stateFilter");if(s){s.innerHTML='<option value="">All States</option>';states.filter(function(a){return a.Active!==false&&a.active!==false;}).sort(function(a,b){return Number(a.SortOrder||9999)-Number(b.SortOrder||9999)||clean(first(a,["StateName","Name"])).localeCompare(clean(first(b,["StateName","Name"])));}).forEach(function(a){var o=document.createElement("option"),v=first(a,["Slug","slug","StateCode","stateCode","StateName","Name"]);o.value=v;o.textContent=first(a,["StateName","stateName","Name","name","Slug","slug"]);o.dataset.slug=slug(first(a,["Slug","slug","StateName","StateName"]));s.appendChild(o);});s.disabled=false;}return states;});}
+  function loadDistrictIndex(){if(!districtIndexPromise)districtIndexPromise=getJSON(cfg("DISTRICT_INDEX_JSON_URL","/assets/data/district-index.json")).then(function(x){return rows(x,"districts");});return districtIndexPromise;}
+  function districtFile(d){return first(d,["file","File","url","URL","dataFile","DataFile","businessFile","BusinessFile"]);}
+  function stateMatches(a,b){var x=norm(a),y=norm(b);return !!x&&!!y&&(x===y||slug(x)===slug(y));}
+  function fieldMatch(y,v){var a=norm(y),b=norm(v),sa=slug(y),sb=slug(v);return !!a&&!!b&&(a===b||sa===sb||a.indexOf(b)>=0||b.indexOf(a)>=0||(" "+a+" ").indexOf(" "+b+" ")>=0);}
+  function businessState(b,v){return [b.State,b.state,b.StateName,b.stateName,b.StateSlug,b.stateSlug,b.StateCode,b.stateCode].some(function(x){return fieldMatch(x,v);});}
+  function businessDistrict(b,v){return [b.DistrictID,b.districtId,b.DistrictCode,b.districtCode,b.DistrictName,b.districtName,b.DistrictSlug,b.districtSlug,b.district,b.District].some(function(y){return fieldMatch(y,v);});}
+  function businessCategory(b,v){return [b.CategoryID,b.categoryId,b.CategoryName,b.categoryName,b.CategorySlug,b.categorySlug,b.category,b.Category].some(function(y){return fieldMatch(y,v);});}
+  function chunk(d){var f=districtFile(d);if(!f)return Promise.resolve([]);if(chunkCache[f])return chunkCache[f];chunkCache[f]=getJSON(f).then(function(x){return unique(rows(x,"businesses"));});return chunkCache[f];}
+  function findDistrict(v,list){var x=norm(v);return (list||[]).find(function(d){return norm(first(d,["DistrictID","districtId","DistrictCode","districtCode","Slug","slug","DistrictSlug","districtSlug","DistrictName","districtName"]))===x||slug(first(d,["Slug","slug","DistrictSlug","districtSlug","DistrictName","districtName"]))===slug(v);})||null;}
+  function stateData(v){
+    var key=norm(v);
+    if(stateCache[key])return stateCache[key];
+    stateCache[key]=Promise.all([loadDistrictIndex(),Promise.resolve(window.UBnuxDistricts&&window.UBnuxDistricts.getAll?window.UBnuxDistricts.getAll():[])]).then(function(a){
+      var ds=a[0]||[], master=a[1]||[], selected=[];
+      var wanted=norm(v), wantedSlug=slug(v);
+      function stateHit(x){var n=norm(x),z=slug(x);return n===wanted||z===wantedSlug||n.indexOf(wanted)>=0||wanted.indexOf(n)>=0;}
+      function districtBelongs(d){
+        return [d.state,d.State,d.stateName,d.StateName,d.stateSlug,d.StateSlug,d.StateCode,d.stateCode].some(stateHit);
+      }
+      var seenD=Object.create(null);
+      master.concat(ds).forEach(function(d){
+        if(!d||!districtBelongs(d))return;
+        var id=norm(first(d,["DistrictID","districtId","DistrictCode","districtCode","Slug","slug","DistrictSlug","districtSlug","DistrictName","districtName"]));
+        if(id&&!seenD[id]){seenD[id]=1;selected.push(d);}
+      });
+      var candidates=selected.length?selected:ds;
+      return Promise.all(candidates.map(chunk)).then(function(parts){
+        var out=[];parts.forEach(function(part){out=out.concat(part||[]);});
+        out=unique(out);
+        /* A district chunk is authoritative. Do not reject its records merely because
+           legacy rows contain values such as "Bihar bihar" in State. */
+        if(selected.length)return out;
+        /* Last-resort fallback for legacy/malformed district indexes. */
+        return getJSON(cfg("BUSINESS_INDEX_JSON_URL","/assets/data/business-index.json")).then(function(x){
+          return unique(rows(x,"businesses")).filter(function(b){
+            return [b.State,b.state,b.StateName,b.stateName,b.StateSlug,b.stateSlug,b.StateCode,b.stateCode].some(stateHit);
+          });
+        });
+      });
+    });
+    return stateCache[key];
+  }
+  function exactDistrictChunk(v){
+    return loadDistrictIndex().then(function(ds){
+      var d=findDistrict(v,ds);
+      if(d)return chunk(d);
+      var master=window.UBnuxDistricts&&window.UBnuxDistricts.getAll?window.UBnuxDistricts.getAll():[];
+      var md=findDistrict(v,master);
+      return md?loadDistrictIndex().then(function(all){var x=findDistrict(first(md,["DistrictID","districtId","DistrictCode","districtCode","Slug","slug","DistrictSlug","districtSlug","DistrictName","districtName"]),all);return x?chunk(x):[];}):[];
+    });
+  }
+  function sortList(a){var s=norm(el("sortFilter")&&el("sortFilter").value)||"featured";return a.sort(function(x,y){if(s==="name")return clean(first(x,["BusinessName","name","Name"])).localeCompare(clean(first(y,["BusinessName","name","Name"])));if(s==="rating")return Number(first(y,["Rating","rating"],0))-Number(first(x,["Rating","rating"],0));return Number(!!first(y,["Featured","featured"]))-Number(!!first(x,["Featured","featured"]))||clean(first(x,["BusinessName","name","Name"])).localeCompare(clean(first(y,["BusinessName","name","Name"])));});}
+  function clearResults(msg){if(window.UBnuxBusinesses)window.UBnuxBusinesses.render([],0);var t=el("businessSectionTitle");if(t)t.textContent="Find Businesses";var m=el("selectionMessage");if(m)m.textContent=msg||"Please select your state to continue.";}
+  function clearSearchInput(){var i=el("ubnuxSmartSearchInput");if(i)i.value="";var cs=el("categorySearchInput");if(cs)cs.value="";}
+  function resetDropdowns(){var s=el("stateFilter"),d=el("districtFilter");if(s)s.value="";if(window.UBnuxDistricts)window.UBnuxDistricts.clearDistricts();if(window.UBnuxState){window.UBnuxState.state.selected={state:"",district:"",category:"",stateName:"",districtName:"",categoryName:""};window.UBnuxState.state.selectedCategory="";}}
+  function setDirectoryMeta(x){
+    var stateText=stateNameFromOption()||x.state, districtText=districtNameFromOption()||x.district, catText=window.UBnuxCategories?window.UBnuxCategories.getCategoryName(x.category):x.category;
+    var path="/in/"+slug(stateText)+"/";
+    if(x.district)path+=slug(districtText)+"/";
+    if(x.category)path+=(x.district?slug(catText):"all/"+slug(catText)+"/");
+    var title="UBnux - Businesses in "+stateText;if(x.district)title+=" | "+districtText;if(x.category)title+=" | "+catText;
+    document.title=title;
+    var c=document.querySelector('link[rel="canonical"]');if(c)c.href=window.location.origin+path;
+    var m=document.querySelector('meta[name="description"]');if(m)m.content="Find local businesses in "+stateText+(x.district?", "+districtText:"")+(x.category?" for "+catText:"")+" with UBnux.";
+    try{history.replaceState({ubnuxDirectory:true},"",path);}catch(e){}
+  }
+  function applyFilters(opts){
+    opts=opts||{};var x=current();
+    if(!x.state){clearResults("Please select your state to continue.");return Promise.resolve([]);}
+    var promise=x.district?exactDistrictChunk(x.district):stateData(x.state);
+    return promise.then(function(data){
+      var p=unique(data||[]);
+      if(x.district)p=p.filter(function(b){return businessDistrict(b,x.district);});
+      else p=p.filter(function(b){return true;});
+      if(x.category)p=p.filter(function(b){return businessCategory(b,x.category);});
+      p=sortList(p);
+      if(window.UBnuxBusinesses)window.UBnuxBusinesses.render(p,p.length);
+      var t=el("businessSectionTitle"),m=el("selectionMessage");
+      if(t)t.textContent=x.category?"Businesses in "+(x.district?districtNameFromOption():stateNameFromOption())+" — "+window.UBnuxCategories.getCategoryName(x.category):"Businesses in "+(x.district?districtNameFromOption():stateNameFromOption());
+      if(m)m.textContent=p.length+" businesses found";
+      if(!opts.skipURL)setDirectoryMeta(x);
+      return p;
+    }).catch(function(e){console.error("UBnux filter failed",e);clearResults("Business data could not be loaded.");return[];});
+  }
+  function bind(){if(bound)return;bound=true;var s=el("stateFilter"),d=el("districtFilter"),cb=el("categoryDropdownButton"),menu=el("categoryDropdownMenu"),more=el("loadMoreButton"),sort=el("sortFilter");if(s)s.addEventListener("change",function(){var v=s.value;if(window.UBnuxCategories)window.UBnuxCategories.clearCategory();if(window.UBnuxState)window.UBnuxState.state.selected.state=v;if(!v){window.UBnuxDistricts.clearDistricts();clearResults();return;}window.UBnuxDistricts.loadDistricts(v);if(d)d.value="";window.UBnuxCategories.setEnabled(true);applyFilters();});if(d)d.addEventListener("change",function(){if(window.UBnuxCategories)window.UBnuxCategories.clearCategory();var v=d.value;if(window.UBnuxState)window.UBnuxState.state.selected.district=v;if(!v){applyFilters();return;}applyFilters();});if(cb&&menu)cb.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();if(cb.disabled)return;menu.classList.contains("open")?window.UBnuxCategories.close():window.UBnuxCategories.open();});if(sort)sort.addEventListener("change",function(){if(current().state)applyFilters({skipURL:true});});if(more)more.addEventListener("click",function(){if(window.UBnuxBusinesses)window.UBnuxBusinesses.appendMore(18);});window.addEventListener("popstate",function(){var r=window.UBnuxRouter.getRoute();if(r.type==="directory")restoreDirectory(r.params);else if(r.type==="search"&&window.UBnuxSmartSearch)window.UBnuxSmartSearch.search(r.query,{noHistory:true});else if(r.type==="home"){resetDropdowns();clearSearchInput();clearResults();}});}
+  function restoreDirectory(r){var s=el("stateFilter"),d=el("districtFilter");if(!r.state)return Promise.resolve(false);var so=Array.prototype.slice.call(s.options).find(function(o){return slug(o.value)===slug(r.state)||slug(o.textContent)===slug(r.state);});if(!so)return Promise.resolve(false);s.value=so.value;window.UBnuxState.state.selected.state=so.value;return window.UBnuxDistricts.loadDistricts(so.value).then(function(){if(r.district&&r.district!=="all"){var o=Array.prototype.slice.call(d.options).find(function(z){return slug(z.value)===slug(r.district)||slug(z.textContent)===slug(r.district);});if(o)d.value=o.value;}else if(d)d.value="";window.UBnuxState.state.selected.district=d.value;if(r.category){window.UBnuxCategories.setCategory(r.category);}else window.UBnuxCategories.clearCategory();window.UBnuxCategories.setEnabled(true);return applyFilters({skipURL:true});});}
+  function init(){failsafe();if(window.UBnuxSmartSearch&&typeof window.UBnuxSmartSearch.init==="function")window.UBnuxSmartSearch.init();var route=window.UBnuxRouter.getRoute();if(route.type==="business"){reveal();return;}Promise.resolve(loadStates()).then(function(){return window.UBnuxDistricts.load();}).then(function(){return window.UBnuxCategories.load();}).then(function(){bind();if(route.type==="directory")return restoreDirectory(route.params);if(route.type==="search")return window.UBnuxSmartSearch.search(route.query,{noHistory:true});clearResults();resetDropdowns();window.UBnuxCategories.setEnabled(false);}).catch(function(e){console.error("UBnux init failed",e);clearResults("Directory data could not load. Please refresh.");}).finally(reveal);}
+  app.version="5.7.0";app.applyFilters=applyFilters;app.resetDropdowns=resetDropdowns;app.clearSearchInput=clearSearchInput;app.init=init;window.UBnuxApp=app;if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
+})(window,document);
