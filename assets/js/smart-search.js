@@ -25,6 +25,7 @@
     if(state&&district&&category)return "/in/"+slug(state)+"/"+slug(district)+"/"+slug(category)+"/";
     if(state&&district)return "/in/"+slug(state)+"/"+slug(district)+"/";
     if(state&&category)return "/in/"+slug(state)+"/all/"+slug(category)+"/";
+    if(state)return "/in/"+slug(state)+"/";
     if(category)return "/search/"+slug(category)+"/";
     return "/search/"+slug(q)+"/";
   }
@@ -32,5 +33,5 @@
   function search(q,opts){opts=opts||{};q=text(q).replace(/\s+/g," ").trim();if(!q){deactivate();if(window.UBnuxBusinesses)window.UBnuxBusinesses.render([],0);return Promise.resolve([]);}st.active=true;st.q=q;return Promise.all([loadIndex(),detect(q)]).then(function(a){var list=a[0],intent=a[1],pool=list;var hasLocation=!!(intent.state||intent.district),hasCategory=!!intent.category;if(hasLocation||hasCategory)pool=list.filter(function(b){return matchField(b,intent.state,"state")&&matchField(b,intent.district,"district")&&matchField(b,intent.category,"category");});var scored=pool.map(function(b){return{b:b,s:score(b,q)};}).filter(function(x){return x.s>0||hasLocation||hasCategory;});scored.sort(function(a,b){return b.s-a.s||field(a.b,["BusinessName","name","Name"]).localeCompare(field(b.b,["BusinessName","name","Name"]));});var out=unique(scored.map(function(x){return x.b;}));st.matches=out;if(window.UBnuxBusinesses)window.UBnuxBusinesses.render(out,out.length);var title=document.getElementById("businessSectionTitle");if(title)title.textContent='Search results for "'+q+'"';var msg=document.getElementById("selectionMessage");if(msg)msg.textContent=out.length+" businesses found";if(!opts.noHistory)try{var path=searchPath(intent,q,out);history.replaceState({ubnuxSearch:q,searchIntent:{state:!!intent.state,district:!!intent.district,category:!!intent.category}},"",path);var can=document.querySelector('link[rel="canonical"]');if(can)can.href=window.location.origin+path;document.title='UBnux Search - '+q;}catch(e){}return out;}).catch(function(e){console.error("UBnux search failed",e);st.matches=[];if(window.UBnuxBusinesses)window.UBnuxBusinesses.render([],0);var m=document.getElementById("selectionMessage");if(m)m.textContent="Search data could not be loaded.";return[];});}
   function deactivate(){st.active=false;st.q="";st.matches=[];}
   function init(){var f=document.getElementById("ubnuxSmartSearchForm"),i=document.getElementById("ubnuxSmartSearchInput");if(f&&i&&!f.dataset.bound){f.dataset.bound="1";f.addEventListener("submit",function(e){e.preventDefault();search(i.value);});}}
-  window.UBnuxSmartSearch={version:"5.4.0",state:st,loadIndex:loadIndex,getIndex:loadIndex,search:search,deactivate:deactivate,init:init};
+  window.UBnuxSmartSearch={version:"5.6.0",state:st,loadIndex:loadIndex,getIndex:loadIndex,search:search,deactivate:deactivate,init:init};
 })(window,document);
