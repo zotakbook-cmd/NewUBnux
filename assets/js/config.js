@@ -1,9 +1,9 @@
-/* UBnux Config v5.0.0 Secure Static First */
+/* UBnux Config v5.0.1 Secure Static First */
 (function(window){
   "use strict";
   var origin = window.location.origin || "https://ubnux.com";
   window.UBNUX_CONFIG = {
-    VERSION: "5.0.0-secure",
+    VERSION: "5.0.1-secure",
     SITE_NAME: "UBnux",
     SITE_URL: "https://ubnux.com",
     PUBLIC_ORIGIN: origin,
@@ -25,7 +25,7 @@
     CONTACTS_API_ONLY: true,
     JSON_REVALIDATE: true,
     DEBUG: false,
-    STORAGE_PREFIX: "ubnux_v5_",
+    STORAGE_PREFIX: "ubnux_v5_1_",
     SEO: { DEFAULT_TITLE: "UBnux - Local Business Discovery", DEFAULT_DESCRIPTION: "Discover local businesses, shops and services on UBnux." }
   };
 })(window);
