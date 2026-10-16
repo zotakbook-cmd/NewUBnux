@@ -858,22 +858,22 @@
        CORE CONFIG
   ====================================================== -->
 
-  <script src="/assets/js/config.js?v=5.0.1"></script>
-<script src="/assets/js/cache.js?v=5.0.1"></script>
+  <script src="/assets/js/config.js?v=5.1.1"></script>
+<script src="/assets/js/cache.js?v=5.1.1"></script>
 
 
   <!-- =====================================================
        CORE ROUTER
   ====================================================== -->
 
-  <script src="/assets/js/router.js?v=5.0.1"></script>
+  <script src="/assets/js/router.js?v=5.1.1"></script>
 
 
   <!-- =====================================================
        API CLIENT
   ====================================================== -->
 
-  <script src="/assets/js/api.js?v=5.0.1"></script>
+  <script src="/assets/js/api.js?v=5.1.1"></script>
 
 
   <!-- =====================================================
@@ -926,13 +926,20 @@
   <script>
 (function(){
   "use strict";
-  var p=(window.location.pathname||"/").split("?")[0].split("#")[0]
-    .split("/").filter(Boolean).map(function(x){return String(x).toLowerCase();});
-  var permanent = p.length === 5 && p[0] === "in" && p[1] && p[2] && p[3] && p[4];
-  if (!permanent) return;
+  var permanent=false;
+  if(window.UBnuxRouter && typeof window.UBnuxRouter.isBusinessRoute==="function"){
+    permanent=window.UBnuxRouter.isBusinessRoute();
+  }else{
+    var p=(window.location.pathname||"/").split("?")[0].split("#")[0]
+      .split("/").filter(Boolean).map(function(x){
+        try{return decodeURIComponent(x).toLowerCase();}catch(e){return String(x).toLowerCase();}
+      });
+    permanent=p.length===5 && p[0]==="in" && !!p[1] && !!p[2] && !!p[3] && !!p[4];
+  }
+  if(!permanent) return;
 
   var s=document.createElement("script");
-  s.src="/assets/js/seo/business-page.js?v=5.0.1";
+  s.src="/assets/js/seo/business-page.js?v=5.1.1";
   s.async=false;
   document.head.appendChild(s);
 })();
@@ -943,15 +950,15 @@
        HOMEPAGE / DIRECTORY SYSTEM
   ====================================================== -->
 
-  <script src="/assets/js/storage.js?v=5.0.1"></script>
+  <script src="/assets/js/storage.js?v=5.1.1"></script>
 
-  <script src="/assets/js/state.js?v=5.0.1"></script>
+  <script src="/assets/js/state.js?v=5.1.1"></script>
 
-  <script src="/assets/js/districts.js?v=5.0.1"></script>
+  <script src="/assets/js/districts.js?v=5.1.1"></script>
 
-  <script src="/assets/js/categories.js?v=5.0.1"></script>
+  <script src="/assets/js/categories.js?v=5.1.1"></script>
 
-  <script src="/assets/js/businesses.js?v=5.0.1"></script>
+  <script src="/assets/js/businesses.js?v=5.1.1"></script>
 
   <!-- =====================================================
        SMART SEARCH CONTROLLER
@@ -960,7 +967,7 @@
        recognized before normal directory initialization.
   ====================================================== -->
 
-  <script src="/assets/js/smart-search.js?v=5.0.1"></script>
+  <script src="/assets/js/smart-search.js?v=5.1.1"></script>
 
   <!-- =====================================================
        MAIN APPLICATION
@@ -969,7 +976,7 @@
   ====================================================== -->
 
   <!-- Smart Search behavior is owned by smart-search.js. -->
-<script src="/assets/js/app.js?v=5.0.1"></script>
+<script src="/assets/js/app.js?v=5.1.1"></script>
 
 
 </body>
