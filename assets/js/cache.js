@@ -1,29 +1,11 @@
-/* UBnux Static JSON Cache Controller v5.0.1 - stable manifest fallback */
-(function(window){
-"use strict";
-var C=window.UBNUX_CONFIG||{};
-var manifestPromise=null;
-var jsonPromises=Object.create(null);
-var sessionFallbackVersion="fallback-"+Date.now();
+/* UBnux Static JSON Cache Controller v7.0.0 */
+(function(window){"use strict";
+var C=window.UBNUX_CONFIG||{},manifestPromise=null,jsonPromises=Object.create(null),sessionFallbackVersion="fallback-"+Date.now();
 function clean(v){return String(v==null?"":v).trim();}
 function withVersion(url,version){var sep=url.indexOf("?")>=0?"&":"?";return url+sep+"v="+encodeURIComponent(version||sessionFallbackVersion);}
-function fetchManifest(){
- if(manifestPromise)return manifestPromise;
- var url=(C.STATIC_DATA_MANIFEST_URL||"/assets/data/business-manifest.json")+"?__ubnux_manifest="+Date.now();
- manifestPromise=fetch(url,{cache:"no-store",credentials:"same-origin",headers:{Accept:"application/json","Cache-Control":"no-cache"}})
- .then(function(r){if(!r.ok)throw new Error("Manifest HTTP "+r.status);return r.json();})
- .then(function(m){var v=clean(m.generatedAt||m.version);if(!v)throw new Error("Manifest has no version");window.UBnuxDataVersion=v;return m;})
- .catch(function(e){console.warn("UBnux manifest unavailable; using session fallback version",e);window.UBnuxDataVersion=sessionFallbackVersion;return {generatedAt:sessionFallbackVersion,version:"fallback"};});
- return manifestPromise;
-}
-function getJSON(url,opts){
- opts=opts||{};url=String(url||"");var key=url;
- if(!opts.forceRefresh&&jsonPromises[key])return jsonPromises[key];
- var p=fetchManifest().then(function(m){var v=clean(m.generatedAt||m.version)||sessionFallbackVersion;var target=opts.forceRefresh?url+(url.indexOf("?")>=0?"&":"?")+"refresh="+Date.now():withVersion(url,v);return fetch(target,{cache:"no-cache",credentials:"same-origin",headers:{Accept:"application/json","Cache-Control":"no-cache"}}).then(function(r){if(!r.ok)throw new Error("Static JSON HTTP "+r.status+": "+url);return r.json();});});
- if(!opts.forceRefresh){jsonPromises[key]=p;p.catch(function(){delete jsonPromises[key];});}
- return p;
-}
+function fetchManifest(){if(manifestPromise)return manifestPromise;var url=(C.STATIC_DATA_MANIFEST_URL||"/assets/data/business-manifest.json")+"?__ubnux_manifest="+Date.now();manifestPromise=fetch(url,{cache:"no-store",credentials:"same-origin",headers:{Accept:"application/json","Cache-Control":"no-cache"}}).then(function(r){if(!r.ok)throw Error("Manifest HTTP "+r.status);return r.json();}).then(function(m){var v=clean(m.generatedAt||m.version);if(!v)throw Error("Manifest has no version");window.UBnuxDataVersion=v;return m;}).catch(function(e){console.warn("UBnux manifest unavailable",e);window.UBnuxDataVersion=sessionFallbackVersion;return{generatedAt:sessionFallbackVersion,version:"fallback"};});return manifestPromise;}
+function getJSON(url,opts){opts=opts||{};url=String(url||"");var key=url;if(!opts.forceRefresh&&jsonPromises[key])return jsonPromises[key];var p=fetchManifest().then(function(m){var v=clean(m.generatedAt||m.version)||sessionFallbackVersion;var target=opts.forceRefresh?url+(url.indexOf("?")>=0?"&":"?")+"refresh="+Date.now():withVersion(url,v);return fetch(target,{cache:"no-cache",credentials:"same-origin",headers:{Accept:"application/json","Cache-Control":"no-cache"}}).then(function(r){if(!r.ok)throw Error("Static JSON HTTP "+r.status+": "+url);return r.json();});});if(!opts.forceRefresh){jsonPromises[key]=p;p.catch(function(){delete jsonPromises[key];});}return p;}
 function invalidate(){manifestPromise=null;jsonPromises=Object.create(null);sessionFallbackVersion="fallback-"+Date.now();window.UBnuxDataVersion=sessionFallbackVersion;}
-window.UBnuxStaticCache={version:"5.0.1",getManifest:fetchManifest,getJSON:getJSON,invalidate:invalidate,versionedURL:function(url){return fetchManifest().then(function(m){return withVersion(url,clean(m.generatedAt||m.version)||sessionFallbackVersion);});}};
+window.UBnuxStaticCache={version:"7.0.0",getManifest:fetchManifest,getJSON:getJSON,invalidate:invalidate,versionedURL:function(url){return fetchManifest().then(function(m){return withVersion(url,clean(m.generatedAt||m.version)||sessionFallbackVersion);});}};
 window.UBnuxStaticCacheFixed=true;
 })(window);

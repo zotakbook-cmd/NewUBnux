@@ -1,4 +1,4 @@
-/* UBnux Smart Search v6.5.0
+/* UBnux Smart Search v7.0.0
  * Entity-first search:
  * 1) District name -> complete district chunk
  * 2) Category name -> all matching businesses
@@ -99,8 +99,8 @@
     var out=[];
     var raw=rawGithubURL(file || localDistrictURL(district));
     var local=localDistrictURL(district);
-    if(raw) out.push(raw);                 // source-of-truth fallback first
-    if(local) out.push(local);             // Cloudflare static copy
+    if(local) out.push(local);             // primary deployed static copy
+    if(raw) out.push(raw);                 // GitHub source fallback
     var f=text(file);
     if(f){
       if(/^https?:\/\//i.test(f)) out.push(f);
@@ -469,6 +469,7 @@
     if(state&&district&&category) return "/in/"+slug(state)+"/"+slug(district)+"/"+slug(category)+"/";
     if(state&&district) return "/in/"+slug(state)+"/"+slug(district)+"/";
     if(state&&category) return "/in/"+slug(state)+"/all/"+slug(category)+"/";
+    if(category) return "/in/all/"+slug(category)+"/";
 
     return "/search/"+slug(q)+"/";
   }
@@ -497,36 +498,59 @@
     var p=(location.pathname||"/").split("/").filter(Boolean).map(function(x){
       try{return decodeURIComponent(x).toLowerCase();}catch(e){return String(x).toLowerCase();}
     });
-    if(p.length===3 && p[0]==="in") return {stateSlug:p[1],districtSlug:p[2]};
-    if(p.length===4 && p[0]==="in") return {stateSlug:p[1],districtSlug:p[2],categorySlug:p[3]};
+    if(p.length===2 && p[0]==="search") return {type:"search",query:p[1].replace(/-/g," ")};
+    if(p.length===3 && p[0]==="in") return {type:"district",stateSlug:p[1],districtSlug:p[2]};
+    if(p.length===4 && p[0]==="in"){
+      if(p[1]==="all") return {type:"category",categorySlug:p[2]};
+      return {type:"district-category",stateSlug:p[1],districtSlug:p[2],categorySlug:p[3]};
+    }
     return null;
   }
 
-  function runDirectoryRoute(route,opts){
-    opts=opts||{};
-    var q=route.districtSlug.replace(/-/g," ");
-    if(route.categorySlug) q += " "+route.categorySlug.replace(/-/g," ");
+  function categoryMatchesSlug(b,cs){
+    cs=slug(cs);
+    var vals=[
+      first(b,["categorySlug","CategorySlug"]),
+      first(b,["categoryName","CategoryName"]),
+      first(b,["category","Category"]),
+      first(b,["categoryId","CategoryID"])
+    ];
+    return vals.some(function(v){
+      var n=norm(v);
+      return slug(n)===cs || n===norm(cs) || n.indexOf(norm(cs))>=0 || norm(cs).indexOf(n)>=0;
+    });
+  }
+
+  function runDirectoryRoute(route){
+    route=route||{};
+    var q=route.query||route.districtSlug||route.categorySlug||"";
+    q=q.replace(/-/g," ").trim();
     var input=document.getElementById("ubnuxSmartSearchInput");
     if(input) input.value=q;
+
+    if(route.type==="search"){
+      return run(q,{noHistory:true,skipRoute:true});
+    }
+
+    if(route.type==="category"){
+      return loadIndex().then(function(index){
+        var result=unique(index).filter(function(b){return categoryMatchesSlug(b,route.categorySlug);});
+        render(result,q);
+        return result;
+      }).catch(function(e){
+        console.error("UBnux category route failed:",e);
+        render([],q); return [];
+      });
+    }
+
     return loadDistrictBySlug(route.stateSlug,route.districtSlug).then(function(full){
       var result=unique(full);
-      if(route.categorySlug){
-        var cs=slug(route.categorySlug);
-        result=result.filter(function(b){
-          return slug(first(b,["categorySlug","CategorySlug","categoryName","CategoryName","category","Category"],""))===cs;
-        });
-        if(!result.length){
-          result=unique(full).filter(function(b){
-            return slug(categoryOf(b))===cs || categoryOf(b).indexOf(norm(route.categorySlug.replace(/-/g," ")))>=0;
-          });
-        }
-      }
+      if(route.categorySlug) result=result.filter(function(b){return categoryMatchesSlug(b,route.categorySlug);});
       render(result,q);
       return result;
     }).catch(function(e){
-      console.error("UBnux directory route failed:",e);
-      render([],q);
-      return [];
+      console.error("UBnux district route failed:",e);
+      render([],q); return [];
     });
   }
 
@@ -543,17 +567,9 @@
 
     state.active=true; state.q=q;
 
-    /* When init supplied a parsed SEO route, use the URL slugs directly.
-       Do not depend on entity recognition or the compact business index. */
-    if(opts.route && opts.route.districtSlug){
-      return runDirectoryRoute(opts.route,{noHistory:true});
-    }
-
-    /* SEO directory URLs are authoritative. Load the exact district chunk
-       directly instead of trying to infer the district from the compact
-       business index. */
-    if(opts.route && opts.route.districtSlug){
-      return runDirectoryRoute(opts.route,opts);
+    /* Parsed SEO route is authoritative. */
+    if(opts.route && !opts.skipRoute){
+      return runDirectoryRoute(opts.route);
     }
 
     return detectIntent(q).then(function(intent){
@@ -618,6 +634,14 @@
        * category matches the recognized category.
        */
       if(intent.category){
+        if(!opts.noHistory && !opts.route){
+          var categoryPath=pathFor(q,intent,[]);
+          if(/^\/in\//.test(categoryPath)){
+            try{ window.location.assign(categoryPath); }
+            catch(navErr){ console.error("UBnux category SEO navigation failed:",navErr); }
+            return Promise.resolve([]);
+          }
+        }
         return loadIndex().then(function(index){
           var result=index.filter(function(b){
             return categoryMatches(b,intent.category) &&
@@ -636,6 +660,14 @@
        * Exact/partial/fuzzy business-name preference, then all-field fallback.
        */
       if(intent.business){
+        if(!opts.noHistory && !opts.route){
+          var businessPath=pathFor(q,intent,[]);
+          if(/^\/in\//.test(businessPath)){
+            try{ window.location.assign(businessPath); }
+            catch(navErr){ console.error("UBnux business SEO navigation failed:",navErr); }
+            return Promise.resolve([]);
+          }
+        }
         return loadIndex().then(function(index){
           var qn=norm(q), result=index.filter(function(b){
             var n=businessName(b);
@@ -698,20 +730,15 @@
         try{return decodeURIComponent(x).toLowerCase();}catch(e){return x.toLowerCase();}
       });
       var q="", route=null;
-      if(parts.length===2 && parts[0]==="search"){
-        q=parts[1].replace(/-/g," ").trim();
-      }else if(parts.length===3 && parts[0]==="in"){
-        route={stateSlug:parts[1],districtSlug:parts[2]};
-        q=parts[2].replace(/-/g," ").trim();
-      }else if(parts.length===4 && parts[0]==="in"){
-        route={stateSlug:parts[1],districtSlug:parts[2],categorySlug:parts[3]};
-        q=(parts[2]+" "+parts[3]).replace(/-/g," ").trim();
+      route=directoryRoute();
+      if(route){
+        if(route.type==="search") q=route.query;
+        else if(route.type==="category") q=route.categorySlug.replace(/-/g," ");
+        else q=(route.districtSlug||"").replace(/-/g," ")+(route.categorySlug?" "+route.categorySlug.replace(/-/g," "):"");
       }
       if(q){
         var input=document.getElementById("ubnuxSmartSearchInput");
         if(input) input.value=q;
-        /* App/bootstrap can still be loading. Repeat the authoritative route
-           load after startup so a late homepage render cannot leave 0 results. */
         setTimeout(function(){ run(q,{noHistory:true,route:route}); },0);
         setTimeout(function(){ run(q,{noHistory:true,route:route}); },350);
         setTimeout(function(){ run(q,{noHistory:true,route:route}); },900);
@@ -722,7 +749,7 @@
   }
 
   window.UBnuxSmartSearch={
-    version:"6.6.0",
+    version:"7.0.0",
     state:state,
     init:init,
     bind:bind,
@@ -732,8 +759,8 @@
     getIndex:loadIndex,
     loadDistrictBySlug:loadDistrictBySlug,
     isDirectorySearchRoute:function(){
-      var p=(location.pathname||"/").split("/").filter(Boolean);
-      return (p.length===2 && p[0]==="search") || (p.length===3 && p[0]==="in") || (p.length===4 && p[0]==="in");
+      var r=directoryRoute();
+      return !!r;
     }
   };
 

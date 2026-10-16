@@ -1,4 +1,4 @@
-/* UBnux App v6.5.0 - resilient static bootstrap + loader failsafe */
+/* UBnux App v7.0.0 - resilient static bootstrap + loader failsafe */
 (function (window, document) {
   "use strict";
 
@@ -234,20 +234,12 @@
   function businessMatchesState(b, wanted) {
     var w = val(wanted);
     if (!w) return true;
-
-    var values = [
-      b.state,
-      b.stateName,
-      b.stateSlug,
-      b.State,
-      b.StateName,
-      b.StateSlug,
-      b.StateCode,
-      b.stateCode
-    ];
-
+    var ws = w.replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"");
+    var values = [b.state,b.stateName,b.stateSlug,b.State,b.StateName,b.StateSlug,b.StateCode,b.stateCode];
     return values.some(function (x) {
-      return val(x) === w;
+      var raw=val(x);
+      var sx=raw.replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"");
+      return raw===w || sx===ws;
     });
   }
 
@@ -565,110 +557,61 @@
     var sort = el("sortFilter");
 
     /* STATE */
-    if (s) {
+    if (s && !s.dataset.ubnuxBound) {
+      s.dataset.ubnuxBound = "1";
       s.addEventListener("change", function () {
+        var selectedState = val(s.value);
         try {
-          var st =
-            window.UBnuxState &&
-            typeof window.UBnuxState.get === "function"
-              ? window.UBnuxState.get()
-              : {};
-
-          var districts =
-            st &&
-            Array.isArray(st.districts)
-              ? st.districts
-              : [];
-
-          var selectedState = val(s.value);
-
-          var ds = districts.filter(function (x) {
-            x = x || {};
-
-            return (
-              val(x.State) === selectedState ||
-              val(x.StateName) === selectedState ||
-              val(x.StateCode) === selectedState ||
-              val(x.Slug) === selectedState
-            );
-          });
-
-          if (
-            window.UBnuxDistricts &&
-            typeof window.UBnuxDistricts.render === "function"
-          ) {
-            window.UBnuxDistricts.render(ds);
+          if (window.UBnuxDistricts && typeof window.UBnuxDistricts.render === "function") window.UBnuxDistricts.render(selectedState);
+        } catch (e) { console.error("UBnux state selector error:", e); }
+        try {
+          var st = window.UBnuxState && typeof window.UBnuxState.get === "function" ? window.UBnuxState.get() : null;
+          if (st) {
+            st.selected.state = selectedState;
+            st.selected.stateName = s.options[s.selectedIndex] ? s.options[s.selectedIndex].textContent : selectedState;
+            st.selected.district = ""; st.selected.districtName = "";
           }
-        } catch (e) {
-          console.error(
-            "UBnux state selector error:",
-            e
-          );
-        }
-
+        } catch (stateErr) {}
         applyFilters();
       });
     }
 
     /* DISTRICT */
-    if (d) {
-      d.addEventListener(
-        "change",
-        applyFilters
-      );
-    }
-
-    /* SORT */
-    if (sort) {
-      sort.addEventListener(
-        "change",
-        applyFilters
-      );
+    if (d && !d.dataset.ubnuxBound) {
+      d.dataset.ubnuxBound = "1";
+      d.addEventListener("change", function () {
+        try {
+          var st = window.UBnuxState && typeof window.UBnuxState.get === "function" ? window.UBnuxState.get() : null;
+          if (st) {
+            st.selected.district = d.value || "";
+            st.selected.districtName = d.options[d.selectedIndex] ? d.options[d.selectedIndex].textContent : "";
+          }
+        } catch (e) {}
+        applyFilters();
+      });
     }
 
     /* CATEGORY DROPDOWN */
     var cb = el("categoryDropdownButton");
-    var menu = el("categoryDropdownMenu");
-
-    if (cb && menu) {
-      cb.addEventListener("click", function () {
-        var open =
-          menu.classList.toggle("open");
-
-        cb.setAttribute(
-          "aria-expanded",
-          open ? "true" : "false"
-        );
-      });
-    }
-
-    /* CATEGORY SEARCH */
-    var catSearch =
-      el("categorySearchInput");
-
-    if (catSearch) {
-      catSearch.addEventListener(
-        "input",
-        function () {
-          var q = val(catSearch.value);
-
-          document
-            .querySelectorAll(
-              ".category-option"
-            )
-            .forEach(function (x) {
-              x.hidden =
-                !!q &&
-                val(x.textContent).indexOf(q) < 0;
-            });
+    if (cb && !cb.dataset.ubnuxBound) {
+      cb.dataset.ubnuxBound = "1";
+      cb.addEventListener("click", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        if (cb.disabled) return;
+        var menu = el("categoryDropdownMenu");
+        var open = menu && !menu.hidden && menu.classList.contains("open");
+        if (window.UBnuxCategories) {
+          if (open && typeof window.UBnuxCategories.close === "function") window.UBnuxCategories.close();
+          else if (!open && typeof window.UBnuxCategories.open === "function") window.UBnuxCategories.open();
         }
-      );
+      });
     }
 
     /* LOAD MORE */
     var more = el("loadMoreButton");
 
-    if (more) {
+    if (more && !more.dataset.ubnuxBound) {
+      more.dataset.ubnuxBound = "1";
       more.addEventListener(
         "click",
         function () {
@@ -690,7 +633,8 @@
     var nav =
       el("mainNav");
 
-    if (menuButton && nav) {
+    if (menuButton && nav && !menuButton.dataset.ubnuxBound) {
+      menuButton.dataset.ubnuxBound = "1";
       menuButton.addEventListener(
         "click",
         function () {
